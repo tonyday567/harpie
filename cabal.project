@@ -1,0 +1,5 @@
+packages:
+  harry.cabal
+
+write-ghc-environment-files: always
+

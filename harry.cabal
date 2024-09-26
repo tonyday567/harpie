@@ -1,0 +1,79 @@
+cabal-version: 3.0
+name: harry
+version: 0.1
+license: BSD-3-Clause
+license-file: LICENSE
+copyright: Tony Day (c) 2016-2024
+category: math
+author: Tony Day
+maintainer: tonyday567@gmail.com
+homepage: https://github.com/tonyday567/harry#readme
+bug-reports: https://github.com/tonyday567/harry/issues
+synopsis: Hyper-rectangular arrays.
+description:
+    This package provides hyper-rectangular array functionality. Module names clash with each other and with the Prelude, so a clear import strategy is:
+
+    == Usage
+
+    >>> import Harry.Fixed qualified as F
+    >>> import Harry.Shape qualified as S
+    >>> import Harry.Dynamic qualified as D
+
+build-type: Simple
+tested-with:
+    , GHC == 9.10.1
+    , GHC == 9.8.2
+    , GHC == 9.6.5
+extra-doc-files: ChangeLog.md
+
+source-repository head
+    type: git
+    location: https://github.com/tonyday567/harry
+
+common ghc-options-stanza
+    ghc-options:
+        -Wall
+        -Wcompat
+        -Widentities
+        -Wincomplete-record-updates
+        -Wincomplete-uni-patterns
+        -Wpartial-fields
+        -Wredundant-constraints
+
+common ghc2021-stanza
+    default-language: GHC2021
+
+library
+    import: ghc-options-stanza
+    import: ghc2021-stanza
+    hs-source-dirs: src
+    build-depends:
+        , adjunctions  >=4.0 && <5
+        , base         >=4.14 && <5
+        , constraints
+        , distributive >=0.4 && <0.7
+        , first-class-families
+        , ghc-typelits-knownnat
+        , prettyprinter >= 1.7 && <1.8
+        , random        >=1.2 && <1.3
+        , reflection    >= 2.1 && <2.2
+        , vector       >=0.12.3 && <0.14
+        , vector-algorithms
+        , QuickCheck
+        , quickcheck-instances
+    exposed-modules:
+        Harry.Dynamic
+        Harry.Fixed
+        Harry.Shape
+        Harry.Sort
+
+test-suite doctests
+    import: ghc2021-stanza
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: doctests.hs
+    ghc-options: -threaded
+    build-depends:
+        , base
+        , harry
+        , doctest-parallel >=0.3 && <0.4

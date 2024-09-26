@@ -1,0 +1,62 @@
+
+
+* harry
+
+[[https://hackage.haskell.org/package/numhask-array][file:https://img.shields.io/hackage/v/harry.svg]] [[https://github.com/tonyday567/numhask-array/actions?query=workflow%3Ahaskell-ci][file:https://github.com/tonyday567/harry/workflows/haskell-ci/badge.svg]]
+
+* Usage
+
+This package provides hyper-rectangular array functionality.
+
+#+begin_src haskell
+import qualified Harry.Shape
+import qualified Harry.Fixed as F
+import qualified Harry.Dynamic as D
+#+end_src
+
+
+
+* Debugging doctest
+
+#+begin_src elisp
+Last login: Thu Sep 26 12:40:45 on ttys001
+➜  harry /Users/tonyday567/.ghcup/ghc/9.8.2/bin/ghc-9.8.2 -XNoImplicitPrelude --interactive -fdiagnostics-color=never -fno-diagnostics-show-caret -ignore-dot-ghci -v0
+ghci> import qualified System.IO
+ghci> import qualified GHC.IO.Handle
+ghci> GHC.IO.Handle.hDuplicateTo System.IO.stdout System.IO.stderr
+ghci> GHC.IO.Handle.hSetBuffering System.IO.stdout GHC.IO.Handle.LineBuffering
+ghci> GHC.IO.Handle.hSetBuffering System.IO.stderr GHC.IO.Handle.LineBuffering
+ghci> GHC.IO.Handle.hSetEncoding System.IO.stdout System.IO.utf8
+ghci> GHC.IO.Handle.hSetEncoding System.IO.stderr System.IO.utf8
+ghci> :m - System.IO
+ghci> :m - GHC.IO.Handle
+ghci> :m +Harry.Shape
+ghci> :reload
+ghci> :m Prelude
+ghci> :m +Harry.Shape
+ghci> :set -XDataKinds
+ghci> :set -XTypeFamilies
+ghci> :set -XFlexibleContexts
+ghci> :set -XRebindableSyntax
+ghci> import Prelude
+ghci> import Harry.Shape as S
+ghci> import Fcf.Data.List
+ghci> import Fcf.Class.Monoid
+ghci> import GHC.TypeNats
+ghci>
+#+end_src
+
+:{
+:reload
+:m Prelude
+:m +Harry.Shape
+:set -XDataKinds
+:set -XTypeFamilies
+:set -XFlexibleContexts
+import Prelude
+import Harry.Shape as S
+import Fcf
+import Fcf.Data.List
+import GHC.TypeNats
+import Data.Type.Ord
+:}
