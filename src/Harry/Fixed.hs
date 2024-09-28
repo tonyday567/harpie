@@ -27,9 +27,11 @@ module Harry.Fixed
 
     -- * Dimensions
     Dim,
+    pattern Dim,
     Dims,
+    pattern Dims,
 
-   -- * Dependent type
+    -- * Dependent type
     SomeArray (..),
     someArray,
 
@@ -228,7 +230,7 @@ import GHC.Generics
 -- >>> import Prelude hiding (cycle, repeat, take, drop, zipWith)
 -- >>> import Harry.Fixed as F
 -- >>> import Harry.Shape qualified as S
--- >>> import Harry.Shape (SNats, Fin (..))
+-- >>> import Harry.Shape (Dims, SNats, Fin (..))
 -- >>> import GHC.TypeNats
 -- >>> import Prettyprinter hiding (dot,fill)
 -- >>> import Data.Functor.Rep
@@ -411,9 +413,16 @@ unsafeModifyVector f a = unsafeArray (asVector (f (vectorAs (asVector a))))
 -- | Representation of an index into a shape (a type-level [Nat]). The index is a dimension of the shape.
 type Dim = SNat
 
+pattern Dim :: () => KnownNat n => SNat n
+pattern Dim = SNat
+{-# COMPLETE Dim #-}
+
 -- | Representation of indexes into a shape (a type-level [Nat]). The indexes are dimensions of the shape.
 type Dims = SNats
 
+pattern Dims :: () => KnownNats ns => SNats ns
+pattern Dims = SNats
+{-# COMPLETE Dims #-}
 
 -- | A fixed Array with a hidden shape.
 --
@@ -454,7 +463,7 @@ toDynamic a = D.array (shape a) (asVector a)
 --
 -- FIXME: rethink this structure
 -- >>> import qualified Harry.Dynamic as D
--- >>> with (D.range [2,3,4]) (F.indexes (S.SNats @[0,1]) (S.UnsafeFins [1,1]) :: F.Array [2,3,4] Int -> F.Array '[4] Int)
+-- >>> with (D.range [2,3,4]) (F.indexes (Dims @[0,1]) (S.UnsafeFins [1,1]) :: F.Array [2,3,4] Int -> F.Array '[4] Int)
 -- [16,17,18,19]
 with ::
   forall a r s.
@@ -705,7 +714,7 @@ imap f a = zipWith f indices a
 --
 -- > rowWise f xs = f [0..rank xs - 1] xs
 --
--- >>> toDynamic $ rowWise indexesT (S.SNats @[1,0]) a
+-- >>> toDynamic $ rowWise indexesT (Dims @[1,0]) a
 -- UnsafeArray [4] [12,13,14,15]
 rowWise ::
   forall a ds s s' xs proxy.
@@ -715,13 +724,13 @@ rowWise ::
   ) =>
   (Dims ds -> proxy xs -> Array s a -> Array s' a) ->
   proxy xs -> Array s a -> Array s' a
-rowWise f xs a = f (SNats @ds) xs a
+rowWise f xs a = f (Dims @ds) xs a
 
 -- | Apply a function that takes a (dimension,parameter) list and applies a parameter list to the the last dimensions (in reverse). ie
 --
 -- > colWise f xs = f (List.reverse [0 .. (rank a - 1)]) xs
 --
--- >>> toDynamic $ colWise indexesT (S.SNats @[1,0]) a
+-- >>> toDynamic $ colWise indexesT (Dims @[1,0]) a
 -- UnsafeArray [2] [1,13]
 colWise ::
   forall a ds s s' xs proxy.
@@ -730,11 +739,11 @@ colWise ::
   , ds ~ Eval (EndDimsOf xs s)) =>
   (Dims ds -> proxy xs -> Array s a -> Array s' a) ->
   proxy xs -> Array s a -> Array s' a
-colWise f xs a = f (SNats @ds) xs a
+colWise f xs a = f (Dims @ds) xs a
 
 -- | Take the top-most elements across the specified dimension.
 --
--- >>> pretty $ take (SNat @2) (SNat @1) a
+-- >>> pretty $ take (Dim @2) (SNat @1) a
 -- [[[0],
 --   [4],
 --   [8]],
@@ -755,7 +764,7 @@ take _ _ a = unsafeBackpermute id a
 
 -- | Take the bottom-most elements across the specified dimension.
 --
--- >>> pretty $ takeB (SNat @2) (SNat @1) a
+-- >>> pretty $ takeB (Dim @2) (SNat @1) a
 -- [[[3],
 --   [7],
 --   [11]],
@@ -772,11 +781,11 @@ takeB ::
   SNat t ->
   Array s a ->
   Array s' a
-takeB SNat SNat a = unsafeBackpermute (\s -> modifyDim (valueOf @d) (\x -> x + (getDim (valueOf @d) (shape a)) - (valueOf @t)) s) a
+takeB Dim SNat a = unsafeBackpermute (\s -> modifyDim (valueOf @d) (\x -> x + (getDim (valueOf @d) (shape a)) - (valueOf @t)) s) a
 
 -- | Drop the top-most elements across the specified dimension.
 --
--- >>> pretty $ drop (SNat @2) (SNat @1) a
+-- >>> pretty $ drop (Dim @2) (SNat @1) a
 -- [[[1,2,3],
 --   [5,6,7],
 --   [9,10,11]],
@@ -793,11 +802,11 @@ drop ::
   SNat t ->
   Array s a ->
   Array s' a
-drop SNat SNat a = unsafeBackpermute (S.modifyDim (valueOf @d) (\x -> x + valueOf @t)) a
+drop Dim SNat a = unsafeBackpermute (S.modifyDim (valueOf @d) (\x -> x + valueOf @t)) a
 
 -- | Drop the bottom-most elements across the specified dimension.
 --
--- >>> pretty $ dropB (SNat @2) (SNat @1) a
+-- >>> pretty $ dropB (Dim @2) (SNat @1) a
 -- [[[0,1,2],
 --   [4,5,6],
 --   [8,9,10]],
@@ -818,7 +827,7 @@ dropB _ _ a = unsafeBackpermute id a
 
 -- | Select an index along a dimension.
 --
--- >>> let s = select (SNat @2) (S.fin @4 3) a
+-- >>> let s = select (Dim @2) (S.fin @4 3) a
 -- >>> pretty s
 -- [[3,7,11],
 --  [15,19,23]]
@@ -833,18 +842,18 @@ select ::
   Fin p ->
   Array s a ->
   Array  s' a
-select SNat p a = unsafeBackpermute (S.insertDim (valueOf @d) (fromFin p)) a
+select Dim p a = unsafeBackpermute (S.insertDim (valueOf @d) (fromFin p)) a
 
 -- | Insert along a dimension at a position.
 --
--- >>> pretty $ insert (SNat @2) (UnsafeFin 0) a (konst @[2,3] 0)
+-- >>> pretty $ insert (Dim @2) (UnsafeFin 0) a (konst @[2,3] 0)
 -- [[[0,0,1,2,3],
 --   [0,4,5,6,7],
 --   [0,8,9,10,11]],
 --  [[0,12,13,14,15],
 --   [0,16,17,18,19],
 --   [0,20,21,22,23]]]
--- >>> toDynamic $ insert (SNat @0) (UnsafeFin 0) (toScalar 1) (toScalar 2)
+-- >>> toDynamic $ insert (Dim @0) (UnsafeFin 0) (toScalar 1) (toScalar 2)
 -- UnsafeArray [2] [2,1]
 insert ::
   forall s' s si d p a.
@@ -860,7 +869,7 @@ insert ::
   Array s a ->
   Array si a ->
   Array s' a
-insert SNat i a b = tabulate go
+insert Dim i a b = tabulate go
   where
     go s
       | getDim d s' == fromFin i = index b (UnsafeFins (deleteDim d s'))
@@ -871,7 +880,7 @@ insert SNat i a b = tabulate go
 
 -- | Delete along a dimension at a position.
 --
--- >>> pretty $ delete (SNat @2) (UnsafeFin 3) a
+-- >>> pretty $ delete (Dim @2) (UnsafeFin 3) a
 -- [[[0,1,2],
 --   [4,5,6],
 --   [8,9,10]],
@@ -888,13 +897,13 @@ delete ::
   Fin p ->
   Array s a ->
   Array s' a
-delete SNat p a = unsafeBackpermute (\s -> bool (incAt d s) s (getDim d s < fromFin p)) a
+delete Dim p a = unsafeBackpermute (\s -> bool (incAt d s) s (getDim d s < fromFin p)) a
   where
     d = valueOf @d
 
 -- | Insert along a dimension at the end.
 --
--- >>> pretty $ append (SNat @2) a (konst @[2,3] 0)
+-- >>> pretty $ append (Dim @2) a (konst @[2,3] 0)
 -- [[[0,1,2,3,0],
 --   [4,5,6,7,0],
 --   [8,9,10,11,0]],
@@ -913,11 +922,11 @@ append ::
   Array s a ->
   Array si a ->
   Array s' a
-append (SNat :: SNat d) = insert (SNat @d) (UnsafeFin (getDim (valueOf @d) (valuesOf @s)))
+append (Dim :: Dim d) = insert (Dim @d) (UnsafeFin (getDim (valueOf @d) (valuesOf @s)))
 
 -- | Insert along a dimension at the beginning.
 --
--- >>> pretty $ prepend (SNat @2) (konst @[2,3] 0) a
+-- >>> pretty $ prepend (Dim @2) (konst @[2,3] 0) a
 -- [[[0,0,1,2,3],
 --   [0,4,5,6,7],
 --   [0,8,9,10,11]],
@@ -940,11 +949,11 @@ prepend d a b = insert d (UnsafeFin 0) b a
 
 -- | Concatenate along a dimension.
 --
--- >>> shape $ concatenate (SNat @1) a a
+-- >>> shape $ concatenate (Dim @1) a a
 -- [2,6,4]
--- >>> toDynamic $ concatenate (SNat @0) (toScalar 1) (toScalar 2)
+-- >>> toDynamic $ concatenate (Dim @0) (toScalar 1) (toScalar 2)
 -- UnsafeArray [2] [1,2]
--- >>> toDynamic $ concatenate (SNat @0) (array @'[1] [0]) (array @'[3] [1..3])
+-- >>> toDynamic $ concatenate (Dim @0) (array @'[1] [0]) (array @'[3] [1..3])
 -- UnsafeArray [4] [0,1,2,3]
 concatenate ::
   forall a s0 s1 d s.
@@ -957,7 +966,7 @@ concatenate ::
   Array s0 a ->
   Array s1 a ->
   Array s a
-concatenate SNat a0 a1 = tabulate (go . fromFins)
+concatenate Dim a0 a1 = tabulate (go . fromFins)
   where
     go s =
       bool
@@ -989,11 +998,11 @@ couple :: forall a s s' se.
    se ~ Eval (InsertDim 0 1 s)
   ) =>
   Array s a -> Array s a -> Array s' a
-couple a a' = concatenate (SNat @0) (elongate (SNat @0) a) (elongate (SNat @0) a')
+couple a a' = concatenate (Dim @0) (elongate (Dim @0) a) (elongate (Dim @0) a')
 
 -- | Slice along a dimension with the supplied (offset, length).
 --
--- >>> pretty $ slice (SNat @2) (SNat @1) (SNat @2) a
+-- >>> pretty $ slice (Dim @2) (SNat @1) (SNat @2) a
 -- [[[1,2],
 --   [5,6],
 --   [9,10]],
@@ -1011,11 +1020,11 @@ slice ::
   SNat l ->
   Array s a ->
   Array s' a
-slice SNat SNat _ a = unsafeBackpermute (S.modifyDim (valueOf @d) (+ (valueOf @off))) a
+slice Dim SNat _ a = unsafeBackpermute (S.modifyDim (valueOf @d) (+ (valueOf @off))) a
 
 -- | Rotate an array along a dimension.
 --
--- >>> pretty $ rotate (SNat @1) 2 a
+-- >>> pretty $ rotate (Dim @1) 2 a
 -- [[[8,9,10,11],
 --   [0,1,2,3],
 --   [4,5,6,7]],
@@ -1029,13 +1038,13 @@ rotate ::
   Int ->
   Array s a ->
   Array s a
-rotate SNat r a = unsafeBackpermute (rotateIndex (valueOf @d) r (shape a)) a
+rotate Dim r a = unsafeBackpermute (rotateIndex (valueOf @d) r (shape a)) a
 
 -- * multi-dimensional operators
 
 -- | Takes the top-most elements across the supplied dimension,n tuples.
 --
--- >>> pretty $ takes (S.SNats @[0,1]) (S.SNats @[1,2]) a
+-- >>> pretty $ takes (Dims @[0,1]) (SNats @[1,2]) a
 -- [[[0,1,2,3],
 --   [4,5,6,7]]]
 takes ::
@@ -1052,7 +1061,7 @@ takes _ _ a = unsafeBackpermute id a
 
 -- | Takes the bottom-most elements across the supplied dimension,n tuples.
 --
--- >>> pretty (takeBs (S.SNats @[0,1]) (S.SNats @[1,2]) a)
+-- >>> pretty (takeBs (Dims @[0,1]) (SNats @[1,2]) a)
 -- [[[16,17,18,19],
 --   [20,21,22,23]]]
 takeBs ::
@@ -1073,7 +1082,7 @@ takeBs _ _ a = unsafeBackpermute (List.zipWith (+) start) a
 
 -- | Drops the top-most elements across dimension,n tuples.
 --
--- >>> pretty $ drops (S.SNats @[0,2]) (S.SNats @[1,3]) a
+-- >>> pretty $ drops (Dims @[0,2]) (SNats @[1,3]) a
 -- [[[15],
 --   [19],
 --   [23]]]
@@ -1095,7 +1104,7 @@ drops _ _ a = unsafeBackpermute (List.zipWith (+) start) a
 
 -- | Drops the bottom-most elements across dimension,n tuples.
 --
--- >>> pretty $ dropBs (S.SNats @[0,2]) (S.SNats @[1,3]) a
+-- >>> pretty $ dropBs (Dims @[0,2]) (SNats @[1,3]) a
 -- [[[0],
 --   [4],
 --   [8]]]
@@ -1115,7 +1124,7 @@ dropBs _ _ a = unsafeBackpermute id a
 
 -- | Select by an index along dimensions.
 --
--- >>> pretty $ indexes (S.SNats @[0,1]) (S.UnsafeFins [1,1]) a
+-- >>> pretty $ indexes (Dims @[0,1]) (S.UnsafeFins [1,1]) a
 -- [16,17,18,19]
 indexes ::
   forall ds s s' xs a.
@@ -1128,11 +1137,11 @@ indexes ::
   Fins xs ->
   Array s a ->
   Array s' a
-indexes SNats xs a = unsafeBackpermute (S.insertDims (valuesOf @ds) (fromFins xs)) a
+indexes Dims xs a = unsafeBackpermute (S.insertDims (valuesOf @ds) (fromFins xs)) a
 
 --- | Select by dimensions and indexes, supplying indexes as a type.
 ---
--- >>> pretty $ indexesT (S.SNats @[0,1]) (S.SNats @[1,1]) a
+-- >>> pretty $ indexesT (Dims @[0,1]) (SNats @[1,1]) a
 -- [16,17,18,19]
 indexesT ::
   forall ds xs s s' a.
@@ -1151,7 +1160,7 @@ indexesT ds _ a = indexes ds (UnsafeFins $ valuesOf @xs) a
 
 -- | Slice along dimensions with the supplied offsets and lengths.
 --
--- >>> pretty $ slices (S.SNats @'[2]) (S.SNats @'[1]) (S.SNats @'[2]) a
+-- >>> pretty $ slices (Dims @'[2]) (SNats @'[1]) (SNats @'[2]) a
 -- [[[1,2],
 --   [5,6],
 --   [9,10]],
@@ -1178,7 +1187,7 @@ slices _ _ _ a = unsafeBackpermute (List.zipWith (+) o) a
 
 -- | Select the first element along the supplied dimensions
 --
--- >>> pretty $ heads (S.SNats @[0,2]) a
+-- >>> pretty $ heads (Dims @[0,2]) a
 -- [0,4,8]
 heads ::
   forall a ds s s'.
@@ -1193,7 +1202,7 @@ heads ds a = indexes ds (UnsafeFins $ replicate (rankOf @ds) 0) a
 
 -- | Select the last element along the supplied dimensions
 --
--- >>> pretty $ lasts (S.SNats @[0,2]) a
+-- >>> pretty $ lasts (Dims @[0,2]) a
 -- [15,19,23]
 lasts ::
   forall ds s s' a.
@@ -1211,7 +1220,7 @@ lasts ds a = indexes ds (UnsafeFins lastds) a
 
 -- | Select the tail elements along the supplied dimensions
 --
--- >>> pretty $ tails (S.SNats @[0,2]) a
+-- >>> pretty $ tails (Dims @[0,2]) a
 -- [[[13,14,15],
 --   [17,18,19],
 --   [21,22,23]]]
@@ -1234,7 +1243,7 @@ tails ds a = slices ds (SNats @os) (SNats @ls) a
 
 -- | Select the init elements along the supplied dimensions
 --
--- >>> pretty $ inits (S.SNats @[0,2]) a
+-- >>> pretty $ inits (Dims @[0,2]) a
 -- [[[0,1,2],
 --   [4,5,6],
 --   [8,9,10]]]
@@ -1259,7 +1268,7 @@ inits ds a = slices ds (SNats @os) (SNats @ls) a
 --
 -- > a == (fromScalar <$> extracts [0..rank a] a)
 --
--- >>> pretty $ shape <$> extracts (S.SNats @'[0]) a
+-- >>> pretty $ shape <$> extracts (Dims @'[0]) a
 -- [[3,4],[3,4]]
 extracts ::
   forall ds st si so a.
@@ -1277,9 +1286,9 @@ extracts ds a = tabulate (\s -> indexes ds s a)
 
 -- | Reduce along specified dimensions, using the supplied fold.
 --
--- >>> pretty $ reduces (S.SNats @'[0]) sum a
+-- >>> pretty $ reduces (Dims @'[0]) sum a
 -- [66,210]
--- >>> pretty $ reduces (S.SNats @[0,2]) sum a
+-- >>> pretty $ reduces (Dims @[0,2]) sum a
 -- [[12,15,18,21],
 --  [48,51,54,57]]
 --
@@ -1300,8 +1309,8 @@ reduces ds f a = fmap f (extracts ds a)
 
 -- | Join inner and outer dimension layers by supplied dimensions. No checks on shape.
 --
--- >>> let e = extracts (S.SNats @[1,0]) a
--- >>> let j = joins (S.SNats @[1,0]) e
+-- >>> let e = extracts (Dims @[1,0]) a
+-- >>> let j = joins (Dims @[1,0]) e
 -- >>> a == j
 -- True
 joins ::
@@ -1320,7 +1329,7 @@ joins _ a = tabulate go
 
 -- | Join inner and outer dimension layers in outer dimension order.
 --
--- >>> a == join (extracts (S.SNats @[0,1]) a)
+-- >>> a == join (extracts (Dims @[0,1]) a)
 -- True
 join ::
   forall a si so st ds.
@@ -1334,9 +1343,6 @@ join ::
   Array so (Array si a) ->
   Array st a
 join a = joins (SNats @ds) a
-  where
-    -- go s = index (index a (UnsafeFins $ S.getDims ds (fromFins s))) (UnsafeFins $ S.deleteDims ds (fromFins s))
-    -- ds = [0..rankOf @so - 1]
 
 -- | Traverse along specified dimensions.
 --
@@ -1354,12 +1360,12 @@ traverses ::
   (a -> f b) ->
   Array s a ->
   f (Array s b)
-traverses (SNats :: SNats ds) f a = joins (SNats @ds) <$> traverse (traverse f) (extracts (SNats :: SNats ds) a)
+traverses (Dims :: Dims ds) f a = joins (SNats @ds) <$> traverse (traverse f) (extracts (Dims :: Dims ds) a)
 
 -- | Maps a function along specified dimensions.
 --
--- > :t maps (S.SNats @'[1]) transpose a
--- maps (transpose) (S.SNats @'[1]) a :: Array [4, 3, 2] Int
+-- > :t maps (Dims @'[1]) transpose a
+-- maps (transpose) (Dims @'[1]) a :: Array [4, 3, 2] Int
 maps ::
   forall ds s s' si si' so a b.
   ( KnownNats s,
@@ -1380,7 +1386,7 @@ maps SNats f a = joins (SNats @ds) (fmap f (extracts (SNats @ds) a))
 
 -- | Filters along specified dimensions (which are flattened as a dynamic array).
 --
--- >>> pretty $ filters (S.SNats @[0,1]) (any ((==0) . (`mod` 7))) a
+-- >>> pretty $ filters (Dims @[0,1]) (any ((==0) . (`mod` 7))) a
 -- [[0,1,2,3],[4,5,6,7],[12,13,14,15],[20,21,22,23]]
 filters ::
   forall ds si so a.
@@ -1393,11 +1399,11 @@ filters ::
   (Array si a -> Bool) ->
   Array so a ->
   D.Array (Array si a)
-filters SNats p a = D.asArray $ V.filter p $ asVector (extracts (SNats @ds) a)
+filters Dims p a = D.asArray $ V.filter p $ asVector (extracts (Dims @ds) a)
 
 -- | Zips two arrays with a function along specified dimensions.
 --
--- >>> pretty $ zips (S.SNats @[0,1]) (zipWith (,)) a (reverses (S.SNats @'[0]) a)
+-- >>> pretty $ zips (Dims @[0,1]) (zipWith (,)) a (reverses (Dims @'[0]) a)
 -- [[[(0,12),(1,13),(2,14),(3,15)],
 --   [(4,16),(5,17),(6,18),(7,19)],
 --   [(8,20),(9,21),(10,22),(11,23)]],
@@ -1421,11 +1427,11 @@ zips ::
   Array s a ->
   Array s b ->
   Array s' c
-zips SNats f a b = joins (SNats @ds) (zipWith f (extracts (SNats @ds) a) (extracts (SNats @ds) b))
+zips SNats f a b = joins (Dims @ds) (zipWith f (extracts (Dims @ds) a) (extracts (Dims @ds) b))
 
 -- | Modify using the supplied function along dimension and positions.
 --
--- >>> pretty $ modifies (fmap (100+)) (S.SNats @'[2]) (S.UnsafeFins [0]) a
+-- >>> pretty $ modifies (fmap (100+)) (Dims @'[2]) (S.UnsafeFins [0]) a
 -- [[[100,1,2,3],
 --   [104,5,6,7],
 --   [108,9,10,11]],
@@ -1445,11 +1451,11 @@ modifies ::
   Fins so ->
   Array s a ->
   Array s a
-modifies f SNats ps a = joins (SNats @ds) $ modify ps f (extracts (SNats @ds) a)
+modifies f SNats ps a = joins (Dims @ds) $ modify ps f (extracts (Dims @ds) a)
 
 -- | Apply a binary function between successive slices, across (dimension, lag) tuples
 --
--- >>> pretty $ diffs (S.SNats @'[1]) (S.SNats @'[1]) (zipWith (-)) a
+-- >>> pretty $ diffs (Dims @'[1]) (SNats @'[1]) (zipWith (-)) a
 -- [[[4,4,4,4],
 --   [4,4,4,4]],
 --  [[4,4,4,4],
@@ -1472,7 +1478,7 @@ diffs ::
   Dims ds ->
   SNats ls ->
   (Array si a -> Array si a -> Array si' b) -> Array st a -> Array st' b
-diffs SNats xs f a = zips (SNats @ds) f (drops (SNats @ds) xs a) (dropBs (SNats @ds) xs a)
+diffs SNats xs f a = zips (Dims @ds) f (drops (Dims @ds) xs a) (dropBs (Dims @ds) xs a)
 
 -- | Product two arrays using the supplied binary function.
 --
@@ -1548,7 +1554,7 @@ expandr f a b = tabulate (\i -> f (index a (UnsafeFins $ List.drop r (fromFins i
 -- FIXME: relook at expand/contract structure
 --
 -- >>> let b = array [1..6] :: Array [2,3] Int
--- >>> pretty $ contract (S.SNats @[1,2]) sum (expand (*) b (transpose b))
+-- >>> pretty $ contract (Dims @[1,2]) sum (expand (*) b (transpose b))
 -- [[14,32],
 --  [32,77]]
 contract ::
@@ -1567,7 +1573,7 @@ contract ::
   (Array ss a -> b) ->
   Array s a ->
   Array s' b
-contract SNats f a = f . diag <$> extracts (SNats @ds') a
+contract SNats f a = f . diag <$> extracts (Dims @ds') a
 
 -- | A generalisation of a dot operation, which is a multiplicative expansion of two arrays and sum contraction along the middle two dimensions.
 --
@@ -1616,7 +1622,7 @@ dot ::
   Array sa a ->
   Array sb b ->
   Array s' d
-dot f g a b = contract (SNats :: SNats ds) f (expand g a b)
+dot f g a b = contract (Dims :: Dims ds) f (expand g a b)
 
 -- | Array multiplication.
 --
@@ -1667,7 +1673,7 @@ mult = dot sum (*)
 
 -- | windows xs are xs-sized windows of an array
 --
--- >>> shape $ windows (S.SNats @[2,2]) (range @[4,3,2])
+-- >>> shape $ windows (Dims @[2,2]) (range @[4,3,2])
 -- [3,2,2,2,2]
 windows :: forall w s ws a.
   ( KnownNats s,
@@ -1975,7 +1981,7 @@ rerank _ a = unsafeModifyShape a
 
 -- | Change the order of dimensions.
 --
--- >>> pretty $ reorder (S.SNats @[2,0,1]) a
+-- >>> pretty $ reorder (Dims @[2,0,1]) a
 -- [[[0,4,8],
 --   [12,16,20]],
 --  [[1,5,9],
@@ -2113,10 +2119,10 @@ intercalate::
   ) =>
   Dim d -> Array si a -> Array s a -> Array st a
 intercalate SNat i a =
-  joins (SNats @ds)
+  joins (Dims @ds)
   (vector @n'
   (List.intersperse i
-  (toList (extracts (SNats @ds) a))))
+  (toList (extracts (Dims @ds) a))))
 
 -- | Intersperse an element along dimensions.
 --
@@ -2146,7 +2152,7 @@ intersperse (SNat :: SNat d) x a = intercalate (SNat @d) (konst @si x) a
 
 -- | Concatenate dimensions, creating a new dimension at the supplied postion.
 --
--- >>> pretty $ concats (S.SNats @[0,1]) (SNat @1) a
+-- >>> pretty $ concats (Dims @[0,1]) (SNat @1) a
 -- [[0,4,8,12,16,20],
 --  [1,5,9,13,17,21],
 --  [2,6,10,14,18,22],
@@ -2167,7 +2173,7 @@ concats SNats SNat a = unsafeBackpermute (unconcatDimsIndex ds n (shape a)) a
 
 -- | Reverses element order along specified dimensions.
 --
--- >>> pretty $ reverses (S.SNats @[0,1]) a
+-- >>> pretty $ reverses (Dims @[0,1]) a
 -- [[[20,21,22,23],
 --   [16,17,18,19],
 --   [12,13,14,15]],
@@ -2184,7 +2190,7 @@ reverses SNats a = unsafeBackpermute (reverseIndex (valuesOf @ds) (shape a)) a
 
 -- | Rotate an array by/along dimensions & offsets.
 --
--- >>> pretty $ rotates (S.SNats @'[1]) [2] a
+-- >>> pretty $ rotates (Dims @'[1]) [2] a
 -- [[[8,9,10,11],
 --   [0,1,2,3],
 --   [4,5,6,7]],
@@ -2203,13 +2209,13 @@ rotates SNats rs a = unsafeBackpermute (rotatesIndex (valuesOf @ds) rs (valuesOf
 
 -- | Sort an array along the supplied dimensions.
 --
--- >>> pretty $ sorts (S.SNats @'[0]) (array @[2,2] [2,3,1,4])
+-- >>> pretty $ sorts (Dims @'[0]) (array @[2,2] [2,3,1,4])
 -- [[1,4],
 --  [2,3]]
--- >>> pretty $ sorts (S.SNats @'[1]) (array @[2,2] [2,3,1,4])
+-- >>> pretty $ sorts (Dims @'[1]) (array @[2,2] [2,3,1,4])
 -- [[2,3],
 --  [1,4]]
--- >>> pretty $ sorts (S.SNats @[0,1]) (array @[2,2] [2,3,1,4])
+-- >>> pretty $ sorts (Dims @[0,1]) (array @[2,2] [2,3,1,4])
 -- [[1,2],
 --  [3,4]]
 sorts ::
@@ -2223,12 +2229,12 @@ sorts ::
    s ~ Eval (InsertDims ds so si)
   ) =>
   Dims ds -> Array s a -> Array s a
-sorts SNats a = joins (SNats @ds) $ unsafeModifyVector sortV (extracts (SNats @ds) a)
+sorts SNats a = joins (Dims @ds) $ unsafeModifyVector sortV (extracts (Dims @ds) a)
 
 -- | The indices into the array if it were sorted by a comparison function along the dimensions supplied.
 --
 -- >>> import Data.Ord (Down (..))
--- >>> toDynamic $ sortsBy (S.SNats @'[0]) (fmap Down) (array @[2,2] [2,3,1,4])
+-- >>> toDynamic $ sortsBy (Dims @'[0]) (fmap Down) (array @[2,2] [2,3,1,4])
 -- UnsafeArray [2,2] [2,3,1,4]
 sortsBy ::
   forall ds s a b si so.
@@ -2241,11 +2247,11 @@ sortsBy ::
    s ~ Eval (InsertDims ds so si)
   ) =>
   Dims ds -> (Array si a -> Array si b) -> Array s a -> Array s a
-sortsBy SNats c a = joins (SNats @ds) $ unsafeModifyVector (sortByV c) (extracts (SNats @ds) a)
+sortsBy SNats c a = joins (Dims @ds) $ unsafeModifyVector (sortByV c) (extracts (Dims @ds) a)
 
 -- | The indices into the array if it were sorted along the dimensions supplied.
 --
--- >>> orders (S.SNats @'[0]) (array @[2,2] [2,3,1,4])
+-- >>> orders (Dims @'[0]) (array @[2,2] [2,3,1,4])
 -- [1,0]
 orders ::
   forall ds s a si so.
@@ -2258,12 +2264,12 @@ orders ::
    s ~ Eval (InsertDims ds so si)
   ) =>
   Dims ds -> Array s a -> Array so Int
-orders SNats a = unsafeModifyVector orderV (extracts (SNats @ds) a)
+orders SNats a = unsafeModifyVector orderV (extracts (Dims @ds) a)
 
 -- | The indices into the array if it were sorted by a comparison function along the dimensions supplied.
 --
 -- >>> import Data.Ord (Down (..))
--- >>> ordersBy (S.SNats @'[0]) (fmap Down) (array @[2,2] [2,3,1,4])
+-- >>> ordersBy (Dims @'[0]) (fmap Down) (array @[2,2] [2,3,1,4])
 -- [0,1]
 ordersBy ::
   forall ds s a b si so.
@@ -2276,13 +2282,13 @@ ordersBy ::
    s ~ Eval (InsertDims ds so si)
   ) =>
   Dims ds -> (Array si a -> Array si b) -> Array s a -> Array so Int
-ordersBy SNats c a = unsafeModifyVector (orderByV c) (extracts (SNats @ds) a)
+ordersBy SNats c a = unsafeModifyVector (orderByV c) (extracts (Dims @ds) a)
 
 -- | Apply a binary array function to two arrays with matching shapes across the supplied (matching) dimensions.
 --
 -- >>> a = array @[2,3] [0..5]
 -- >>> b = array @'[3] [6..8]
--- >>> pretty $ telecasts (S.SNats @'[1]) (S.SNats @'[0]) (concatenate (SNat @0)) a b
+-- >>> pretty $ telecasts (Dims @'[1]) (Dims @'[0]) (concatenate (SNat @0)) a b
 -- [[0,3,6],
 --  [1,4,7],
 --  [2,5,8]]
@@ -2331,7 +2337,7 @@ transmit ::
    sc ~ Eval (InsertDims ds sob sic),
    True ~ (Eval (IsPrefixOf sa sb))) =>
   (Array sa a -> Array sib b -> Array sic c) -> Array sa a -> Array sb b -> Array sc c
-transmit f a b = maps (SNats @ds) (f a) b
+transmit f a b = maps (Dims @ds) (f a) b
 
 -- | <https://en.wikipedia.org/wiki/Vector_(mathematics_and_physics) Wiki Vector>
 type Vector s a = Array '[s] a
@@ -2428,7 +2434,7 @@ uncons ::
    st ~ Eval (SetDims ds ls s)
   ) =>
   Array s a -> (Array sh a, Array st a)
-uncons a = (heads (SNats @ds) a, tails (SNats @ds) a)
+uncons a = (heads (Dims @ds) a, tails (Dims @ds) a)
 
 -- | split an array into the initial rows and the last row.
 --
@@ -2450,7 +2456,7 @@ unsnoc ::
     si ~ Eval (SetDims ds ls s),
     sl ~ Eval (DeleteDims ds s)
   ) => Array s a -> (Array si a, Array sl a)
-unsnoc a = (inits (SNats @ds) a, lasts (SNats @ds) a)
+unsnoc a = (inits (Dims @ds) a, lasts (Dims @ds) a)
 
 -- | Convenience pattern for row extraction and consolidation at the beginning of an Array.
 --

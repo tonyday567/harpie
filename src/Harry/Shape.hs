@@ -169,6 +169,9 @@ module Harry.Shape
     indexWindows,
     dimWindows,
     DimWindows,
+
+    -- * Fcf re-exports
+    Eval,
   )
 where
 
@@ -201,13 +204,10 @@ import Control.Monad
 -- $setup
 -- >>> :set -XDataKinds
 -- >>> :set -XTypeFamilies
--- >>> :set -XFlexibleContexts
 -- >>> import Prelude
--- >>> import Harry.Shape as S
 -- >>> import Fcf
--- >>> import Fcf.Data.List
--- >>> import GHC.TypeNats
--- >>> import Data.Type.Ord
+-- >>> import GHC.Exts ()
+-- >>> import Harry.Shape as S
 
 -- | Get the value of a type level Nat.
 -- Use with explicit type application
@@ -218,6 +218,8 @@ valueOf :: forall n. (KnownNat n) => Int
 valueOf = fromIntegral $ fromSNat (SNat @n)
 {-# INLINE valueOf #-}
 
+type role SNats nominal
+
 -- | Mimics SNat from GHC.TypeNats
 newtype SNats (ns :: [Nat]) = UnsafeSNats [Nat]
 
@@ -225,7 +227,6 @@ instance Show (SNats ns)
   where
     show (UnsafeSNats s) = "SNats @" <> bool "" "'" (length s < 2) <> "[" <> mconcat (List.intersperse ", " (show <$> s)) <> "]"
 
-type role SNats nominal
 
 pattern SNats :: forall ns. () => KnownNats ns => SNats ns
 pattern SNats <- (knownNatsInstance -> KnownNatsInstance)
@@ -414,12 +415,10 @@ rerank r xs =
 
 -- | Create a new rank by adding 1s to the left, if the new rank is greater, or combining dimensions (from left to right) into rows, if the new rank is lower.
 --
--- FIXME: ok in cabal repl
---
--- >> :k! Eval (Rerank 4 [2,3,4])
+-- >>> :k! Eval (Rerank 4 [2,3,4])
 -- ...
 -- = [1, 2, 3, 4]
--- >> :k! Eval (Rerank 2 [2,3,4])
+-- >>> :k! Eval (Rerank 2 [2,3,4])
 -- ...
 -- = [6, 4]
 data Rerank :: Nat -> [Nat] -> Exp [Nat]
@@ -432,8 +431,7 @@ type instance Eval (Rerank r xs) =
 
 -- | Enumerate the dimensions of a shape.
 --
--- >> import Fcf.Data.List
--- >> :k! Eval (DimsOf [2,3,4])
+-- >>> :k! Eval (DimsOf [2,3,4])
 -- ...
 -- = [0, 1, 2]
 data DimsOf :: [Nat] -> Exp [Nat]
@@ -442,7 +440,7 @@ type instance Eval (DimsOf xs) =
   Eval (Range =<< Rank xs)
 
 -- | Enumerate the final dimensions of a shape.
--- >> :k! Eval (EndDimsOf [1,0] [2,3,4])
+-- >>> :k! Eval (EndDimsOf [1,0] [2,3,4])
 -- ...
 -- = [2, 1]
 data EndDimsOf :: [Nat] -> [Nat] -> Exp [Nat]
@@ -462,7 +460,7 @@ size xs = P.product xs
 
 -- | Total number of elements (if the list is the shape of a hyper-rectangular array).
 --
--- >> :k! (Eval (Size [2,3,4]))
+-- >>> :k! (Eval (Size [2,3,4]))
 -- ...
 -- = 24
 data Size :: [Nat] -> Exp Nat
@@ -512,10 +510,10 @@ asSingleton [] = [1]
 asSingleton x = x
 
 -- | Convert a scalar to a dimensioned shape
--- >> :k! Eval (AsSingleton '[])
+-- >>> :k! Eval (AsSingleton '[])
 -- ...
 -- = '[1]
--- >> :k! Eval (AsSingleton [2,3,4])
+-- >>> :k! Eval (AsSingleton [2,3,4])
 -- ...
 -- = [2, 3, 4]
 data AsSingleton :: [Nat] -> Exp [Nat]
@@ -534,10 +532,10 @@ asScalar [1] = []
 asScalar x = x
 
 -- | Convert a (potentially) [1] dimensioned shape to a scalar shape
--- >> :k! Eval (AsScalar '[1])
+-- >>> :k! Eval (AsScalar '[1])
 -- ...
 -- = '[]
--- >> :k! Eval (AsScalar [2,3,4])
+-- >>> :k! Eval (AsScalar [2,3,4])
 -- ...
 -- = [2, 3, 4]
 data AsScalar :: [Nat] -> Exp [Nat]
@@ -572,17 +570,15 @@ isSubset xs ys = lte (rerank (rank ys) xs) ys
 
 -- | Check if a shape is a subset (<=) another shape after reranking.
 --
--- FIXME: ok in cabal repl
---
--- >> :k! Eval (IsSubset [2,3,4] [2,3,4])
+-- >>> :k! Eval (IsSubset [2,3,4] [2,3,4])
 -- ...
 -- = True
 --
--- >> :k! Eval (IsSubset [1,2] [2,3,4])
+-- >>> :k! Eval (IsSubset [1,2] [2,3,4])
 -- ...
 -- = True
 --
--- >> :k! Eval (IsSubset [2,1] '[1])
+-- >>> :k! Eval (IsSubset [2,1] '[1])
 -- ...
 -- = False
 data IsSubset :: [Nat] -> [Nat] -> Exp Bool
@@ -599,7 +595,7 @@ exceptDims ds s = deleteDims ds [0 .. ((rank s) - 1)]
 
 -- | Compute dimensions for a shape other than the supplied dimensions.
 --
--- >> :k! Eval (ExceptDims [1,2] [2,3,4])
+-- >>> :k! Eval (ExceptDims [1,2] [2,3,4])
 -- ...
 -- = '[0]
 data ExceptDims :: [Nat] -> [Nat] -> Exp [Nat]
@@ -618,9 +614,7 @@ reorder s (d : ds) = getDim d s : reorder s ds
 
 -- | Reorder the dimensions of shape according to a list of positions.
 --
--- FIXME: ok in cabal repl
---
--- >> :k! Eval (Reorder [2,3,4] [2,0,1])
+-- >>> :k! Eval (Reorder [2,3,4] [2,0,1])
 -- ...
 -- = [4, 2, 3]
 data Reorder :: [Nat] -> [Nat] -> Exp [Nat]
@@ -645,9 +639,7 @@ squeeze = filter (/= 1)
 
 -- | Remove 1's from a list.
 --
--- FIXME: Ok in cabal repl
---
--- >> :k! (Eval (Squeeze [0,1,2,3]))
+-- >>> :k! (Eval (Squeeze [0,1,2,3]))
 -- ...
 -- = [0, 2, 3]
 data Squeeze :: [a] -> Exp [a]
@@ -669,11 +661,11 @@ minimum (x : xs) = P.min x (minimum xs)
 
 -- | minimum of a list
 --
--- >> :k! Eval (Minimum '[])
+-- >>> :k! Eval (Minimum '[])
 -- ...
 -- = (TypeError ...)
 --
--- >> :k! Eval (Minimum [2,3,4])
+-- >>> :k! Eval (Minimum [2,3,4])
 -- ...
 -- = 2
 data Minimum :: [a] -> Exp a
@@ -684,7 +676,7 @@ type instance Eval (Minimum (x ': xs)) =
 
 -- | Minimum of two type values.
 --
--- >> :k! Eval (Min 0 1)
+-- >>> :k! Eval (Min 0 1)
 -- ...
 -- = 0
 data Min :: a -> a -> Exp a
@@ -693,7 +685,7 @@ type instance Eval (Min a b) = If (a <? b) a b
 
 -- | Maximum of two type values.
 --
--- >> :k! Eval (Max 0 1)
+-- >>> :k! Eval (Max 0 1)
 -- ...
 -- = 1
 data Max :: a -> a -> Exp a
@@ -711,10 +703,10 @@ isFin i d = (0 <= i && i + 1 <= d)
 
 -- | Check if i is a valid Fin (aka in-bounds index of a dimension)
 --
--- >> :k! Eval (IsFin 0 2)
+-- >>> :k! Eval (IsFin 0 2)
 -- ...
 -- = True
--- >> :k! Eval (IsFin 2 2)
+-- >>> :k! Eval (IsFin 2 2)
 -- ...
 -- = False
 data IsFin :: Nat -> Nat -> Exp Bool
@@ -733,10 +725,10 @@ isFins xs ds = length xs == length ds && and (zipWith isFin xs ds)
 
 -- | Check if i is a valid Fins (aka in-bounds index of a Shape)
 --
--- >> :k! Eval (IsFins [0,1] [2,2])
+-- >>> :k! Eval (IsFins [0,1] [2,2])
 -- ...
 -- = True
--- >> :k! Eval (IsFins [0,1] [2,1])
+-- >>> :k! Eval (IsFins [0,1] [2,1])
 -- ...
 -- = False
 data IsFins :: [Nat] -> [Nat] -> Exp Bool
@@ -754,10 +746,10 @@ isDim :: Int -> [Int] -> Bool
 isDim d s = isFin d (rank s) || (d == 0 && s == [])
 
 -- | Is a value a valid dimension of a shape.
--- >> :k! Eval (IsDim 2 [2,3,4])
+-- >>> :k! Eval (IsDim 2 [2,3,4])
 -- ...
 -- = True
--- >> :k! Eval (IsDim 0 '[])
+-- >>> :k! Eval (IsDim 0 '[])
 -- ...
 -- = True
 data IsDim :: Nat -> [Nat] -> Exp Bool
@@ -776,12 +768,10 @@ isDims ds s = and $ fmap (\d -> isDim d s) ds
 
 -- | Are values valid dimensions of a shape.
 --
--- FIXME: Ok in cabal repl
---
--- >> :k! Eval (IsDims [2,1] [2,3,4])
+-- >>> :k! Eval (IsDims [2,1] [2,3,4])
 -- ...
 -- = True
--- >> :k! Eval (IsDims '[0] '[])
+-- >>> :k! Eval (IsDims '[0] '[])
 -- ...
 -- = True
 data IsDims :: [Nat] -> [Nat] -> Exp Bool
@@ -799,10 +789,10 @@ lastPos d s =
   bool ((getDim d s) - 1) 0 (0 == d && s == [])
 
 -- | Get the last position of a dimension of a shape.
--- >> :k! Eval (LastPos 2 [2,3,4])
+-- >>> :k! Eval (LastPos 2 [2,3,4])
 -- ...
 -- = 3
--- >> :k! Eval (LastPos 0 '[])
+-- >>> :k! Eval (LastPos 0 '[])
 -- ...
 -- = 0
 data LastPos :: Nat -> [Nat] -> Exp Nat
@@ -821,10 +811,10 @@ minDim [] = []
 minDim s = [minimum s]
 
 -- | Get the minimum dimension as a singleton dimension.
--- >> :k! Eval (MinDim [2,3,4])
+-- >>> :k! Eval (MinDim [2,3,4])
 -- ...
 -- = '[2]
--- >> :k! Eval (MinDim '[])
+-- >>> :k! Eval (MinDim '[])
 -- ...
 -- = '[]
 data MinDim :: [Nat] -> Exp [Nat]
@@ -835,7 +825,7 @@ type instance Eval (MinDim s) =
 
 -- | Enumerate between two Nats
 --
--- >> :k! Eval (EnumFromTo 0 3)
+-- >>> :k! Eval (EnumFromTo 0 3)
 -- ...
 -- = [0, 1, 2, 3]
 data EnumFromTo :: Nat -> Nat -> Exp [Nat]
@@ -850,7 +840,7 @@ type instance Eval (EnumFromToHelper b a) =
 
 -- | Left fold.
 --
--- >> :k! Eval (Foldl' (Fcf.+) 0 [1,2,3])
+-- >>> :k! Eval (Foldl' (Fcf.+) 0 [1,2,3])
 -- ...
 -- = 6
 data Foldl' :: (b -> a -> Exp b) -> b -> t a -> Exp b
@@ -860,7 +850,7 @@ type instance Eval (Foldl' f y (x ': xs)) = Eval (Foldl' f (Eval (f y x)) xs)
 
 -- | Get an element at a given index.
 --
--- >> :kind! Eval (GetIndex 2 [2,3,4])
+-- >>> :kind! Eval (GetIndex 2 [2,3,4])
 -- ...
 -- = Just 4
 data GetIndex :: Nat -> [a] -> Exp (Maybe a)
@@ -887,13 +877,13 @@ getDim i s = fromMaybe (error "getDim outside bounds") (s List.!? i)
 
 -- | GetDim i xs is the i'th element of xs. getDim 0 [] is 1 (to account for scalars). Error if out-of-bounds or non-computable (usually unknown to the compiler).
 --
--- >> :k! Eval (GetDim 1 [2,3,4])
+-- >>> :k! Eval (GetDim 1 [2,3,4])
 -- ...
 -- = 3
--- >> :k! Eval (GetDim 3 [2,3,4])
+-- >>> :k! Eval (GetDim 3 [2,3,4])
 -- ...
 -- = (TypeError ...)
--- >> :k! Eval (GetDim 0 '[])
+-- >>> :k! Eval (GetDim 0 '[])
 -- ...
 -- = 1
 data GetDim :: Nat -> [Nat] -> Exp Nat
@@ -917,7 +907,7 @@ modifyDim d f xs =
 
 -- | modify an index at a specific dimension. Errors if out of bounds.
 --
--- >> :k! Eval (ModifyDim 0 ((Fcf.+) 1) [0,1,2])
+-- >>> :k! Eval (ModifyDim 0 ((Fcf.+) 1) [0,1,2])
 -- ...
 -- = [1, 1, 2]
 data ModifyDim :: Nat -> (Nat -> Exp Nat) -> [Nat] -> Exp [Nat]
@@ -936,10 +926,10 @@ incAt d ds = modifyDim d (+1) (asSingleton ds)
 
 -- | Increment the index at a dimension of a shape by 1. Scalars turn into singletons.
 --
--- >> :k! Eval (IncAt 1 [2,3,4])
+-- >>> :k! Eval (IncAt 1 [2,3,4])
 -- ...
 -- = [2, 4, 4]
--- >> :k! Eval (IncAt 0 '[])
+-- >>> :k! Eval (IncAt 0 '[])
 -- ...
 -- = '[2]
 data IncAt :: Nat -> [Nat] -> Exp [Nat]
@@ -956,7 +946,7 @@ decAt d ds = modifyDim d (\x -> x - 1) ds
 
 -- | Decrement the index at a dimension of a shape by 1.
 --
--- >> :k! Eval (DecAt 1 [2,3,4])
+-- >>> :k! Eval (DecAt 1 [2,3,4])
 -- ...
 -- = [2, 2, 4]
 data DecAt :: Nat -> [Nat] -> Exp [Nat]
@@ -976,7 +966,7 @@ setDim d x xs = modifyDim d (const x) xs
 
 -- | replace an index at a specific dimension.
 --
--- >> :k! Eval (SetDim 0 1 [2,3,4])
+-- >>> :k! Eval (SetDim 0 1 [2,3,4])
 -- ...
 -- = [1, 3, 4]
 data SetDim :: Nat -> Nat -> [Nat] -> Exp [Nat]
@@ -998,7 +988,7 @@ takeDim d t s = modifyDim d (min t) s
 
 -- | Take along a dimension.
 --
--- >> :k! Eval (TakeDim 0 1 [2,3,4])
+-- >>> :k! Eval (TakeDim 0 1 [2,3,4])
 -- ...
 -- = [1, 3, 4]
 data TakeDim :: Nat -> Nat -> [Nat] -> Exp [Nat]
@@ -1017,7 +1007,7 @@ dropDim d t s = modifyDim d (max 0 . (\x -> x - t)) s
 
 -- | Drop along a dimension.
 --
--- >> :k! Eval (DropDim 2 1 [2,3,4])
+-- >>> :k! Eval (DropDim 2 1 [2,3,4])
 -- ...
 -- = [2, 3, 3]
 data DropDim :: Nat -> Nat -> [Nat] -> Exp [Nat]
@@ -1039,10 +1029,10 @@ deleteDim i s = take i s ++ drop (i + 1) s
 
 -- | delete the i'th dimension
 --
--- >> :k! Eval (DeleteDim 1 [2, 3, 4])
+-- >>> :k! Eval (DeleteDim 1 [2, 3, 4])
 -- ...
 -- = [2, 4]
--- >> :k! Eval (DeleteDim 1 '[])
+-- >>> :k! Eval (DeleteDim 1 '[])
 -- ...
 -- = '[]
 data DeleteDim :: Nat -> [Nat] -> Exp [Nat]
@@ -1061,10 +1051,10 @@ insertDim d i s = take d s ++ (i : drop d s)
 
 -- | Insert a new dimension at a position (or at the end if > rank).
 --
--- >> :k! Eval (InsertDim 1 3 [2,4])
+-- >>> :k! Eval (InsertDim 1 3 [2,4])
 -- ...
 -- = [2, 3, 4]
--- >> :k! Eval (InsertDim 0 4 '[])
+-- >>> :k! Eval (InsertDim 0 4 '[])
 -- ...
 -- = '[4]
 data InsertDim :: Nat -> Nat -> [Nat] -> Exp [Nat]
@@ -1079,10 +1069,10 @@ type instance Eval (InsertDimUncurried xs ds) =
 
 -- | Is a slice ok constraint.
 --
--- >> :k! Eval (InsertOk 2 [2,3,4] [2,3])
+-- >>> :k! Eval (InsertOk 2 [2,3,4] [2,3])
 -- ...
 -- = True
--- >> :k! Eval (InsertOk 0 '[] '[])
+-- >>> :k! Eval (InsertOk 0 '[] '[])
 -- ...
 -- = True
 data InsertOk :: Nat -> [Nat] -> [Nat] -> Exp Bool
@@ -1095,7 +1085,7 @@ type instance Eval (InsertOk d s si) =
 
 -- | Is a slice ok?
 --
--- >> :k! Eval (SliceOk 1 1 2 [2,3,4])
+-- >>> :k! Eval (SliceOk 1 1 2 [2,3,4])
 -- ...
 -- = True
 data SliceOk :: Nat -> Nat -> Nat -> [Nat] -> Exp Bool
@@ -1124,7 +1114,7 @@ type instance Eval (SliceOk_ s d off l) = Eval (SliceOk d off l s)
 
 -- | Are slices ok?
 --
--- >> :k! Eval (SlicesOk '[1] '[1] '[2] [2,3,4])
+-- >>> :k! Eval (SlicesOk '[1] '[1] '[2] [2,3,4])
 -- ...
 -- = True
 data SlicesOk :: [Nat] -> [Nat] -> [Nat] -> [Nat] -> Exp Bool
@@ -1154,16 +1144,16 @@ concatenate i s0 s1 = take i s0 ++ (getDim i s0 + getDim i s1 : drop (i + 1) s0)
 --
 -- Bespoke logic for scalars.
 --
--- >> :k! Eval (Concatenate 1 [2,3,4] [2,3,4])
+-- >>> :k! Eval (Concatenate 1 [2,3,4] [2,3,4])
 -- ...
 -- = [2, 6, 4]
--- >> :k! Eval (Concatenate 0 '[3] '[])
+-- >>> :k! Eval (Concatenate 0 '[3] '[])
 -- ...
 -- = '[4]
--- >> :k! Eval (Concatenate 0 '[] '[3])
+-- >>> :k! Eval (Concatenate 0 '[] '[3])
 -- ...
 -- = '[4]
--- >> :k! Eval (Concatenate 0 '[] '[])
+-- >>> :k! Eval (Concatenate 0 '[] '[])
 -- ...
 -- = '[2]
 data Concatenate :: Nat -> [Nat] -> [Nat] -> Exp [Nat]
@@ -1196,10 +1186,10 @@ getDims i s = (flip getDim s) <$> i
 
 -- | Get dimensions of a shape.
 --
--- >> :k! Eval (GetDims [2,0] [2,3,4])
+-- >>> :k! Eval (GetDims [2,0] [2,3,4])
 -- ...
 -- = [4, 2]
--- >> :k! Eval (GetDims '[2] '[])
+-- >>> :k! Eval (GetDims '[2] '[])
 -- ...
 -- = '[(TypeError ...)]
 data GetDims :: [Nat] -> [Nat] -> Exp [Nat]
@@ -1219,10 +1209,10 @@ getLastPositions ds s =
 
 -- | Get the index of the last position in the selected dimensions of a shape. Errors on a 0-dimension.
 --
--- >> :k! Eval (GetLastPositions [2,0] [2,3,4])
+-- >>> :k! Eval (GetLastPositions [2,0] [2,3,4])
 -- ...
 -- = [3, 1]
--- >> :k! Eval (GetLastPositions '[0] '[0])
+-- >>> :k! Eval (GetLastPositions '[0] '[0])
 -- ...
 -- = '[0 GHC.TypeNats.- 1]
 data GetLastPositions :: [Nat] -> [Nat] -> Exp [Nat]
@@ -1258,11 +1248,11 @@ preDeletePositions as = reverse (go as [])
 --
 -- To delete the positions [1,2,5] from a list, for example, you need to delete position 1, (arriving at a 4 element list), then position 1, arriving at a 3 element list, and finally position 3.
 --
--- >> :k! Eval (PreDeletePositions [1,2,5])
+-- >>> :k! Eval (PreDeletePositions [1,2,5])
 -- ...
 -- = [1, 1, 3]
 --
--- >> :k! Eval (PreDeletePositions [1,2,0])
+-- >>> :k! Eval (PreDeletePositions [1,2,0])
 -- ...
 -- = [1, 1, 0]
 data PreDeletePositions :: [Nat] -> Exp [Nat]
@@ -1299,11 +1289,11 @@ preInsertPositions = reverse . preDeletePositions . reverse
 -- To insert into positions [1,2,0] from a list, starting from a 2 element list, for example, you need to insert at position 0, (arriving at a 3 element list), then position 1, arriving at a 4 element list, and finally position 0.
 --
 -- > preInsertPositions == reverse . preDeletePositions . reverse
--- >> :k! Eval (PreInsertPositions [1,2,5])
+-- >>> :k! Eval (PreInsertPositions [1,2,5])
 -- ...
 -- = [1, 2, 5]
 --
--- >> :k! Eval (PreInsertPositions [1,2,0])
+-- >>> :k! Eval (PreInsertPositions [1,2,0])
 -- ...
 -- = [0, 1, 0]
 data PreInsertPositions :: [Nat] -> Exp [Nat]
@@ -1320,7 +1310,7 @@ deleteDims i s = foldl' (flip deleteDim) s (preDeletePositions i)
 
 -- | drop dimensions of a shape according to a list of positions (where position refers to the initial shape)
 --
--- >> :k! Eval (DeleteDims [1,0] [2, 3, 4])
+-- >>> :k! Eval (DeleteDims [1,0] [2, 3, 4])
 -- ...
 -- = '[4]
 data DeleteDims :: [Nat] -> [Nat] -> Exp [Nat]
@@ -1341,10 +1331,10 @@ insertDims ds xs s = foldl' (flip (uncurry insertDim)) s ps
 
 -- | insert a list of dimensions according to dimension,position tuple lists.  Note that the list of positions references the final shape and not the initial shape.
 --
--- >> :k! Eval (InsertDims '[0] '[5] '[])
+-- >>> :k! Eval (InsertDims '[0] '[5] '[])
 -- ...
 -- = '[5]
--- >> :k! Eval (InsertDims [1,0] [3,2] '[4])
+-- >>> :k! Eval (InsertDims [1,0] [3,2] '[4])
 -- ...
 -- = [2, 3, 4]
 data InsertDims :: [Nat] -> [Nat] -> [Nat] -> Exp [Nat]
@@ -1364,11 +1354,11 @@ setDims ds xs ns = foldl' (\ns' (d, x) -> setDim d x ns') ns (zip ds xs)
 
 -- | Set dimensions of a shape.
 --
--- >> :k! Eval (SetDims [0,1] [1,5] [2,3,4])
+-- >>> :k! Eval (SetDims [0,1] [1,5] [2,3,4])
 -- ...
 -- = [1, 5, 4]
 --
--- >> :k! Eval (SetDims '[0] '[3] '[])
+-- >>> :k! Eval (SetDims '[0] '[3] '[])
 -- ...
 -- = '[3]
 data SetDims :: [Nat] -> [Nat] -> [Nat] -> Exp [Nat]
@@ -1387,7 +1377,7 @@ dropDims ds xs s = setDims ds xs' s
 
 -- | Drop a number of elements of a shape along the supplied dimensions.
 --
--- >> :k! Eval (DropDims [0,2] [1,3] [2,3,4])
+-- >>> :k! Eval (DropDims [0,2] [1,3] [2,3,4])
 -- ...
 -- = [1, 3, 1]
 data DropDims :: [Nat] -> [Nat] -> [Nat] -> Exp [Nat]
@@ -1404,7 +1394,7 @@ concatDims ds n s = insertDim n (size $ getDims ds s) (deleteDims ds s)
 
 -- | Drop a number of elements of a shape along the supplied dimensions.
 --
--- >> :k! Eval (ConcatDims [0,1] 1 [2,3,4])
+-- >>> :k! Eval (ConcatDims [0,1] 1 [2,3,4])
 -- ...
 -- = [4, 6]
 data ConcatDims :: [Nat] -> Nat -> [Nat] -> Exp [Nat]
@@ -1472,7 +1462,7 @@ expandWindows ws ds = List.zipWith (\s' x' -> s' - x' + 1) ds ws <> ws <> List.d
 
 -- | Expanded shape of a windowed array
 --
--- >> :k! Eval (ExpandWindows [2,2] [4,3,2])
+-- >>> :k! Eval (ExpandWindows [2,2] [4,3,2])
 -- ...
 -- = [3, 2, 2, 2, 2]
 data ExpandWindows :: [Nat] -> [Nat] -> Exp [Nat]
@@ -1496,7 +1486,7 @@ dimWindows ws s = range (rank s) <> [rank s * 2 .. (rank ws - 1)]
 
 -- | Dimensions of a windowed array.
 --
--- >> :k! Eval (DimWindows [2,2] [4,3,2])
+-- >>> :k! Eval (DimWindows [2,2] [4,3,2])
 -- ...
 -- = [0, 1, 2]
 data DimWindows :: [Nat] -> [Nat] -> Exp [Nat]

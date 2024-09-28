@@ -2,7 +2,8 @@
 
 * harry
 
-[[https://hackage.haskell.org/package/numhask-array][file:https://img.shields.io/hackage/v/harry.svg]] [[https://github.com/tonyday567/numhask-array/actions?query=workflow%3Ahaskell-ci][file:https://github.com/tonyday567/harry/workflows/haskell-ci/badge.svg]]
+[[https://hackage.haskell.org/package/harry][file:https://img.shields.io/hackage/v/harry.svg
+]][[https://github.com/tonyday567/harry/actions?query=workflow%3Ahaskell-ci][file:https://github.com/tonyday567/harry/workflows/haskell-ci/badge.svg]]
 
 * Usage
 
