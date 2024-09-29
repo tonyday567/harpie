@@ -115,6 +115,7 @@ module Harry.Dynamic
     expand,
     expandr,
     contract,
+    prod,
     dot,
     mult,
     windows,
@@ -212,6 +213,10 @@ import GHC.Generics
 -- >>> let v = range [3]
 -- >>> v
 -- UnsafeArray [3] [0,1,2]
+-- >>> let m = range [2,3]
+-- >>> pretty m
+-- [[0,1,2],
+--  [3,4,5]]
 -- >>> let a = range [2,3,4]
 -- >>> a
 -- UnsafeArray [2,3,4] [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
@@ -1088,8 +1093,19 @@ traverses ds f a = join <$> traverse (traverse f) (extracts ds a)
 
 -- | Maps a function along specified dimensions.
 --
--- >>> shape $ maps [1] transpose a
--- [4,3,2]
+-- >>> pretty $ maps [1] transpose a
+-- [[[0,12],
+--   [4,16],
+--   [8,20]],
+--  [[1,13],
+--   [5,17],
+--   [9,21]],
+--  [[2,14],
+--   [6,18],
+--   [10,22]],
+--  [[3,15],
+--   [7,19],
+--   [11,23]]]
 maps ::
   Dims ->
   (Array a -> Array b) ->
@@ -1230,10 +1246,10 @@ expandr f a b = tabulate (shape a <> shape b) (\i -> f (index a (List.drop r i))
 --
 -- This generalises a tensor contraction by allowing the number of contracting diagonals to be other than 2.
 --
--- >>> let b = array [2,3] [1..6] :: Array Int
--- >>> pretty $ contract [1,2] sum (expand (*) b (transpose b))
--- [[14,32],
---  [32,77]]
+--
+-- >>> pretty $ contract [1,2] sum (expand (*) m (transpose m))
+-- [[5,14],
+--  [14,50]]
 contract ::
   Dims ->
   (Array a -> b) ->
@@ -1241,29 +1257,49 @@ contract ::
   Array b
 contract ds f a = f . diag <$> extracts (exceptDims ds (shape a)) a
 
+-- | Product two arrays using the supplied function and then contract the result using the supplied matching dimensions and function.
+--
+-- >>> pretty $ prod [1] [0] sum (*) (range [2,3]) (range [3,2])
+-- [[10,13],
+--  [28,40]]
+--
+-- With full laziness, this computation would be equivalent to:
+--
+-- > f . diag <$> extracts ds' (expand g a b)
+--
+prod ::
+  Dims ->
+  Dims ->
+  (Array c -> d) ->
+  (a -> b -> c) ->
+  Array a ->
+  Array b ->
+  Array d
+prod ds0 ds1 g f a b = tabulate (S.deleteDims ds0 (shape a) <> S.deleteDims ds1 (shape b)) (\so -> g $ tabulate (S.getDims ds0 (shape a)) (\si -> f (index a (S.insertDims ds0 si (List.take sp so))) (index b (S.insertDims ds1 si (List.drop sp so)))))
+  where
+    sp = rank a - S.rank ds0
+
 -- | A generalisation of a dot operation, which is a multiplicative expansion of two arrays and sum contraction along the middle two dimensions.
 --
 -- matrix multiplication
 --
--- >>> let b = array [2,3] [1..6] :: Array Int
--- >>> pretty $ dot sum (*) b (transpose b)
--- [[14,32],
---  [32,77]]
+-- >>> pretty $ dot sum (*) m (transpose m)
+-- [[5,14],
+--  [14,50]]
 --
 -- inner product
 --
--- >>> let v = array [3] [1..3] :: Array Int
 -- >>> pretty $ dot sum (*) v v
--- 14
+-- 5
 --
 -- matrix-vector multiplication
 -- Note that an Array with shape [3] is neither a row vector nor column vector.
 --
--- >>> pretty $ dot sum (*) v b
--- [9,12,15]
+-- >>> pretty $ dot sum (*) v (transpose m)
+-- [5,14]
 --
--- >>> pretty $ dot sum (*) b v
--- [14,32]
+-- >>> pretty $ dot sum (*) m v
+-- [5,14]
 dot ::
   (Array c -> d) ->
   (a -> b -> c) ->
@@ -1278,24 +1314,22 @@ dot f g a b = contract [r - 1, r] f (expand g a b)
 --
 -- matrix multiplication
 --
--- >>> let b = array [2,3] [1..6] :: Array Int
--- >>> pretty $ mult b (transpose b)
--- [[14,32],
---  [32,77]]
+-- >>> pretty $ mult m (transpose m)
+-- [[5,14],
+--  [14,50]]
 --
 -- inner product
 --
--- >>> let v = array [3] [1..3] :: Array Int
 -- >>> pretty $ mult v v
--- 14
+-- 5
 --
 -- matrix-vector multiplication
 --
--- >>> pretty $ mult v b
--- [9,12,15]
+-- >>> pretty $ mult v (transpose m)
+-- [5,14]
 --
--- >>> pretty $ mult b v
--- [14,32]
+-- >>> pretty $ mult m v
+-- [5,14]
 mult ::
   ( Num a
   ) =>

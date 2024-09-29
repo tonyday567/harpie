@@ -10,54 +10,71 @@
 This package provides hyper-rectangular array functionality.
 
 #+begin_src haskell
-import qualified Harry.Shape
+import qualified Harry.Shape as S
 import qualified Harry.Fixed as F
 import qualified Harry.Dynamic as D
 #+end_src
 
 
+* Development
 
-* Debugging doctest
-
-#+begin_src elisp
-Last login: Thu Sep 26 12:40:45 on ttys001
-➜  harry /Users/tonyday567/.ghcup/ghc/9.8.2/bin/ghc-9.8.2 -XNoImplicitPrelude --interactive -fdiagnostics-color=never -fno-diagnostics-show-caret -ignore-dot-ghci -v0
-ghci> import qualified System.IO
-ghci> import qualified GHC.IO.Handle
-ghci> GHC.IO.Handle.hDuplicateTo System.IO.stdout System.IO.stderr
-ghci> GHC.IO.Handle.hSetBuffering System.IO.stdout GHC.IO.Handle.LineBuffering
-ghci> GHC.IO.Handle.hSetBuffering System.IO.stderr GHC.IO.Handle.LineBuffering
-ghci> GHC.IO.Handle.hSetEncoding System.IO.stdout System.IO.utf8
-ghci> GHC.IO.Handle.hSetEncoding System.IO.stderr System.IO.utf8
-ghci> :m - System.IO
-ghci> :m - GHC.IO.Handle
-ghci> :m +Harry.Shape
-ghci> :reload
-ghci> :m Prelude
-ghci> :m +Harry.Shape
-ghci> :set -XDataKinds
-ghci> :set -XTypeFamilies
-ghci> :set -XFlexibleContexts
-ghci> :set -XRebindableSyntax
-ghci> import Prelude
-ghci> import Harry.Shape as S
-ghci> import Fcf.Data.List
-ghci> import Fcf.Class.Monoid
-ghci> import GHC.TypeNats
-ghci>
+#+begin_src haskell-ng :results output
+:r
+:set -Wno-name-shadowing
+:set -Wno-type-defaults
+import qualified Harry.Shape as S
+import qualified Harry.Fixed as F
+import qualified Harry.Dynamic as D
+import Prettyprinter
+import GHC.TypeNats
+import Data.Vector qualified as V
 #+end_src
 
-:{
-:reload
-:m Prelude
-:m +Harry.Shape
-:set -XDataKinds
-:set -XTypeFamilies
-:set -XFlexibleContexts
-import Prelude
-import Harry.Shape as S
-import Fcf
-import Fcf.Data.List
-import GHC.TypeNats
-import Data.Type.Ord
-:}
+* expand
+
+#+begin_src haskell-ng :results output
+
+b = F.expand (,) (F.indices @[2,3]) (F.indices @[3,2])
+#+end_src
+
+#+begin_src haskell-ng :results output
+F.extracts (Dims @[0,3]) (F.expand (,) (F.indices @[2,3]) (F.indices @[3,2]))
+#+end_src
+
+e
+[[([0,0],[0,0]),([0,0],[1,0]),([0,0],[2,0]),([0,1],[0,0]),([0,1],[1,0]),([0,1],[2,0]),([0,2],[0,0]),([0,2],[1,0]),([0,2],[2,0])],[([0,0],[0,1]),([0,0],[1,1]),([0,0],[2,1]),([0,1],[0,1]),([0,1],[1,1]),([0,1],[2,1]),([0,2],[0,1]),([0,2],[1,1]),([0,2],[2,1])],[([1,0],[0,0]),([1,0],[1,0]),([1,0],[2,0]),([1,1],[0,0]),([1,1],[1,0]),([1,1],[2,0]),([1,2],[0,0]),([1,2],[1,0]),([1,2],[2,0])],[([1,0],[0,1]),([1,0],[1,1]),([1,0],[2,1]),([1,1],[0,1]),([1,1],[1,1]),([1,1],[2,1]),([1,2],[0,1]),([1,2],[1,1]),([1,2],[2,1])]]
+
+ghci> diag <$> e
+[[([0,0],[0,0]),([0,1],[1,0]),([0,2],[2,0])],[([0,0],[0,1]),([0,1],[1,1]),([0,2],[2,1])],[([1,0],[0,0]),([1,1],[1,0]),([1,2],[2,0])],[([1,0],[0,1]),([1,1],[1,1]),([1,2],[2,1])]]
+ghci> :t diag <$> e
+
+https://en.wikipedia.org/wiki/Raising_and_lowering_indices
+
+#+begin_src haskell-ng :results output
+c = diag <$> (F.extracts (Dims @[0,1,4,5]) $ F.expand (,) (F.indices @[2,3,4]) (F.indices @[4,3,2]))
+#+end_src
+* cabal repl bug
+
+#+begin_src haskell-ng :results output
+cabal repl
+Build profile: -w ghc-9.8.2 -O1
+In order, the following will be built (use -v for more details):
+ - harry-0.1 (lib) (ephemeral targets)
+Preprocessing library for harry-0.1..
+GHCi, version 9.8.2: https://www.haskell.org/ghc/  :? for help
+Loaded GHCi configuration from /Users/tonyday567/haskell/harry/.ghci
+[1 of 4] Compiling Harry.Shape      ( src/Harry/Shape.hs, interpreted )
+[2 of 4] Compiling Harry.Sort       ( src/Harry/Sort.hs, interpreted )
+[3 of 4] Compiling Harry.Dynamic    ( src/Harry/Dynamic.hs, interpreted )
+[4 of 4] Compiling Harry.Fixed      ( src/Harry/Fixed.hs, interpreted )
+Ok, four modules loaded.
+ghci> import Harry.Fixed as F
+ghci> a = F.range @[2,3,4]
+ghci> F.extracts (Dims @'[0]) a
+[[0,4,8,12,12,16,20,481112440832,481112440832,123158152609792,Error: cabal: repl failed for harry-0.1. The build process segfaulted (i.e.
+SIGSEGV).
+#+end_src
+
+#+begin_src haskell-ng :results output
+F.indexes (Dims @'[0]) (UnsafeFins [0]) a
+#+end_src

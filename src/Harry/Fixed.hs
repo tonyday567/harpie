@@ -9,7 +9,6 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
 
 -- | Arrays with a fixed shape (known shape at compile time).
 module Harry.Fixed
@@ -127,6 +126,7 @@ module Harry.Fixed
     expand,
     expandr,
     contract,
+    prod,
     dot,
     mult,
     windows,
@@ -230,7 +230,7 @@ import GHC.Generics
 -- >>> import Prelude hiding (cycle, repeat, take, drop, zipWith)
 -- >>> import Harry.Fixed as F
 -- >>> import Harry.Shape qualified as S
--- >>> import Harry.Shape (Dims, SNats, Fin (..))
+-- >>> import Harry.Shape (SNats, Fin (..))
 -- >>> import GHC.TypeNats
 -- >>> import Prettyprinter hiding (dot,fill)
 -- >>> import Data.Functor.Rep
@@ -245,6 +245,10 @@ import GHC.Generics
 -- >>> let v = range @'[3]
 -- >>> pretty v
 -- [0,1,2]
+-- >>> let m = range @[2,3]
+-- >>> pretty m
+-- [[0,1,2],
+--  [3,4,5]]
 -- >>> a = range @[2,3,4]
 -- >>> a
 -- [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
@@ -461,17 +465,16 @@ toDynamic a = D.array (shape a) (asVector a)
 
 -- | Use a dynamic array in a fixed context.
 --
--- FIXME: rethink this structure
 -- >>> import qualified Harry.Dynamic as D
--- >>> with (D.range [2,3,4]) (F.indexes (Dims @[0,1]) (S.UnsafeFins [1,1]) :: F.Array [2,3,4] Int -> F.Array '[4] Int)
--- [16,17,18,19]
+-- >>> with (D.range [2,3,4]) show
+-- "[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]"
 with ::
-  forall a r s.
-  (KnownNats s) =>
+  forall a r.
   D.Array a ->
-  (Array s a -> r) ->
+  (forall s. KnownNats s => Array s a -> r) ->
   r
-with (D.UnsafeArray _ v) f = f (Array v)
+with d f =
+  withSomeSNats (fromIntegral <$> D.shape d) $ \(SNats :: SNats s) -> withKnownNats (SNats @s) (f (array @s (D.asVector d)))
 
 -- | Get shape of an Array as a value.
 --
@@ -676,9 +679,7 @@ undiag ::
   Array s' a
 undiag a = tabulate ((\xs -> bool 0 (index a (UnsafeFins $ pure $ getDim 0 (fromFins xs))) (isDiag (fromFins xs))))
 
--- | Zip two arrays at an element level. Could also be called liftS2 or sometink like that.
---
--- > zipWith == \f a b -> zips (range (rank a)) (\f a b -> f (D.toScalar a) (D.toScalar b))
+-- | Zip two arrays at an element level.
 --
 -- >>> zipWith (-) v v
 -- [0,0,0]
@@ -1044,7 +1045,7 @@ rotate Dim r a = unsafeBackpermute (rotateIndex (valueOf @d) r (shape a)) a
 
 -- | Takes the top-most elements across the supplied dimension,n tuples.
 --
--- >>> pretty $ takes (Dims @[0,1]) (SNats @[1,2]) a
+-- >>> pretty $ takes (Dims @[0,1]) (S.SNats @[1,2]) a
 -- [[[0,1,2,3],
 --   [4,5,6,7]]]
 takes ::
@@ -1061,7 +1062,7 @@ takes _ _ a = unsafeBackpermute id a
 
 -- | Takes the bottom-most elements across the supplied dimension,n tuples.
 --
--- >>> pretty (takeBs (Dims @[0,1]) (SNats @[1,2]) a)
+-- >>> pretty (takeBs (Dims @[0,1]) (S.SNats @[1,2]) a)
 -- [[[16,17,18,19],
 --   [20,21,22,23]]]
 takeBs ::
@@ -1082,7 +1083,7 @@ takeBs _ _ a = unsafeBackpermute (List.zipWith (+) start) a
 
 -- | Drops the top-most elements across dimension,n tuples.
 --
--- >>> pretty $ drops (Dims @[0,2]) (SNats @[1,3]) a
+-- >>> pretty $ drops (Dims @[0,2]) (S.SNats @[1,3]) a
 -- [[[15],
 --   [19],
 --   [23]]]
@@ -1104,7 +1105,7 @@ drops _ _ a = unsafeBackpermute (List.zipWith (+) start) a
 
 -- | Drops the bottom-most elements across dimension,n tuples.
 --
--- >>> pretty $ dropBs (Dims @[0,2]) (SNats @[1,3]) a
+-- >>> pretty $ dropBs (Dims @[0,2]) (S.SNats @[1,3]) a
 -- [[[0],
 --   [4],
 --   [8]]]
@@ -1160,7 +1161,7 @@ indexesT ds _ a = indexes ds (UnsafeFins $ valuesOf @xs) a
 
 -- | Slice along dimensions with the supplied offsets and lengths.
 --
--- >>> pretty $ slices (Dims @'[2]) (SNats @'[1]) (SNats @'[2]) a
+-- >>> pretty $ slices (Dims @'[2]) (S.SNats @'[1]) (S.SNats @'[2]) a
 -- [[[1,2],
 --   [5,6],
 --   [9,10]],
@@ -1266,8 +1267,6 @@ inits ds a = slices ds (SNats @os) (SNats @ls) a
 
 -- | Extracts dimensions to an outer layer.
 --
--- > a == (fromScalar <$> extracts [0..rank a] a)
---
 -- >>> pretty $ shape <$> extracts (Dims @'[0]) a
 -- [[3,4],[3,4]]
 extracts ::
@@ -1364,8 +1363,19 @@ traverses (Dims :: Dims ds) f a = joins (SNats @ds) <$> traverse (traverse f) (e
 
 -- | Maps a function along specified dimensions.
 --
--- > :t maps (Dims @'[1]) transpose a
--- maps (transpose) (Dims @'[1]) a :: Array [4, 3, 2] Int
+-- >>> pretty $ maps (Dims @'[1]) transpose a
+-- [[[0,12],
+--   [4,16],
+--   [8,20]],
+--  [[1,13],
+--   [5,17],
+--   [9,21]],
+--  [[2,14],
+--   [6,18],
+--   [10,22]],
+--  [[3,15],
+--   [7,19],
+--   [11,23]]]
 maps ::
   forall ds s s' si si' so a b.
   ( KnownNats s,
@@ -1455,7 +1465,7 @@ modifies f SNats ps a = joins (Dims @ds) $ modify ps f (extracts (Dims @ds) a)
 
 -- | Apply a binary function between successive slices, across (dimension, lag) tuples
 --
--- >>> pretty $ diffs (Dims @'[1]) (SNats @'[1]) (zipWith (-)) a
+-- >>> pretty $ diffs (Dims @'[1]) (S.SNats @'[1]) (zipWith (-)) a
 -- [[[4,4,4,4],
 --   [4,4,4,4]],
 --  [[4,4,4,4],
@@ -1551,12 +1561,10 @@ expandr f a b = tabulate (\i -> f (index a (UnsafeFins $ List.drop r (fromFins i
 --
 -- This generalises a tensor contraction by allowing the number of contracting diagonals to be other than 2.
 --
--- FIXME: relook at expand/contract structure
 --
--- >>> let b = array [1..6] :: Array [2,3] Int
--- >>> pretty $ contract (Dims @[1,2]) sum (expand (*) b (transpose b))
--- [[14,32],
---  [32,77]]
+-- >>> pretty $ contract (Dims @[1,2]) sum (expand (*) m (transpose m))
+-- [[5,14],
+--  [14,50]]
 contract ::
   forall a b s ss se s' ds ds'.
   ( KnownNats se,
@@ -1575,100 +1583,131 @@ contract ::
   Array s' b
 contract SNats f a = f . diag <$> extracts (Dims @ds') a
 
+-- | Expand two arrays and then contract the result using the supplied matching dimensions.
+--
+-- >>> pretty $ prod (Dims @'[1]) (Dims @'[0]) sum (*) (F.range @[2,3]) (F.range @[3,2])
+-- [[10,13],
+--  [28,40]]
+--
+-- With full laziness, this computation would be equivalent to:
+--
+-- > f . diag <$> extracts (Dims @ds') (expand g a b)
+--
+prod ::
+  forall a b c d s0 s1 so0 so1 si st ds0 ds1.
+  ( KnownNats so0,
+    KnownNats so1,
+    KnownNats si,
+    KnownNats s0,
+    KnownNats s1,
+    KnownNats st,
+    KnownNats ds0,
+    KnownNats ds1,
+    so0 ~ Eval (DeleteDims ds0 s0),
+    so1 ~ Eval (DeleteDims ds1 s1),
+    si ~ Eval (GetDims ds0 s0),
+    si ~ Eval (GetDims ds1 s1),
+    st ~ Eval ((++) so0 so1)
+  ) =>
+  Dims ds0 ->
+  Dims ds1 ->
+  (Array si c -> d) ->
+  (a -> b -> c) ->
+  Array s0 a ->
+  Array s1 b ->
+  Array st d
+prod SNats SNats g f a b = unsafeTabulate (\so -> g $ unsafeTabulate (\si -> f (unsafeIndex a (S.insertDims (valuesOf @ds0) si (List.take sp so))) (unsafeIndex b (S.insertDims (valuesOf @ds1) si (List.drop sp so)))))
+  where
+    sp = rank a - rankOf @ds0
+
 -- | A generalisation of a dot operation, which is a multiplicative expansion of two arrays and sum contraction along the middle two dimensions.
 --
 -- matrix multiplication
 --
--- >>> let b = array [1..6] :: Array [2,3] Int
--- >>> pretty $ dot sum (*) b (transpose b)
--- [[14,32],
---  [32,77]]
+-- >>> pretty $ dot sum (*) m (transpose m)
+-- [[5,14],
+--  [14,50]]
 --
 -- inner product
 --
--- >>> let v = array [1..3] :: Array '[3] Int
 -- >>> pretty $ dot sum (*) v v
--- 14
+-- 5
 --
 -- matrix-vector multiplication
 -- Note that an Array with shape [3] is neither a row vector nor column vector.
 --
--- >>> pretty $ dot sum (*) v b
--- [9,12,15]
+-- >>> pretty $ dot sum (*) v (transpose m)
+-- [5,14]
 --
--- >>> pretty $ dot sum (*) b v
--- [14,32]
+-- >>> pretty $ dot sum (*) m v
+-- [5,14]
 dot ::
-  forall a b c d ds ds' s sa sb s' ss se.
-  ( KnownNats sa,
-    KnownNats sb,
-    KnownNats se,
-    KnownNat (Eval (Rank sa) - 1),
-    KnownNat (Eval (Rank sa)),
-    KnownNats ss,
-    KnownNats s',
-    KnownNats ds,
-    KnownNats ds',
-    KnownNats s,
-    s ~ Eval ((++) sa sb),
-    ds ~ '[Eval ((Fcf.-) (Eval (Rank sa))  1), Eval (Rank sa)],
-    ds' ~ Eval (ExceptDims ds s),
-    s' ~ Eval (GetDims ds' s),
-    se ~ Eval (DeleteDims ds' s),
-    ss ~ Eval (MinDim se)
+  forall a b c d ds0 ds1 s0 s1 so0 so1 st si.
+  ( KnownNats s0,
+    KnownNats s1,
+    KnownNats ds0,
+    KnownNats ds1,
+    KnownNats so0,
+    KnownNats so1,
+    KnownNats st,
+    KnownNats si,
+    so0 ~ Eval (DeleteDims ds0 s0),
+    so1 ~ Eval (DeleteDims ds1 s1),
+    si ~ Eval (GetDims ds0 s0),
+    si ~ Eval (GetDims ds1 s1),
+    st ~ Eval ((++) so0 so1),
+    ds0 ~ '[Eval ((Fcf.-) (Eval (Rank s0)) 1)],
+    ds1 ~ '[0]
   ) =>
-  (Array ss c -> d) ->
+  (Array si c -> d) ->
   (a -> b -> c) ->
-  Array sa a ->
-  Array sb b ->
-  Array s' d
-dot f g a b = contract (Dims :: Dims ds) f (expand g a b)
+  Array s0 a ->
+  Array s1 b ->
+  Array st d
+dot f g a b = prod (Dims @ds0) (Dims @ds1) f g a b
 
 -- | Array multiplication.
 --
 -- matrix multiplication
 --
--- >>> let b = array [1..6] :: Array [2,3] Int
--- >>> pretty $ mult b (transpose b)
--- [[14,32],
---  [32,77]]
+-- >>> pretty $ mult m (transpose m)
+-- [[5,14],
+--  [14,50]]
 --
 -- inner product
 --
--- >>> let v = array @'[3] [1..3::Int]
 -- >>> pretty $ mult v v
--- 14
+-- 5
 --
 -- matrix-vector multiplication
 --
--- >>> pretty $ mult v b
--- [9,12,15]
+-- >>> pretty $ mult v (transpose m)
+-- [5,14]
 --
--- >>> pretty $ mult b v
--- [14,32]
+-- >>> pretty $ mult m v
+-- [5,14]
 mult ::
-  forall a sa sb s s' ss se ds ds'.
+  forall a ds0 ds1 s0 s1 so0 so1 st si.
   ( Num a,
-    KnownNats sa,
-    KnownNats sb,
-    KnownNats se,
-    KnownNat (Eval (Rank sa) - 1),
-    KnownNat (Eval (Rank sa)),
-    KnownNats ss,
-    KnownNats s',
-    KnownNats ds,
-    KnownNats ds',
-    KnownNats s,
-    s ~ Eval ((++) sa sb),
-    ds ~ '[Eval (Rank sa) - 1, Eval (Rank sa)],
-    ds' ~ Eval (ExceptDims ds s),
-    s' ~ Eval (GetDims ds' s),
-    se ~ Eval (DeleteDims ds' s),
-    ss ~ Eval (MinDim se)
+    KnownNats s0,
+    KnownNats s1,
+    KnownNats ds0,
+    KnownNats ds1,
+    KnownNats so0,
+    KnownNats so1,
+    KnownNats st,
+    KnownNats si,
+    so0 ~ Eval (DeleteDims ds0 s0),
+    so1 ~ Eval (DeleteDims ds1 s1),
+    si ~ Eval (GetDims ds0 s0),
+    si ~ Eval (GetDims ds1 s1),
+    st ~ Eval ((++) so0 so1),
+    ds0 ~ '[Eval ((Fcf.-) (Eval (Rank s0)) 1)],
+    ds1 ~ '[0]
   ) =>
-  Array sa a ->
-  Array sb a ->
-  Array s' a
+  Array s0 a ->
+  Array s1 a ->
+  Array st a
 mult = dot sum (*)
 
 -- | windows xs are xs-sized windows of an array

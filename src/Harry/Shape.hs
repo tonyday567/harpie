@@ -41,6 +41,7 @@ module Harry.Shape
     fromSNats,
     KnownNats (..),
     natVals,
+    withKnownNats,
     SomeNats,
     someNatVals,
     withSomeSNats,
@@ -172,6 +173,7 @@ module Harry.Shape
 
     -- * Fcf re-exports
     Eval,
+    type (++),
   )
 where
 
@@ -220,19 +222,56 @@ valueOf = fromIntegral $ fromSNat (SNat @n)
 
 type role SNats nominal
 
--- | Mimics SNat from GHC.TypeNats
+-- | A value-level witness for a type-level list of natural numbers.
+--
+-- Obtain an SNats value using:
+--
+-- - The natsSing method of KnownNats
+-- - The SNats pattern
+-- - The withSomeSNats function
+-- - The UnsafeSNats constructor
+--
+-- >>> :t SNats @[2,3,4]
+-- SNats @[2,3,4] :: KnownNats [2, 3, 4] => SNats [2, 3, 4]
+-- >>> SNats @[2,3,4]
+-- SNats @[2, 3, 4]
 newtype SNats (ns :: [Nat]) = UnsafeSNats [Nat]
 
+instance Eq (SNats ns) where
+  _ == _ = True
+
+instance Ord (SNats ns) where
+  compare _ _ = EQ
+
+-- | Matches GHC printing quirks.
 instance Show (SNats ns)
   where
     show (UnsafeSNats s) = "SNats @" <> bool "" "'" (length s < 2) <> "[" <> mconcat (List.intersperse ", " (show <$> s)) <> "]"
 
-
+-- | A explicitly bidirectional pattern synonym relating an 'SNats' to a 'KnownNats' constraint.
+--
+-- As an expression: Constructs an explicit 'SNats' ns value from an implicit 'KnownNats' ns constraint:
+--
+-- > SNat @n :: KnownNat n => SNat n
+--
+-- As a pattern: Matches on an explicit SNats n value bringing an implicit KnownNats n constraint into scope:
+--
+-- > f :: SNats ns -> ..
+-- > f SNat = {- KnownNats ns in scope -}
+--
+-- or, if you need to both bring the KnownNats into scope and reuse the SNats input:
+--
+-- > f (SNats :: SNats s) = g (SNats @s)
+--
 pattern SNats :: forall ns. () => KnownNats ns => SNats ns
 pattern SNats <- (knownNatsInstance -> KnownNatsInstance)
   where SNats = natsSing
 {-# COMPLETE SNats #-}
 
+-- | Return the value-level list of naturals in an SNats ns value.
+--
+-- >>> fromSNats (SNats @[2,3,4])
+-- [2,3,4]
 fromSNats :: SNats s -> [Nat]
 fromSNats (UnsafeSNats s) = s
 
@@ -246,7 +285,10 @@ data KnownNatsInstance (ns :: [Nat]) where
 knownNatsInstance :: SNats ns -> KnownNatsInstance ns
 knownNatsInstance dims = withKnownNats dims KnownNatsInstance
 
--- | Reflect a list of Nats
+-- | Reflect a list of naturals.
+--
+-- >>> natsSing @'[2]
+-- SNats @'[2]
 class KnownNats (ns :: [Nat]) where
   natsSing :: SNats ns
 
@@ -257,20 +299,29 @@ instance (KnownNat n, KnownNats s) => KnownNats (n ': s)
   where
     natsSing = UnsafeSNats (fromSNat (SNat :: SNat n) : fromSNats (SNats :: SNats s))
 
+-- | Obtain a value-level list of naturals from a type-level proxy
+--
+-- >>> natVals (SNats @[2,3,4])
+-- [2,3,4]
 natVals :: forall ns proxy. KnownNats ns => proxy ns -> [Nat]
 natVals _ = case natsSing :: SNats ns of
               UnsafeSNats xs -> xs
 
+-- | Convert an explicit SNats ns value into an implicit KnownNats ns constraint.
 withKnownNats :: forall ns rep (r :: TYPE rep).
                 SNats ns -> (KnownNats ns => r) -> r
 withKnownNats = withDict @(KnownNats ns)
 
+-- | Convert a list of naturals into an SNats ns value, where ns is a fresh type-level list of naturals.
 withSomeSNats :: forall rep (r :: TYPE rep).
                 [Nat] -> (forall s. SNats s -> r) -> r
 withSomeSNats s k = k (UnsafeSNats s)
+{-# NOINLINE withSomeSNats #-}
 
+-- | An unknown type-level list of naturals.
 data SomeNats = forall s. KnownNats s => SomeNats (Proxy s)
 
+-- | Promote a list of naturals to unknown type-level
 someNatVals :: [Nat] -> SomeNats
 someNatVals s = withSomeSNats s (\(sn :: SNats s) ->
                 withKnownNats sn (SomeNats @s Proxy))
@@ -634,7 +685,7 @@ type instance Eval (ReorderOk ds xs) =
 --
 -- >>> squeeze [0,1,2,3]
 -- [0,2,3]
-squeeze :: (Num a, Eq a) => [a] -> [a]
+squeeze :: [Int] -> [Int]
 squeeze = filter (/= 1)
 
 -- | Remove 1's from a list.
