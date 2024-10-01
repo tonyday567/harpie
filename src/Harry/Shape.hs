@@ -3,30 +3,19 @@
 {-# LANGUAGE RebindableSyntax #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# Language MagicHash #-}
 {-# Language CPP #-}
-{-# Language AllowAmbiguousTypes #-}
 {-# Language ConstraintKinds #-}
-{-# Language DataKinds #-}
-{-# Language DeriveLift #-}
 {-# Language PolyKinds #-}
 {-# Language DerivingStrategies #-}
 {-# Language FlexibleContexts #-}
 {-# Language GADTs #-}
-{-# Language MagicHash #-}
-{-# Language LambdaCase #-}
 {-# Language PatternSynonyms #-}
 {-# Language RankNTypes #-}
 {-# Language RoleAnnotations #-}
 {-# Language ScopedTypeVariables #-}
-{-# Language StandaloneDeriving #-}
 {-# Language TypeApplications #-}
-{-# Language TypeFamilies #-}
 {-# Language TypeOperators #-}
-{-# Language UndecidableInstances #-}
-{-# Language Unsafe #-}
 {-# Language ViewPatterns #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 
 -- | Functions for manipulating shape. The module tends to supply equivalent functionality at type-level and value-level with functions of the same name (except for capitalization).
 module Harry.Shape
@@ -183,25 +172,18 @@ import Data.Type.Bool hiding (Not)
 import Data.Type.Equality
 import GHC.TypeLits qualified as L
 import Prelude as P hiding (minimum)
-import Data.Coerce
-import Data.Data
 import Data.Bool
 import Data.Maybe
 import Data.Function
 import Data.Foldable hiding (minimum)
-import GHC.Arr hiding (range)
 import GHC.Exts
 import GHC.TypeNats
-import GHC.TypeLits (TypeError, ErrorMessage(..))
-import Text.Read
+import GHC.TypeLits (ErrorMessage(..))
 import Data.Type.Ord hiding (Min, Max)
-import Unsafe.Coerce
 import Fcf hiding (type (>), type (<), type (&&), type (||), type (+), type (-), type (++))
 import Fcf qualified
 import Fcf.Class.Foldable
 import Fcf.Data.List
-import Fcf.Combinators
-import Control.Monad
 
 -- $setup
 -- >>> :set -XDataKinds
@@ -475,8 +457,8 @@ data Rerank :: Nat -> [Nat] -> Exp [Nat]
 type instance Eval (Rerank r xs) =
   If (Eval ((Fcf.>) r (Eval (Rank xs))))
   (Eval (Eval (Replicate (Eval ((Fcf.-) r (Eval (Rank xs)))) 1) ++ xs))
-  (Eval (('[Eval (Size (Eval (Take (Eval ((Fcf.+) (Eval ((Fcf.-) (Eval (Rank xs)) r)) 1)) xs)))]) ++
-    (Eval (Drop (Eval ((Fcf.+) (Eval ((Fcf.-) (Eval (Rank xs)) r)) 1)) xs))))
+  (Eval ('[Eval (Size (Eval (Take (Eval ((Fcf.+) (Eval ((Fcf.-) (Eval (Rank xs)) r)) 1)) xs)))] ++
+    Eval (Drop (Eval ((Fcf.+) (Eval ((Fcf.-) (Eval (Rank xs)) r)) 1)) xs)))
 
 -- | Enumerate the dimensions of a shape.
 --
@@ -595,13 +577,13 @@ type instance Eval (AsScalar xs) =
 lte :: [Int] -> [Int] -> Bool
 lte xs ys =
   and (zipWith (<=) xs ys) &&
-  (rank xs) == (rank ys)
+  rank xs == rank ys
 
 data LTE :: [Nat] -> [Nat] -> Exp Bool
 
 type instance Eval (LTE xs ys) =
   Eval (LiftM2 (Fcf.&&)
-    (And =<< (ZipWith (Fcf.<=) xs ys))
+    (And =<< ZipWith (Fcf.<=) xs ys)
     (LiftM2 TyEq (Rank xs) (Rank ys)))
 
 -- | Check if a shape is a subset (<=) another shape after reranking.
@@ -640,7 +622,7 @@ type instance Eval (IsSubset xs ys) =
 -- >>> exceptDims [1,2] [2,3,4]
 -- [0]
 exceptDims :: [Int] -> [Int] -> [Int]
-exceptDims ds s = deleteDims ds [0 .. ((rank s) - 1)]
+exceptDims ds s = deleteDims ds [0 .. (rank s - 1)]
 
 -- | Compute dimensions for a shape other than the supplied dimensions.
 --
@@ -748,7 +730,7 @@ type instance Eval (Max a b) = If (a >? b) a b
 -- >>> isFin 2 2
 -- False
 isFin :: Int -> Int -> Bool
-isFin i d = (0 <= i && i + 1 <= d)
+isFin i d = 0 <= i && i + 1 <= d
 
 -- | Check if i is a valid Fin (aka in-bounds index of a dimension)
 --
@@ -792,7 +774,7 @@ type instance Eval (IsFins xs ds) =
 -- >>> isDim 0 []
 -- True
 isDim :: Int -> [Int] -> Bool
-isDim d s = isFin d (rank s) || (d == 0 && s == [])
+isDim d s = isFin d (rank s) || d == 0 && null s
 
 -- | Is a value a valid dimension of a shape.
 -- >>> :k! Eval (IsDim 2 [2,3,4])
@@ -813,7 +795,7 @@ type instance Eval (IsDim d s) =
 -- >>> isDims [0] []
 -- True
 isDims :: [Int] -> [Int] -> Bool
-isDims ds s = and $ fmap (\d -> isDim d s) ds
+isDims ds s = all (`isDim` s) ds
 
 -- | Are values valid dimensions of a shape.
 --
@@ -835,7 +817,7 @@ type instance Eval (IsDims ds s) =
 -- 0
 lastPos :: Int -> [Int] -> Int
 lastPos d s =
-  bool ((getDim d s) - 1) 0 (0 == d && s == [])
+  bool (getDim d s - 1) 0 (0 == d && null s)
 
 -- | Get the last position of a dimension of a shape.
 -- >>> :k! Eval (LastPos 2 [2,3,4])
@@ -937,7 +919,7 @@ getDim i s = fromMaybe (error "getDim outside bounds") (s List.!? i)
 -- = 1
 data GetDim :: Nat -> [Nat] -> Exp Nat
 type instance Eval (GetDim n xs) =
-    If (Eval (And [(Eval (TyEq n 0)), (Eval (TyEq xs ('[]::[Nat])))])) 1
+    If (Eval (And [Eval (TyEq n 0), Eval (TyEq xs ('[]::[Nat]))])) 1
     (Eval (FromMaybe (L.TypeError (L.Text "GetDim out of bounds or non-computable: " :<>: ShowType n :<>: L.Text " " :<>: ShowType xs)) (Eval (GetIndex n xs))))
 
 -- | modify an index at a specific dimension. Errors if out of bounds.
@@ -962,7 +944,7 @@ modifyDim d f xs =
 data ModifyDim :: Nat -> (Nat -> Exp Nat) -> [Nat] -> Exp [Nat]
 
 type instance Eval (ModifyDim d f s) =
-  Eval ( LiftM2 (Fcf.++) (Take d s) (LiftM2 Cons (f =<< (GetDim d s)) (Drop (d+1) s)))
+  Eval ( LiftM2 (Fcf.++) (Take d s) (LiftM2 Cons (f =<< GetDim d s) (Drop (d+1) s)))
 
 -- | Increment the index at a dimension of a shape by 1. Scalars turn into singletons.
 --
@@ -991,7 +973,7 @@ type instance Eval (IncAt d ds) =
 -- >>> decAt 1 [2,3,4]
 -- [2,2,4]
 decAt :: Int -> [Int] -> [Int]
-decAt d ds = modifyDim d (\x -> x - 1) ds
+decAt d = modifyDim d (\x -> x - 1)
 
 -- | Decrement the index at a dimension of a shape by 1.
 --
@@ -1011,7 +993,7 @@ type instance Eval (DecAt d ds) =
 -- >>> setDim 0 3 []
 -- [3]
 setDim :: Int -> Int -> [Int] -> [Int]
-setDim d x xs = modifyDim d (const x) xs
+setDim d x = modifyDim d (const x)
 
 -- | replace an index at a specific dimension.
 --
@@ -1033,7 +1015,7 @@ type instance Eval (SetDimUncurried xs ds) =
 -- >>> takeDim 0 1 [2,3,4]
 -- [1,3,4]
 takeDim :: Int -> Int -> [Int] -> [Int]
-takeDim d t s = modifyDim d (min t) s
+takeDim d t = modifyDim d (min t)
 
 -- | Take along a dimension.
 --
@@ -1052,7 +1034,7 @@ type instance Eval (TakeDim d t s) =
 -- >>> dropDim 2 1 [2,3,4]
 -- [2,3,3]
 dropDim :: Int -> Int -> [Int] -> [Int]
-dropDim d t s = modifyDim d (max 0 . (\x -> x - t)) s
+dropDim d t = modifyDim d (max 0 . (\x -> x - t))
 
 -- | Drop along a dimension.
 --
@@ -1064,7 +1046,7 @@ data DropDim :: Nat -> Nat -> [Nat] -> Exp [Nat]
 type instance Eval (DropDim d t s) =
   Eval (
     ModifyDim d
-    (Max 0 <=< (Flip (Fcf.-) t))
+    (Max 0 <=< Flip (Fcf.-) t)
     s)
 
 -- | delete the i'th dimension. No effect on a scalar.
@@ -1109,7 +1091,7 @@ insertDim d i s = take d s ++ (i : drop d s)
 data InsertDim :: Nat -> Nat -> [Nat] -> Exp [Nat]
 
 type instance Eval (InsertDim d i ds) =
-  Eval (LiftM2 (Fcf.++) (Take d ds) ((Cons i) =<< (Drop d ds)))
+  Eval (LiftM2 (Fcf.++) (Take d ds) (Cons i =<< Drop d ds))
 
 data InsertDimUncurried :: (Nat,Nat) -> [Nat] -> Exp [Nat]
 
@@ -1231,7 +1213,7 @@ type instance Eval (ConcatenateOk i s0 s1) =
 -- []
 getDims :: [Int] -> [Int] -> [Int]
 getDims _ [] = []
-getDims i s = (flip getDim s) <$> i
+getDims i s = (`getDim` s) <$> i
 
 -- | Get dimensions of a shape.
 --
@@ -1348,7 +1330,7 @@ preInsertPositions = reverse . preDeletePositions . reverse
 data PreInsertPositions :: [Nat] -> Exp [Nat]
 
 type instance Eval (PreInsertPositions xs) =
-  Eval (Reverse =<< (PreDeletePositions =<< (Reverse xs)))
+  Eval (Reverse =<< (PreDeletePositions =<< Reverse xs))
 
 -- | drop dimensions of a shape according to a list of positions (where position refers to the initial shape)
 --
@@ -1481,7 +1463,7 @@ rotate r xs = drop r' xs <> take r' xs
 -- >>> rotateIndex 0 1 [2,3,4] [0,1,2]
 -- [1,1,2]
 rotateIndex :: Int -> Int -> [Int] -> [Int] -> [Int]
-rotateIndex d r s xs = modifyDim d (\x -> ((x + r) `mod`) (getDim d s)) xs
+rotateIndex d r s = modifyDim d (\x -> (x + r) `mod` getDim d s)
 
 -- | rotate an index along specific dimensions.
 --
@@ -1541,4 +1523,4 @@ dimWindows ws s = range (rank s) <> [rank s * 2 .. (rank ws - 1)]
 data DimWindows :: [Nat] -> [Nat] -> Exp [Nat]
 
 type instance Eval (DimWindows ws s) =
-  Eval ((Eval (Range =<< (Rank s))) ++ (Eval (EnumFromTo (Eval ((Fcf.*) 2 (Eval (Rank s)))) (Eval (Rank ws) - 1))))
+  Eval (Eval (Range =<< Rank s) ++ Eval (EnumFromTo (Eval ((Fcf.*) 2 (Eval (Rank s)))) (Eval (Rank ws) - 1)))

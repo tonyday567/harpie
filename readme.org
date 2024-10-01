@@ -12,9 +12,8 @@ This package provides hyper-rectangular array functionality.
 #+begin_src haskell
 import qualified Harry.Shape as S
 import qualified Harry.Fixed as F
-import qualified Harry.Dynamic as D
+import qualified Harry.Array as A
 #+end_src
-
 
 * Development
 
@@ -24,35 +23,12 @@ import qualified Harry.Dynamic as D
 :set -Wno-type-defaults
 import qualified Harry.Shape as S
 import qualified Harry.Fixed as F
-import qualified Harry.Dynamic as D
+import qualified Harry.Array as A
 import Prettyprinter
 import GHC.TypeNats
 import Data.Vector qualified as V
 #+end_src
 
-* expand
-
-#+begin_src haskell-ng :results output
-
-b = F.expand (,) (F.indices @[2,3]) (F.indices @[3,2])
-#+end_src
-
-#+begin_src haskell-ng :results output
-F.extracts (Dims @[0,3]) (F.expand (,) (F.indices @[2,3]) (F.indices @[3,2]))
-#+end_src
-
-e
-[[([0,0],[0,0]),([0,0],[1,0]),([0,0],[2,0]),([0,1],[0,0]),([0,1],[1,0]),([0,1],[2,0]),([0,2],[0,0]),([0,2],[1,0]),([0,2],[2,0])],[([0,0],[0,1]),([0,0],[1,1]),([0,0],[2,1]),([0,1],[0,1]),([0,1],[1,1]),([0,1],[2,1]),([0,2],[0,1]),([0,2],[1,1]),([0,2],[2,1])],[([1,0],[0,0]),([1,0],[1,0]),([1,0],[2,0]),([1,1],[0,0]),([1,1],[1,0]),([1,1],[2,0]),([1,2],[0,0]),([1,2],[1,0]),([1,2],[2,0])],[([1,0],[0,1]),([1,0],[1,1]),([1,0],[2,1]),([1,1],[0,1]),([1,1],[1,1]),([1,1],[2,1]),([1,2],[0,1]),([1,2],[1,1]),([1,2],[2,1])]]
-
-ghci> diag <$> e
-[[([0,0],[0,0]),([0,1],[1,0]),([0,2],[2,0])],[([0,0],[0,1]),([0,1],[1,1]),([0,2],[2,1])],[([1,0],[0,0]),([1,1],[1,0]),([1,2],[2,0])],[([1,0],[0,1]),([1,1],[1,1]),([1,2],[2,1])]]
-ghci> :t diag <$> e
-
-https://en.wikipedia.org/wiki/Raising_and_lowering_indices
-
-#+begin_src haskell-ng :results output
-c = diag <$> (F.extracts (Dims @[0,1,4,5]) $ F.expand (,) (F.indices @[2,3,4]) (F.indices @[4,3,2]))
-#+end_src
 * cabal repl bug
 
 #+begin_src haskell-ng :results output
@@ -77,4 +53,9 @@ SIGSEGV).
 
 #+begin_src haskell-ng :results output
 F.indexes (Dims @'[0]) (UnsafeFins [0]) a
+#+end_src
+#+begin_src haskell-ng :results output
+c = diag <$> (F.extracts (Dims @[0,1,4,5]) $ F.expand (,) (F.indices @[2,3,4]) (F.indices @[4,3,2]))
+ghci> c ! [1,2,2,1]
+[([1,2,0],[0,2,1]),([1,2,1],[1,2,1]),([1,2,2],[2,2,1]),([1,2,3],[3,2,1])]
 #+end_src

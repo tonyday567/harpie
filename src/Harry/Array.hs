@@ -9,11 +9,11 @@
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 
 -- | Arrays with a dynamic shape (shape only known at runtime).
-module Harry.Dynamic
+module Harry.Array
   ( -- * Usage
     -- $usage
 
-    -- * Dynamic Arrays
+    -- * Harry Arrays
     Array (..),
     array,
     (><),
@@ -200,8 +200,8 @@ import GHC.Generics
 
 -- $setup
 -- >>> :m -Prelude
--- >>> import Prelude hiding (take, drop, zipWith)
--- >>> import Harry.Dynamic as D
+-- >>> import Prelude hiding (take, drop, zipWith, length, cycle, repeat)
+-- >>> import Harry.Array as A
 -- >>> import Prettyprinter hiding (dot, fill)
 -- >>> import Harry.Shape qualified as S
 -- >>> import Data.Vector qualified as V
@@ -229,7 +229,7 @@ import GHC.Generics
 --   [20,21,22,23]]]
 
 -- $usage
--- >>> import Harry.Dynamic as D
+-- >>> import Harry.Array as A
 -- >>> import Harry.Shape qualified as S
 -- >>> import Prettyprinter (pretty)
 -- >>> let a = range [2,3,4]
@@ -431,7 +431,7 @@ size = S.size . shape
 
 -- | Number of rows (first dimension size) in an Array. As a convention, a scalar value is still a single row.
 --
--- >>> D.length a
+-- >>> length a
 -- 2
 length :: Array a -> Int
 length a = case shape a of
@@ -616,7 +616,7 @@ undiag a = tabulate (shape a <> shape a) (\xs -> bool 0 (index a xs) (isDiag xs)
 
 -- | Zip two arrays at an element level. Could also be called liftS2 or sometink like that.
 --
--- > zipWith == \f a b -> zips (range (rank a)) (\f a b -> f (D.toScalar a) (D.toScalar b))
+-- > zipWith == \f a b -> zips (range (rank a)) (\f a b -> f (toScalar a) (toScalar b))
 --
 -- >>> zipWith (-) v v
 -- UnsafeArray [3] [0,0,0]
@@ -625,7 +625,7 @@ zipWith f (UnsafeArray s v) (UnsafeArray _ v') = UnsafeArray s (V.zipWith f v v'
 
 -- | Zip two arrays at an element level, checking for shape consistency.
 --
--- > zipWith == \f a b -> zips (range (rank a)) (\f a b -> f (D.toScalar a) (D.toScalar b))
+-- > zipWith == \f a b -> zips (range (rank a)) (\f a b -> f (toScalar a) (toScalar b))
 --
 -- >>> zipWithSafe (-) v (array [7] [0..6])
 -- Nothing
@@ -672,7 +672,7 @@ rowWise f xs a = f [0..(S.rank xs - 1)] xs a
 -- >>> colWise indexes [1,0] a
 -- UnsafeArray [2] [1,13]
 colWise :: (Dims -> [x] -> Array a -> Array a) -> [x] -> Array a -> Array a
-colWise f xs a = f (List.reverse [(rank a - (S.rank xs)) .. (rank a - 1)]) xs a
+colWise f xs a = f (List.reverse [(rank a - S.rank xs) .. (rank a - 1)]) xs a
 
 -- | Apply a function that takes a dimension and parameter, and folds a (dimension,parameter) list over an array.
 --
@@ -717,7 +717,7 @@ take d t a = backpermute dsNew (modifyDim d (\x -> x + bool 0 (getDim d (shape a
 --  [[13,14,15],
 --   [17,18,19],
 --   [21,22,23]]]
--- >>> pretty $ D.drop 2 (-1) a
+-- >>> pretty $ drop 2 (-1) a
 -- [[[0,1,2],
 --   [4,5,6],
 --   [8,9,10]],
@@ -755,7 +755,7 @@ select d x a = backpermute (deleteDim d) (insertDim d x) a
 --  [[0,12,13,14,15],
 --   [0,16,17,18,19],
 --   [0,20,21,22,23]]]
--- >>> D.insert 0 0 (D.toScalar 1) (D.toScalar 2)
+-- >>> insert 0 0 (toScalar 1) (toScalar 2)
 -- UnsafeArray [2] [2,1]
 insert ::
   Dim ->
@@ -1349,7 +1349,7 @@ mult = dot sum (*)
 
 -- | windows xs are xs-sized windows of an array
 --
--- >>> D.shape $ D.windows [2,2] (D.range [4,3,2])
+-- >>> shape $ windows [2,2] (range [4,3,2])
 -- [3,2,2,2,2]
 windows :: [Int] -> Array a -> Array a
 windows xs a = backpermute (expandWindows xs) (indexWindows (S.rank xs)) a
@@ -1358,9 +1358,9 @@ windows xs a = backpermute (expandWindows xs) (indexWindows (S.rank xs)) a
 
 -- | Find the starting positions of occurences of one array in another.
 --
--- >>> a = D.cycle [4,4] (range [3]) :: Array Int
+-- >>> a = cycle [4,4] (range [3]) :: Array Int
 -- >>> i = array [2,2] [1,2,2,0] :: Array Int
--- >>> pretty $ D.find i a
+-- >>> pretty $ find i a
 -- [[False,True,False],
 --  [True,False,False],
 --  [False,False,True]]
@@ -1373,8 +1373,8 @@ find i a = xs
 
 -- | Find the ending positions of one array in another except where the array overlaps with another copy.
 --
--- >>> a = D.konst [5,5] 1 :: Array Int
--- >>> i = D.konst [2,2] 1 :: Array Int
+-- >>> a = konst [5,5] 1 :: Array Int
+-- >>> i = konst [2,2] 1 :: Array Int
 -- >>> pretty $ findNoOverlap i a
 -- [[True,False,True,False],
 --  [False,False,False,False],
@@ -1388,14 +1388,14 @@ findNoOverlap i a = r
 
     cl :: [Int] -> [[Int]]
     cl sh = List.filter (P.not . any (> 0) . List.init) $ List.filter (P.not . all (>= 0)) $ arrayAs $ tabulate ((\x -> 2 * x - 1) <$> sh) (\s -> List.zipWith (\x x0 -> x - x0 + 1) s sh)
-    go r' s = index f s && all (P.not . index r') (List.filter (\x -> isFins x (shape f)) $ fmap (List.zipWith (+) s) (cl (shape i)))
+    go r' s = index f s && not (any (index r') (List.filter (\x -> isFins x (shape f)) $ fmap (List.zipWith (+) s) (cl (shape i))))
     r = tabulate (shape f) (go r)
 
 -- | Find the indices of the starting location of one array in another.
 --
--- >>> b = D.cycle [4,4] (range [3]) :: Array Int
+-- >>> b = cycle [4,4] (range [3]) :: Array Int
 -- >>> i = array [2,2] [1,2,2,0] :: Array Int
--- >>> pretty $ D.findIndices i b
+-- >>> pretty $ findIndices i b
 -- [[0,1],[1,0],[2,2]]
 findIndices :: (Eq a) => Array a -> Array a -> Array [Int]
 findIndices i a = fmap fst $ vectorAs $ V.filter snd $ asVector $ imap (,) b
@@ -1525,13 +1525,13 @@ flat a = unsafeModifyShape (pure . S.size) a
 
 -- | Reshape an array, repeating the original array. The shape of the array should be a suffix of the new shape.
 --
--- >>> pretty $ D.repeat [2,2,2] (array [2] [1,2])
+-- >>> pretty $ repeat [2,2,2] (array [2] [1,2])
 -- [[[1,2],
 --   [1,2]],
 --  [[1,2],
 --   [1,2]]]
 --
--- > D.repeat ds (toScalar x) == konst ds x
+-- > repeat ds (toScalar x) == konst ds x
 repeat ::
   [Int] ->
   Array a ->
@@ -1540,7 +1540,7 @@ repeat s a = backpermute (const s) (List.drop (S.rank s - rank a)) a
 
 -- | Reshape an array, cycling through the elements without regard to the original shape.
 --
--- >>> pretty $ D.cycle [2,2,2] (array [3] [1,2,3])
+-- >>> pretty $ cycle [2,2,2] (array [3] [1,2,3])
 -- [[[1,2],
 --   [3,1]],
 --  [[2,3],
@@ -1549,7 +1549,7 @@ cycle ::
   [Int] ->
   Array a ->
   Array a
-cycle s a = backpermute (const s) (shapen (shape a) . (`mod` (size a)) . flatten s) a
+cycle s a = backpermute (const s) (shapen (shape a) . (`mod` size a) . flatten s) a
 
 -- | Change rank by adding new dimensions at the front, if the new rank is greater, or combining dimensions (from left to right) into rows, if the new rank is lower.
 --
@@ -1736,9 +1736,9 @@ ordersBy ds c a = unsafeModifyVector (orderByV c) (extracts ds a)
 
 -- | Apply a binary array function to two arrays with matching shapes across the supplied dimensions. No check on shapes.
 --
--- >>> a = D.array [2,3] [0..5]
--- >>> b = D.array [3] [0..2]
--- >>> pretty $ D.telecasts [1] [0] (D.concatenate 0) a b
+-- >>> a = array [2,3] [0..5]
+-- >>> b = array [3] [0..2]
+-- >>> pretty $ telecasts [1] [0] (concatenate 0) a b
 -- [[0,1,2],
 --  [3,4,5],
 --  [0,1,2]]
@@ -1747,8 +1747,8 @@ telecasts dsa dsb f a b = zipWith f (extracts dsa a) (extracts dsb b) & joins ds
 
 -- | Apply a binary array function to two arrays with matching shapes across the supplied dimensions. Checks shape.
 --
--- >>> a = D.array [2,3] [0..5]
--- >>> b = D.array [1] [1]
+-- >>> a = array [2,3] [0..5]
+-- >>> b = array [1] [1]
 -- >>> telecastsSafe [0] [0] (zipWith (+)) a b
 -- Nothing
 telecastsSafe :: Dims -> Dims -> (Array a -> Array b -> Array c) -> Array a -> Array b -> Maybe (Array c)
@@ -1760,8 +1760,8 @@ telecastsSafe dsa dsb f a b =
 
 -- | Apply a binary array function to two arrays where the shape of the first array is a prefix of the second array. No checks on shape.
 --
--- >>> a = D.array [2,3] [0..5]
--- >>> pretty $ D.transmit (D.zipWith (+)) (D.toScalar 1) a
+-- >>> a = array [2,3] [0..5]
+-- >>> pretty $ transmit (zipWith (+)) (toScalar 1) a
 -- [[1,2,3],
 --  [4,5,6]]
 transmit :: (Array a -> Array b -> Array c) -> Array a -> Array b -> Array c
@@ -1771,8 +1771,8 @@ transmit f a b = maps ds (f a) b
 
 -- | Apply a binary array function to two arrays where the shape of the first array is a prefix of the second array. Checks shape.
 --
--- >>> a = D.array [2,3] [0..5]
--- >>> D.transmitSafe (D.zipWith (+)) (array [3] [1,2,3]) a
+-- >>> a = array [2,3] [0..5]
+-- >>> transmitSafe (zipWith (+)) (array [3] [1,2,3]) a
 -- Nothing
 transmitSafe :: (Array a -> Array b -> Array c) -> Array a -> Array b -> Maybe (Array c)
 transmitSafe f a b = bool Nothing (Just $ transmit f a b) (shape a `List.isPrefixOf` shape b)
@@ -1789,8 +1789,8 @@ transmitSafe f a b = bool Nothing (Just $ transmit f a b) (shape a `List.isPrefi
 transmitOp :: (a -> b -> c) -> Array a -> Array b -> Array c
 transmitOp f a b
   | shape a == shape b = zipWith f a b
-  | (shape a) `List.isPrefixOf` (shape b) = transmit (zipWith f) a b
-  | (shape b) `List.isPrefixOf` (shape a) = transmit (zipWith (flip f)) b a
+  | shape a `List.isPrefixOf` shape b = transmit (zipWith f) a b
+  | shape b `List.isPrefixOf` shape a = transmit (zipWith (flip f)) b a
   | otherwise = error "bad shapes"
 
 -- | Vector specialisation of 'range'
@@ -1896,13 +1896,13 @@ uniform g ds r = do
 
 -- | Inverse of a square matrix.
 --
--- >>> e = D.array [3,3] [4,12,-16,12,37,-43,-16,-43,98] :: D.Array Double
+-- >>> e = array [3,3] [4,12,-16,12,37,-43,-16,-43,98] :: Array Double
 -- >>> pretty (inverse e)
 -- [[49.36111111111111,-13.555555555555554,2.1111111111111107],
 --  [-13.555555555555554,3.7777777777777772,-0.5555555555555555],
 --  [2.1111111111111107,-0.5555555555555555,0.1111111111111111]]
 --
--- > D.mult (D.inverse a) a == a
+-- > mult (inverse a) a == a
 inverse :: (Floating a) => Array a -> Array a
 inverse a = mult (invtri (transpose (chol a))) (invtri (chol a))
 
@@ -1926,18 +1926,18 @@ invtri a = i
     add = zipWith (+)
     sum' = foldl' add zero'
     i = mult (sum' (fmap (pow l) (range [n]))) ti
-    n = shape a !! 0
+    n = S.getDim 0 (shape a)
 
 -- | cholesky decomposition
 --
 -- Uses the <https://en.wikipedia.org/wiki/Cholesky_decomposition#The_Cholesky_algorithm Cholesky-Crout> algorithm.
 --
--- >>> e = D.array [3,3] [4,12,-16,12,37,-43,-16,-43,98] :: D.Array Double
--- >>> pretty (D.chol e)
+-- >>> e = array [3,3] [4,12,-16,12,37,-43,-16,-43,98] :: Array Double
+-- >>> pretty (chol e)
 -- [[2.0,0.0,0.0],
 --  [6.0,1.0,0.0],
 --  [-8.0,5.0,3.0]]
--- >>> D.mult (D.chol e) (D.transpose (D.chol e)) == e
+-- >>> mult (chol e) (transpose (chol e)) == e
 -- True
 chol :: (Floating a) => Array a -> Array a
 chol a =

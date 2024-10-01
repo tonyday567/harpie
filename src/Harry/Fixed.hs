@@ -203,7 +203,7 @@ import Fcf hiding (type (&&), type (+), type (-), type (++))
 import Fcf.Data.List
 import qualified Fcf
 import GHC.TypeNats
-import Harry.Dynamic qualified as D
+import Harry.Array qualified as A
 import Harry.Shape hiding (concatenate, rank, size, asScalar, asSingleton, squeeze, rotate, reorder, rerank, range)
 import Harry.Shape qualified as S
 import Prelude as P hiding (take, drop, zipWith, sequence, length, repeat, cycle)
@@ -227,7 +227,7 @@ import GHC.Generics
 -- >>> :set -XDataKinds
 -- >>> :set -Wno-type-defaults
 -- >>> :set -Wno-name-shadowing
--- >>> import Prelude hiding (cycle, repeat, take, drop, zipWith)
+-- >>> import Prelude hiding (cycle, repeat, take, drop, zipWith, length)
 -- >>> import Harry.Fixed as F
 -- >>> import Harry.Shape qualified as S
 -- >>> import Harry.Shape (SNats, Fin (..))
@@ -460,21 +460,21 @@ instance (Arbitrary a) => Arbitrary (SomeArray a) where
 --
 -- >>> toDynamic a
 -- UnsafeArray [2,3,4] [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
-toDynamic :: (KnownNats s) => Array s a -> D.Array a
-toDynamic a = D.array (shape a) (asVector a)
+toDynamic :: (KnownNats s) => Array s a -> A.Array a
+toDynamic a = A.array (shape a) (asVector a)
 
 -- | Use a dynamic array in a fixed context.
 --
--- >>> import qualified Harry.Dynamic as D
--- >>> with (D.range [2,3,4]) show
+-- >>> import qualified Harry.Array as A
+-- >>> with (A.range [2,3,4]) show
 -- "[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]"
 with ::
   forall a r.
-  D.Array a ->
+  A.Array a ->
   (forall s. KnownNats s => Array s a -> r) ->
   r
 with d f =
-  withSomeSNats (fromIntegral <$> D.shape d) $ \(SNats :: SNats s) -> withKnownNats (SNats @s) (f (array @s (D.asVector d)))
+  withSomeSNats (fromIntegral <$> A.shape d) $ \(SNats :: SNats s) -> withKnownNats (SNats @s) (f (array @s (A.asVector d)))
 
 -- | Get shape of an Array as a value.
 --
@@ -502,7 +502,7 @@ size = S.size . shape
 
 -- | Number of rows (first dimension size) in an Array. As a convention, a scalar value is still a single row.
 --
--- >>> F.length a
+-- >>> length a
 -- 2
 length :: (KnownNats s) => Array s a -> Int
 length a = case shape a of
@@ -677,7 +677,7 @@ undiag ::
   ) =>
   Array s a ->
   Array s' a
-undiag a = tabulate ((\xs -> bool 0 (index a (UnsafeFins $ pure $ getDim 0 (fromFins xs))) (isDiag (fromFins xs))))
+undiag a = tabulate (\xs -> bool 0 (index a (UnsafeFins $ pure $ getDim 0 (fromFins xs))) (isDiag (fromFins xs)))
 
 -- | Zip two arrays at an element level.
 --
@@ -782,7 +782,7 @@ takeB ::
   SNat t ->
   Array s a ->
   Array s' a
-takeB Dim SNat a = unsafeBackpermute (\s -> modifyDim (valueOf @d) (\x -> x + (getDim (valueOf @d) (shape a)) - (valueOf @t)) s) a
+takeB Dim SNat a = unsafeBackpermute (modifyDim (valueOf @d) (\x -> x + getDim (valueOf @d) (shape a) - (valueOf @t))) a
 
 -- | Drop the top-most elements across the specified dimension.
 --
@@ -1345,7 +1345,7 @@ join a = joins (SNats @ds) a
 
 -- | Traverse along specified dimensions.
 --
--- >>> F.traverses (Dims @'[1]) print (F.range @[2,3])
+-- >>> traverses (Dims @'[1]) print (range @[2,3])
 -- 0
 -- 3
 -- 1
@@ -1415,8 +1415,8 @@ filters ::
   Dims ds ->
   (Array si a -> Bool) ->
   Array so a ->
-  D.Array (Array si a)
-filters Dims p a = D.asArray $ V.filter p $ asVector (extracts (Dims @ds) a)
+  A.Array (Array si a)
+filters Dims p a = A.asArray $ V.filter p $ asVector (extracts (Dims @ds) a)
 
 -- | Zips two arrays with a function along specified dimensions.
 --
@@ -1592,7 +1592,7 @@ contract SNats f a = f . diag <$> extracts (Dims @ds') a
 
 -- | Expand two arrays and then contract the result using the supplied matching dimensions.
 --
--- >>> pretty $ prod (Dims @'[1]) (Dims @'[0]) sum (*) (F.range @[2,3]) (F.range @[3,2])
+-- >>> pretty $ prod (Dims @'[1]) (Dims @'[0]) sum (*) (range @[2,3]) (range @[3,2])
 -- [[10,13],
 --  [28,40]]
 --
@@ -1792,8 +1792,8 @@ findNoOverlap i a = r
     f = find i a
 
     cl :: [Int] -> [[Int]]
-    cl sh = List.filter (P.not . any (> 0) . List.init) $ List.filter (P.not . all (>= 0)) $ D.arrayAs $ D.tabulate ((\x -> 2 * x - 1) <$> sh) (\s -> List.zipWith (\x x0 -> x - x0 + 1) s sh)
-    go r' s = index f (UnsafeFins s) && all (P.not . index r' . UnsafeFins) (List.filter (\x -> isFins x (shape f)) $ fmap (List.zipWith (+) s) (cl (shape i)))
+    cl sh = List.filter (P.not . any (> 0) . List.init) $ List.filter (P.not . all (>= 0)) $ A.arrayAs $ A.tabulate ((\x -> 2 * x - 1) <$> sh) (\s -> List.zipWith (\x x0 -> x - x0 + 1) s sh)
+    go r' s = index f (UnsafeFins s) && not (any (index r' . UnsafeFins) (List.filter (\x -> isFins x (shape f)) $ fmap (List.zipWith (+) s) (cl (shape i))))
     r = unsafeTabulate (go r)
 
 -- | Check if the first array is a prefix of the second
@@ -1918,7 +1918,7 @@ pad ::
   a ->
   Array s a ->
   Array s' a
-pad d a = tabulate (\s -> bool d (index a' (unsafeCoerce s)) ((fromFins s) `S.isFins` (shape a')))
+pad d a = tabulate (\s -> bool d (index a' (unsafeCoerce s)) (fromFins s `S.isFins` shape a'))
   where
     a' = rerank (SNat @r) a
 
@@ -1940,7 +1940,7 @@ lpad ::
   a ->
   Array s a ->
   Array s' a
-lpad d a = tabulate (\s -> bool d (index a' (UnsafeFins $ olds s)) ((olds s) `S.isFins` (shape a')))
+lpad d a = tabulate (\s -> bool d (index a' (UnsafeFins $ olds s)) (olds s `S.isFins` shape a'))
   where
     a' = rerank (SNat @r) a
     gap = List.zipWith (-) (valuesOf @s') (shape a')
@@ -1980,7 +1980,14 @@ reshape = unsafeBackpermute (shapen s . flatten s')
 -- [0,1,2,3]
 -- >>> pretty (flat $ toScalar 0)
 -- [0]
-flat :: forall s' s a. (KnownNats s, KnownNats s', s' ~ ('[Eval (Size s)])) => Array s a -> Array s' a
+flat ::
+  forall s' s a.
+  ( KnownNats s
+  , KnownNats s'
+  , s' ~ '[Eval (Size s)]
+  ) =>
+  Array s a ->
+  Array s' a
 flat a = unsafeModifyShape a
 
 -- | Reshape an array, repeating the original array. The shape of the array should be a suffix of the new shape.
@@ -2014,7 +2021,7 @@ cycle ::
    KnownNats s') =>
   Array s a ->
   Array s' a
-cycle a = unsafeBackpermute (S.shapen (shape a) . (`mod` (size a)) . S.flatten (valuesOf @s')) a
+cycle a = unsafeBackpermute (S.shapen (shape a) . (`mod` size a) . S.flatten (valuesOf @s')) a
 
 -- | Change rank by adding new dimensions at the front, if the new rank is greater, or combining dimensions (from left to right) into rows, if the new rank is lower.
 --
@@ -2388,7 +2395,7 @@ transmit ::
    sob ~ Eval (GetDims ds sb),
    sb ~ Eval (InsertDims ds sob sib),
    sc ~ Eval (InsertDims ds sob sic),
-   True ~ (Eval (IsPrefixOf sa sb))) =>
+   True ~ Eval (IsPrefixOf sa sb)) =>
   (Array sa a -> Array sib b -> Array sic c) -> Array sa a -> Array sb b -> Array sc c
 transmit f a b = maps (Dims @ds) (f a) b
 
@@ -2603,7 +2610,7 @@ uniform g r = do
 
 -- | Inverse of a square matrix.
 --
--- > D.mult (D.inverse a) a == a
+-- > A.mult (D.inverse a) a == a
 --
 -- >>> e = array @[3,3] @Double [4,12,-16,12,37,-43,-16,-43,98]
 -- >>> pretty (inverse e)

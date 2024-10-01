@@ -17,7 +17,7 @@ description:
 
     >>> import Harry.Fixed qualified as F
     >>> import Harry.Shape qualified as S
-    >>> import Harry.Dynamic qualified as D
+    >>> import Harry.Array qualified as A
 
 build-type: Simple
 tested-with:
@@ -59,7 +59,7 @@ library
         , vector               >=0.12.3 && <0.14
         , vector-algorithms    >=0.9.0 && <0.10
     exposed-modules:
-        Harry.Dynamic
+        Harry.Array
         Harry.Fixed
         Harry.Shape
         Harry.Sort
