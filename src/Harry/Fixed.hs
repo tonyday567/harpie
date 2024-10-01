@@ -1345,7 +1345,14 @@ join a = joins (SNats @ds) a
 
 -- | Traverse along specified dimensions.
 --
--- FIXME: Needs example.
+-- >>> F.traverses (Dims @'[1]) print (F.range @[2,3])
+-- 0
+-- 3
+-- 1
+-- 4
+-- 2
+-- 5
+-- [(),(),(),(),(),()]
 traverses ::
   (Applicative f,
    KnownNats s,
@@ -1791,15 +1798,18 @@ findNoOverlap i a = r
 
 -- | Check if the first array is a prefix of the second
 --
--- FIXME: different to D.isPrefixOf result
--- >>> isPrefixOf (array @[2,2] [0,4,12,16]) a
+-- >>> isPrefixOf (array @[2,2] [0,1,4,5]) a
 -- True
 isPrefixOf ::
-  forall s' s a.
+  forall s' s r a.
   (Eq a,
    KnownNats s,
    KnownNats s',
-   True ~ Eval (IsSubset s' s)) =>
+   KnownNat r,
+   KnownNats (Eval (Rerank r s)),
+   True ~ Eval (IsSubset s' s),
+   r ~ Eval (Rank s')
+  ) =>
   Array s' a -> Array s a -> Bool
 isPrefixOf p a = p == cut a
 
@@ -1863,13 +1873,17 @@ fill x (Array v) = Array (V.take (S.size (valuesOf @s')) (v <> V.replicate (S.si
 -- >>> toDynamic $ cut @'[2] (array @'[4] @Int [0..3])
 -- UnsafeArray [2] [0,1]
 cut ::
-  forall s' s a.
+  forall s' s r a.
   (KnownNats s,
    KnownNats s',
-   True ~ Eval (IsSubset s' s)) =>
+   KnownNat r,
+   KnownNats (Eval (Rerank r s)),
+   True ~ Eval (IsSubset s' s),
+   r ~ Eval (Rank s')
+  ) =>
   Array s a ->
   Array s' a
-cut a = unsafeBackpermute id a
+cut a = unsafeBackpermute id (rerank (SNat @r) a)
 
 -- | Cut an array to form a new (smaller) shape, using suffix elements. Errors if the new shape is larger. The old array is reranked to the rank of the new shape first.
 --

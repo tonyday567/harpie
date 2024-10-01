@@ -436,8 +436,6 @@ range n = [0..(n-1)]
 
 -- | Enumerate a range of rank n
 --
--- FIXME: If the order of these tests are reversed, it fails.
---
 -- >>> :k! Eval (Range 0)
 -- ...
 -- = '[]

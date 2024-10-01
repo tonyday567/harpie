@@ -1083,13 +1083,22 @@ allEqual a = case arrayAs a of
   (x : xs) -> all (== x) xs
 
 -- | Traverse along specified dimensions.
+--
+-- traverses [1] print (range [2,3])
+-- 0
+-- 3
+-- 1
+-- 4
+-- 2
+-- 5
+-- UnsafeArray [2,3] [(),(),(),(),(),()]
 traverses ::
   (Applicative f) =>
   Dims ->
   (a -> f b) ->
   Array a ->
   f (Array b)
-traverses ds f a = join <$> traverse (traverse f) (extracts ds a)
+traverses ds f a = joins ds <$> traverse (traverse f) (extracts ds a)
 
 -- | Maps a function along specified dimensions.
 --
