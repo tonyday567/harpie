@@ -62,6 +62,7 @@ module Harry.Array
     undiag,
 
     -- * Operations
+
     -- ** Element-level operators
     zipWith,
     zipWithSafe,
@@ -179,24 +180,23 @@ module Harry.Array
     invtri,
     inverse,
     chol,
-
   )
 where
 
 import Control.Monad hiding (join)
+import Data.Bool
+import Data.Foldable hiding (find, length, minimum)
+import Data.Function
 import Data.List qualified as List
 import Data.Vector qualified as V
-import Harry.Shape hiding (rank, size, asSingleton, concatenate, rerank, asScalar, reorder, squeeze, rotate, range)
+import GHC.Generics
+import Harry.Shape hiding (asScalar, asSingleton, concatenate, range, rank, reorder, rerank, rotate, size, squeeze)
 import Harry.Shape qualified as S
 import Harry.Sort
-import Prelude as P hiding (cycle, drop, length, repeat, take, zip, zipWith)
 import Prettyprinter hiding (dot, fill)
 import System.Random hiding (uniform)
 import System.Random.Stateful hiding (uniform)
-import Data.Bool
-import Data.Function
-import Data.Foldable hiding (minimum, find, length)
-import GHC.Generics
+import Prelude as P hiding (cycle, drop, length, repeat, take, zip, zipWith)
 
 -- $setup
 -- >>> :m -Prelude
@@ -539,6 +539,7 @@ asScalar :: Array a -> Array a
 asScalar = unsafeModifyShape S.asScalar
 
 -- * Creation
+
 -- | An array with no elements.
 --
 -- >>> empty
@@ -663,7 +664,7 @@ imap f a = zipWith f (indices (shape a)) a
 -- >>> rowWise indexes [1,0] a
 -- UnsafeArray [4] [12,13,14,15]
 rowWise :: (Dims -> [x] -> Array a -> Array a) -> [x] -> Array a -> Array a
-rowWise f xs a = f [0..(S.rank xs - 1)] xs a
+rowWise f xs a = f [0 .. (S.rank xs - 1)] xs a
 
 -- | Apply a function that takes dimensions & parameters and applies a parameter list to the the last dimensions (in reverse). ie
 --
@@ -907,7 +908,7 @@ takes ::
 takes ds xs a = backpermute dsNew (List.zipWith (+) start) a
   where
     dsNew = setDims ds xsAbs
-    start = List.zipWith (\x s -> bool 0 (s + x) (x<0)) (setDims ds xs (replicate (rank a) 0)) (shape a)
+    start = List.zipWith (\x s -> bool 0 (s + x) (x < 0)) (setDims ds xs (replicate (rank a) 0)) (shape a)
     xsAbs = fmap abs xs
 
 -- | Drops the top-most elements. Negative values drop the bottom-most.
@@ -950,7 +951,7 @@ slices ::
   [Int] ->
   Array a ->
   Array a
-slices ds os ls a = dimsWise (\d (o,l) -> slice d o l) ds (List.zip os ls) a
+slices ds os ls a = dimsWise (\d (o, l) -> slice d o l) ds (List.zip os ls) a
 
 -- | Select the first element along the supplied dimensions
 --
@@ -1014,7 +1015,6 @@ extracts ds a = tabulate (getDims ds (shape a)) go
 -- >>> pretty $ reduces [0,2] sum a
 -- [[12,15,18,21],
 --  [48,51,54,57]]
---
 reduces ::
   Dims ->
   (Array a -> b) ->
@@ -1275,7 +1275,6 @@ contract ds f a = f . diag <$> extracts (exceptDims ds (shape a)) a
 -- With full laziness, this computation would be equivalent to:
 --
 -- > f . diag <$> extracts ds' (expand g a b)
---
 prod ::
   Dims ->
   Dims ->
@@ -1340,8 +1339,7 @@ dot f g a b = contract [r - 1, r] f (expand g a b)
 -- >>> pretty $ mult m v
 -- [5,14]
 mult ::
-  ( Num a
-  ) =>
+  (Num a) =>
   Array a ->
   Array a ->
   Array a
@@ -1444,7 +1442,7 @@ cut ::
   [Int] ->
   Array a ->
   Array a
-cut s' a = bool (error "bad cut") (tabulate s' (index a'))  (isSubset s' (shape a))
+cut s' a = bool (error "bad cut") (tabulate s' (index a')) (isSubset s' (shape a))
   where
     a' = rerank (S.rank s') a
 
@@ -1636,7 +1634,7 @@ inflate d n a = backpermute (insertDim d n) (deleteDim d) a
 --  [[12,0,13,0,14,0,15],
 --   [16,0,17,0,18,0,19],
 --   [20,0,21,0,22,0,23]]]
-intercalate:: Dim -> Array a -> Array a -> Array a
+intercalate :: Dim -> Array a -> Array a -> Array a
 intercalate d i a = joins [d] $ asArray (List.intersperse i (arrayAs (extracts [d] a)))
 
 -- | Intersperse an element along dimensions.
@@ -1820,7 +1818,6 @@ uncons a = (heads [0] a', tails [0] a')
   where
     a' = asSingleton a
 
-
 -- | Convenience pattern for row extraction and consolidation at the beginning of an Array.
 --
 -- >>> (x:<xs) = array [4] [0..3]
@@ -1889,7 +1886,7 @@ infix 5 :>
 --  [[9,8,1,0],
 --   [2,2,8,2],
 --   [2,8,0,6]]]
-uniform :: (StatefulGen g m, UniformRange a) => g -> [Int] -> (a,a) -> m (Array a)
+uniform :: (StatefulGen g m, UniformRange a) => g -> [Int] -> (a, a) -> m (Array a)
 uniform g ds r = do
   v <- V.replicateM (S.size ds) (uniformRM r g)
   pure $ UnsafeArray ds v
@@ -1942,7 +1939,8 @@ invtri a = i
 chol :: (Floating a) => Array a -> Array a
 chol a =
   let l =
-        tabulate (shape a)
+        tabulate
+          (shape a)
           ( \[i, j] ->
               bool
                 ( 1
@@ -1957,7 +1955,7 @@ chol a =
                 ( sqrt
                     ( index a [i, i]
                         - sum
-                          ( (\k -> index l [j, k] ^ (2::Int))
+                          ( (\k -> index l [j, k] ^ (2 :: Int))
                               <$> [0 .. (j - 1)]
                           )
                     )
@@ -1965,4 +1963,3 @@ chol a =
                 (i == j)
           )
    in l
-

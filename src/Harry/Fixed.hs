@@ -74,6 +74,7 @@ module Harry.Fixed
     undiag,
 
     -- * Operations
+
     -- ** Element-level operators
     zipWith,
     modify,
@@ -191,35 +192,34 @@ module Harry.Fixed
     invtri,
     inverse,
     chol,
-
-)
+  )
 where
 
+import Data.Bool
 import Data.Distributive (Distributive (..))
+import Data.Foldable hiding (find, length, minimum)
 import Data.Functor.Classes
 import Data.Functor.Rep
+import Data.List qualified as List
+import Data.Maybe
 import Data.Vector qualified as V
-import Fcf hiding (type (&&), type (+), type (-), type (++))
+import Fcf hiding (type (&&), type (+), type (++), type (-))
+import Fcf qualified
 import Fcf.Data.List
-import qualified Fcf
+import GHC.Generics
 import GHC.TypeNats
 import Harry.Array qualified as A
-import Harry.Shape hiding (concatenate, rank, size, asScalar, asSingleton, squeeze, rotate, reorder, rerank, range)
+import Harry.Shape hiding (asScalar, asSingleton, concatenate, range, rank, reorder, rerank, rotate, size, squeeze)
 import Harry.Shape qualified as S
-import Prelude as P hiding (take, drop, zipWith, sequence, length, repeat, cycle)
-import Prelude qualified
+import Harry.Sort
 import Prettyprinter hiding (dot, fill)
-import Data.List qualified as List
 import System.Random hiding (uniform)
 import System.Random.Stateful hiding (uniform)
-import Unsafe.Coerce
-import Harry.Sort
 import Test.QuickCheck hiding (tabulate, vector)
 import Test.QuickCheck.Instances.Natural ()
-import Data.Maybe
-import Data.Bool
-import Data.Foldable hiding (minimum, find, length)
-import GHC.Generics
+import Unsafe.Coerce
+import Prelude as P hiding (cycle, drop, length, repeat, sequence, take, zipWith)
+import Prelude qualified
 
 -- $setup
 --
@@ -417,15 +417,17 @@ unsafeModifyVector f a = unsafeArray (asVector (f (vectorAs (asVector a))))
 -- | Representation of an index into a shape (a type-level [Nat]). The index is a dimension of the shape.
 type Dim = SNat
 
-pattern Dim :: () => KnownNat n => SNat n
+pattern Dim :: () => (KnownNat n) => SNat n
 pattern Dim = SNat
+
 {-# COMPLETE Dim #-}
 
 -- | Representation of indexes into a shape (a type-level [Nat]). The indexes are dimensions of the shape.
 type Dims = SNats
 
-pattern Dims :: () => KnownNats ns => SNats ns
+pattern Dims :: () => (KnownNats ns) => SNats ns
 pattern Dims = SNats
+
 {-# COMPLETE Dims #-}
 
 -- | A fixed Array with a hidden shape.
@@ -435,15 +437,13 @@ data SomeArray a = forall s. SomeArray (SNats s) (Array s a)
 
 deriving instance (Show a) => Show (SomeArray a)
 
-instance Functor SomeArray
-  where
-    fmap f (SomeArray sn a) = SomeArray sn (fmap f a)
+instance Functor SomeArray where
+  fmap f (SomeArray sn a) = SomeArray sn (fmap f a)
 
-instance Foldable SomeArray
-  where
-    foldMap f (SomeArray _ a) = foldMap f a
+instance Foldable SomeArray where
+  foldMap f (SomeArray _ a) = foldMap f a
 
-someArray :: forall s t a. FromVector t a => SNats s -> t -> SomeArray a
+someArray :: forall s t a. (FromVector t a) => SNats s -> t -> SomeArray a
 someArray s t = SomeArray s (Array (asVector t))
 
 -- |
@@ -471,7 +471,7 @@ toDynamic a = A.array (shape a) (asVector a)
 with ::
   forall a r.
   A.Array a ->
-  (forall s. KnownNats s => Array s a -> r) ->
+  (forall s. (KnownNats s) => Array s a -> r) ->
   r
 with d f =
   withSomeSNats (fromIntegral <$> A.shape d) $ \(SNats :: SNats s) -> withKnownNats (SNats @s) (f (array @s (A.asVector d)))
@@ -599,6 +599,7 @@ asScalar :: (KnownNats s, KnownNats s', s' ~ Eval (AsScalar s)) => Array s a -> 
 asScalar = unsafeModifyShape
 
 -- * Creation
+
 -- | An array with no elements.
 --
 -- >>> toDynamic empty
@@ -719,12 +720,14 @@ imap f a = zipWith f indices a
 -- UnsafeArray [4] [12,13,14,15]
 rowWise ::
   forall a ds s s' xs proxy.
-  ( KnownNats s
-  , KnownNats ds
-  , ds ~ Eval (DimsOf xs)
+  ( KnownNats s,
+    KnownNats ds,
+    ds ~ Eval (DimsOf xs)
   ) =>
   (Dims ds -> proxy xs -> Array s a -> Array s' a) ->
-  proxy xs -> Array s a -> Array s' a
+  proxy xs ->
+  Array s a ->
+  Array s' a
 rowWise f xs a = f (Dims @ds) xs a
 
 -- | Apply a function that takes a (dimension,parameter) list and applies a parameter list to the the last dimensions (in reverse). ie
@@ -735,11 +738,14 @@ rowWise f xs a = f (Dims @ds) xs a
 -- UnsafeArray [2] [1,13]
 colWise ::
   forall a ds s s' xs proxy.
-  ( KnownNats s
-  , KnownNats ds
-  , ds ~ Eval (EndDimsOf xs s)) =>
+  ( KnownNats s,
+    KnownNats ds,
+    ds ~ Eval (EndDimsOf xs s)
+  ) =>
   (Dims ds -> proxy xs -> Array s a -> Array s' a) ->
-  proxy xs -> Array s a -> Array s' a
+  proxy xs ->
+  Array s a ->
+  Array s' a
 colWise f xs a = f (Dims @ds) xs a
 
 -- | Take the top-most elements across the specified dimension.
@@ -834,15 +840,15 @@ dropB _ _ a = unsafeBackpermute id a
 --  [15,19,23]]
 select ::
   forall d a p s s'.
-  (KnownNats s,
-   KnownNats s',
-   s' ~ Eval (DeleteDim d s),
-   p ~ Eval (GetDim d s)
+  ( KnownNats s,
+    KnownNats s',
+    s' ~ Eval (DeleteDim d s),
+    p ~ Eval (GetDim d s)
   ) =>
   Dim d ->
   Fin p ->
   Array s a ->
-  Array  s' a
+  Array s' a
 select Dim p a = unsafeBackpermute (S.insertDim (valueOf @d) (fromFin p)) a
 
 -- | Insert along a dimension at a position.
@@ -858,12 +864,12 @@ select Dim p a = unsafeBackpermute (S.insertDim (valueOf @d) (fromFin p)) a
 -- UnsafeArray [2] [2,1]
 insert ::
   forall s' s si d p a.
-  (KnownNats s,
-   KnownNats si,
-   KnownNats s',
-   s' ~ Eval (IncAt d s),
-   p ~ Eval (GetDim d s),
-   True ~ Eval (InsertOk d s si)
+  ( KnownNats s,
+    KnownNats si,
+    KnownNats s',
+    s' ~ Eval (IncAt d s),
+    p ~ Eval (GetDim d s),
+    True ~ Eval (InsertOk d s si)
   ) =>
   Dim d ->
   Fin p ->
@@ -876,7 +882,8 @@ insert Dim i a b = tabulate go
       | getDim d s' == fromFin i = index b (UnsafeFins (deleteDim d s'))
       | getDim d s' < fromFin i = index a (UnsafeFins s')
       | otherwise = index a (UnsafeFins (decAt d s'))
-      where s' = fromFins s
+      where
+        s' = fromFins s
     d = valueOf @d
 
 -- | Delete along a dimension at a position.
@@ -890,10 +897,11 @@ insert Dim i a b = tabulate go
 --   [20,21,22]]]
 delete ::
   forall d s s' p a.
-  (KnownNats s,
-   KnownNats s',
-   s' ~ Eval (DecAt d s),
-   p ~ 1 + Eval (GetDim d s)) =>
+  ( KnownNats s,
+    KnownNats s',
+    s' ~ Eval (DecAt d s),
+    p ~ 1 + Eval (GetDim d s)
+  ) =>
   Dim d ->
   Fin p ->
   Array s a ->
@@ -974,10 +982,11 @@ concatenate Dim a0 a1 = tabulate (go . fromFins)
         (index a0 (UnsafeFins s))
         ( index
             a1
-            ( UnsafeFins $ insertDim
-                d'
-                (getDim d' s - getDim d' ds0)
-                (deleteDim d' s)
+            ( UnsafeFins $
+                insertDim
+                  d'
+                  (getDim d' s - getDim d' ds0)
+                  (deleteDim d' s)
             )
         )
         (getDim d' s >= getDim d' ds0)
@@ -991,12 +1000,13 @@ concatenate Dim a0 a1 = tabulate (go . fromFins)
 --  [4,5,6]]
 -- >>> couple (toScalar @Int 0) (toScalar 1)
 -- [0,1]
-couple :: forall a s s' se.
-  (KnownNats s,
-   KnownNats s',
-   KnownNats se,
-   s' ~ Eval (Concatenate 0 se se),
-   se ~ Eval (InsertDim 0 1 s)
+couple ::
+  forall a s s' se.
+  ( KnownNats s,
+    KnownNats s',
+    KnownNats se,
+    s' ~ Eval (Concatenate 0 se se),
+    se ~ Eval (InsertDim 0 1 s)
   ) =>
   Array s a -> Array s a -> Array s' a
 couple a a' = concatenate (Dim @0) (elongate (Dim @0) a) (elongate (Dim @0) a')
@@ -1012,10 +1022,11 @@ couple a a' = concatenate (Dim @0) (elongate (Dim @0) a) (elongate (Dim @0) a')
 --   [21,22]]]
 slice ::
   forall a d off l s s'.
-  (KnownNats s,
-   KnownNats s',
-   s' ~ Eval (SetDim d l s),
-   Eval (SliceOk d off l s) ~ True) =>
+  ( KnownNats s,
+    KnownNats s',
+    s' ~ Eval (SetDim d l s),
+    Eval (SliceOk d off l s) ~ True
+  ) =>
   Dim d ->
   SNat off ->
   SNat l ->
@@ -1170,13 +1181,14 @@ indexesT ds _ a = indexes ds (UnsafeFins $ valuesOf @xs) a
 --   [21,22]]]
 slices ::
   forall a ds ls offs s s'.
-  (KnownNats s,
-   KnownNats s',
-   KnownNats ds,
-   KnownNats ls,
-   KnownNats offs,
-   Eval (SlicesOk ds offs ls s) ~ True,
-   Eval (SetDims ds ls s) ~ s') =>
+  ( KnownNats s,
+    KnownNats s',
+    KnownNats ds,
+    KnownNats ls,
+    KnownNats offs,
+    Eval (SlicesOk ds offs ls s) ~ True,
+    Eval (SetDims ds ls s) ~ s'
+  ) =>
   Dims ds ->
   SNats offs ->
   SNats ls ->
@@ -1195,7 +1207,8 @@ heads ::
   ( KnownNats s,
     KnownNats s',
     KnownNats ds,
-    s' ~ Eval (DeleteDims ds s)) =>
+    s' ~ Eval (DeleteDims ds s)
+  ) =>
   Dims ds ->
   Array s a ->
   Array s' a
@@ -1290,7 +1303,6 @@ extracts ds a = tabulate (\s -> indexes ds s a)
 -- >>> pretty $ reduces (Dims @[0,2]) sum a
 -- [[12,15,18,21],
 --  [48,51,54,57]]
---
 reduces ::
   forall ds st si so a b.
   ( KnownNats st,
@@ -1314,11 +1326,12 @@ reduces ds f a = fmap f (extracts ds a)
 -- True
 joins ::
   forall a ds si so st.
-  (KnownNats ds,
-   KnownNats st,
-   KnownNats si,
-   KnownNats so,
-   Eval (InsertDims ds so si) ~ st) =>
+  ( KnownNats ds,
+    KnownNats st,
+    KnownNats si,
+    KnownNats so,
+    Eval (InsertDims ds so si) ~ st
+  ) =>
   Dims ds ->
   Array so (Array si a) ->
   Array st a
@@ -1332,12 +1345,12 @@ joins _ a = tabulate go
 -- True
 join ::
   forall a si so st ds.
-  (KnownNats st,
-   KnownNats si,
-   KnownNats so,
-   KnownNats ds,
-   ds ~ Eval (DimsOf so),
-   st ~ Eval (InsertDims ds so si)
+  ( KnownNats st,
+    KnownNats si,
+    KnownNats so,
+    KnownNats ds,
+    ds ~ Eval (DimsOf so),
+    st ~ Eval (InsertDims ds so si)
   ) =>
   Array so (Array si a) ->
   Array st a
@@ -1354,14 +1367,14 @@ join a = joins (SNats @ds) a
 -- 5
 -- [(),(),(),(),(),()]
 traverses ::
-  (Applicative f,
-   KnownNats s,
-   KnownNats si,
-   KnownNats so,
-   si ~ Eval (GetDims ds s),
-   so ~ Eval (DeleteDims ds s),
-   s ~ Eval (InsertDims ds si so)
-   ) =>
+  ( Applicative f,
+    KnownNats s,
+    KnownNats si,
+    KnownNats so,
+    si ~ Eval (GetDims ds s),
+    so ~ Eval (DeleteDims ds s),
+    s ~ Eval (InsertDims ds si so)
+  ) =>
   Dims ds ->
   (a -> f b) ->
   Array s a ->
@@ -1462,7 +1475,8 @@ modifies ::
     KnownNats so,
     si ~ Eval (DeleteDims ds s),
     so ~ Eval (GetDims ds s),
-    s ~ Eval (InsertDims ds so si)) =>
+    s ~ Eval (InsertDims ds so si)
+  ) =>
   (Array si a -> Array si a) ->
   Dims ds ->
   Fins so ->
@@ -1494,7 +1508,9 @@ diffs ::
   ) =>
   Dims ds ->
   SNats ls ->
-  (Array si a -> Array si a -> Array si' b) -> Array st a -> Array st' b
+  (Array si a -> Array si a -> Array si' b) ->
+  Array st a ->
+  Array st' b
 diffs SNats xs f a = zips (Dims @ds) f (drops (Dims @ds) xs a) (dropBs (Dims @ds) xs a)
 
 -- | Product two arrays using the supplied binary function.
@@ -1599,7 +1615,6 @@ contract SNats f a = f . diag <$> extracts (Dims @ds') a
 -- With full laziness, this computation would be equivalent to:
 --
 -- > f . diag <$> extracts (Dims @ds') (expand g a b)
---
 prod ::
   forall a b c d s0 s1 so0 so1 si st ds0 ds1.
   ( KnownNats so0,
@@ -1721,10 +1736,12 @@ mult = dot sum (*)
 --
 -- >>> shape $ windows (Dims @[2,2]) (range @[4,3,2])
 -- [3,2,2,2,2]
-windows :: forall w s ws a.
+windows ::
+  forall w s ws a.
   ( KnownNats s,
     KnownNats ws,
-    ws ~ Eval (ExpandWindows w s)) =>
+    ws ~ Eval (ExpandWindows w s)
+  ) =>
   SNats w -> Array s a -> Array ws a
 windows SNats a = unsafeBackpermute (S.indexWindows (rankOf @w)) a
 
@@ -1738,20 +1755,20 @@ windows SNats a = unsafeBackpermute (S.indexWindows (rankOf @w)) a
 --  [False,False,True]]
 find ::
   forall s' si s a r i' re ws.
-  (Eq a,
-   KnownNats si,
-   KnownNats s,
-   KnownNats s',
-   KnownNats re,
-   KnownNats i',
-   KnownNat r,
-   KnownNats ws,
-   ws ~ Eval (ExpandWindows i' s),
-   r ~ Eval (Rank s),
-   i' ~ Eval (Rerank r si),
-   re ~ Eval (DimWindows ws s),
-   i' ~ Eval (DeleteDims re ws),
-   s' ~ Eval (GetDims re ws)
+  ( Eq a,
+    KnownNats si,
+    KnownNats s,
+    KnownNats s',
+    KnownNats re,
+    KnownNats i',
+    KnownNat r,
+    KnownNats ws,
+    ws ~ Eval (ExpandWindows i' s),
+    r ~ Eval (Rank s),
+    i' ~ Eval (Rerank r si),
+    re ~ Eval (DimWindows ws s),
+    i' ~ Eval (DeleteDims re ws),
+    s' ~ Eval (GetDims re ws)
   ) =>
   Array si a -> Array s a -> Array s' Bool
 find i a = xs
@@ -1771,20 +1788,20 @@ find i a = xs
 --  [False,False,False,False]]
 findNoOverlap ::
   forall s' si s a r i' re ws.
-  (Eq a,
-   KnownNats si,
-   KnownNats s,
-   KnownNats s',
-   KnownNats re,
-   KnownNats i',
-   KnownNat r,
-   KnownNats ws,
-   ws ~ Eval (ExpandWindows i' s),
-   r ~ Eval (Rank s),
-   i' ~ Eval (Rerank r si),
-   re ~ Eval (DimWindows ws s),
-   i' ~ Eval (DeleteDims re ws),
-   s' ~ Eval (GetDims re ws)
+  ( Eq a,
+    KnownNats si,
+    KnownNats s,
+    KnownNats s',
+    KnownNats re,
+    KnownNats i',
+    KnownNat r,
+    KnownNats ws,
+    ws ~ Eval (ExpandWindows i' s),
+    r ~ Eval (Rank s),
+    i' ~ Eval (Rerank r si),
+    re ~ Eval (DimWindows ws s),
+    i' ~ Eval (DeleteDims re ws),
+    s' ~ Eval (GetDims re ws)
   ) =>
   Array si a -> Array s a -> Array s' Bool
 findNoOverlap i a = r
@@ -1802,13 +1819,13 @@ findNoOverlap i a = r
 -- True
 isPrefixOf ::
   forall s' s r a.
-  (Eq a,
-   KnownNats s,
-   KnownNats s',
-   KnownNat r,
-   KnownNats (Eval (Rerank r s)),
-   True ~ Eval (IsSubset s' s),
-   r ~ Eval (Rank s')
+  ( Eq a,
+    KnownNats s,
+    KnownNats s',
+    KnownNat r,
+    KnownNats (Eval (Rerank r s)),
+    True ~ Eval (IsSubset s' s),
+    r ~ Eval (Rank s')
   ) =>
   Array s' a -> Array s a -> Bool
 isPrefixOf p a = p == cut a
@@ -1819,13 +1836,14 @@ isPrefixOf p a = p == cut a
 -- True
 isSuffixOf ::
   forall s' s r a.
-  (Eq a,
-   KnownNats s,
-   KnownNats s',
-   KnownNat r,
-   KnownNats (Eval (Rerank r s)),
-   r ~ Eval (Rank s'),
-   True ~ Eval (IsSubset s' s)) =>
+  ( Eq a,
+    KnownNats s,
+    KnownNats s',
+    KnownNat r,
+    KnownNats (Eval (Rerank r s)),
+    r ~ Eval (Rank s'),
+    True ~ Eval (IsSubset s' s)
+  ) =>
   Array s' a -> Array s a -> Bool
 isSuffixOf p a = p == cutSuffix a
 
@@ -1835,20 +1853,20 @@ isSuffixOf p a = p == cutSuffix a
 -- True
 isInfixOf ::
   forall s' si s a r i' re ws.
-  (Eq a,
-   KnownNats si,
-   KnownNats s,
-   KnownNats s',
-   KnownNats re,
-   KnownNats i',
-   KnownNat r,
-   KnownNats ws,
-   ws ~ Eval (ExpandWindows i' s),
-   r ~ Eval (Rank s),
-   i' ~ Eval (Rerank r si),
-   re ~ Eval (DimWindows ws s),
-   i' ~ Eval (DeleteDims re ws),
-   s' ~ Eval (GetDims re ws)
+  ( Eq a,
+    KnownNats si,
+    KnownNats s,
+    KnownNats s',
+    KnownNats re,
+    KnownNats i',
+    KnownNat r,
+    KnownNats ws,
+    ws ~ Eval (ExpandWindows i' s),
+    r ~ Eval (Rank s),
+    i' ~ Eval (Rerank r si),
+    re ~ Eval (DimWindows ws s),
+    i' ~ Eval (DeleteDims re ws),
+    s' ~ Eval (GetDims re ws)
   ) =>
   Array si a -> Array s a -> Bool
 isInfixOf p a = or $ find p a
@@ -1863,8 +1881,9 @@ isInfixOf p a = or $ find p a
 -- [1,2,3]
 fill ::
   forall s' a s.
-  (KnownNats s,
-   KnownNats s') =>
+  ( KnownNats s,
+    KnownNats s'
+  ) =>
   a -> Array s a -> Array s' a
 fill x (Array v) = Array (V.take (S.size (valuesOf @s')) (v <> V.replicate (S.size (valuesOf @s') - V.length v) x))
 
@@ -1874,12 +1893,12 @@ fill x (Array v) = Array (V.take (S.size (valuesOf @s')) (v <> V.replicate (S.si
 -- UnsafeArray [2] [0,1]
 cut ::
   forall s' s r a.
-  (KnownNats s,
-   KnownNats s',
-   KnownNat r,
-   KnownNats (Eval (Rerank r s)),
-   True ~ Eval (IsSubset s' s),
-   r ~ Eval (Rank s')
+  ( KnownNats s,
+    KnownNats s',
+    KnownNat r,
+    KnownNats (Eval (Rerank r s)),
+    True ~ Eval (IsSubset s' s),
+    r ~ Eval (Rank s')
   ) =>
   Array s a ->
   Array s' a
@@ -1891,12 +1910,13 @@ cut a = unsafeBackpermute id (rerank (SNat @r) a)
 -- UnsafeArray [2,2] [18,19,22,23]
 cutSuffix ::
   forall s' s a r.
-  (KnownNats s,
-   KnownNats s',
-   KnownNat r,
-   KnownNats (Eval (Rerank r s)),
-   r ~ Eval (Rank s'),
-   True ~ Eval (IsSubset s' s)) =>
+  ( KnownNats s,
+    KnownNats s',
+    KnownNat r,
+    KnownNats (Eval (Rerank r s)),
+    r ~ Eval (Rank s'),
+    True ~ Eval (IsSubset s' s)
+  ) =>
   Array s a ->
   Array s' a
 cutSuffix a = unsafeBackpermute (List.zipWith (+) diffDim) a'
@@ -1910,11 +1930,12 @@ cutSuffix a = unsafeBackpermute (List.zipWith (+) diffDim) a'
 -- UnsafeArray [5] [0,1,2,3,0]
 pad ::
   forall s' a s r.
-  (KnownNats s,
-   KnownNats s',
-   KnownNat r,
-   KnownNats (Eval (Rerank r s)),
-   r ~ Eval (Rank s')) =>
+  ( KnownNats s,
+    KnownNats s',
+    KnownNat r,
+    KnownNats (Eval (Rerank r s)),
+    r ~ Eval (Rank s')
+  ) =>
   a ->
   Array s a ->
   Array s' a
@@ -1932,11 +1953,12 @@ pad d a = tabulate (\s -> bool d (index a' (unsafeCoerce s)) (fromFins s `S.isFi
 --  [0,2,3]]
 lpad ::
   forall s' a s r.
-  (KnownNats s,
-   KnownNats s',
-   KnownNat r,
-   KnownNats (Eval (Rerank r s)),
-   r ~ Eval (Rank s')) =>
+  ( KnownNats s,
+    KnownNats s',
+    KnownNat r,
+    KnownNats (Eval (Rerank r s)),
+    r ~ Eval (Rank s')
+  ) =>
   a ->
   Array s a ->
   Array s' a
@@ -1982,9 +2004,9 @@ reshape = unsafeBackpermute (shapen s . flatten s')
 -- [0]
 flat ::
   forall s' s a.
-  ( KnownNats s
-  , KnownNats s'
-  , s' ~ '[Eval (Size s)]
+  ( KnownNats s,
+    KnownNats s',
+    s' ~ '[Eval (Size s)]
   ) =>
   Array s a ->
   Array s' a
@@ -2001,9 +2023,10 @@ flat a = unsafeModifyShape a
 -- > repeat ds (toScalar x) == konst ds x
 repeat ::
   forall s' s a.
-  (KnownNats s,
-   KnownNats s',
-   Eval (IsPrefixOf s s') ~ True) =>
+  ( KnownNats s,
+    KnownNats s',
+    Eval (IsPrefixOf s s') ~ True
+  ) =>
   Array s a ->
   Array s' a
 repeat a = unsafeBackpermute (List.drop (S.rank (valuesOf @s') - rank a)) a
@@ -2017,8 +2040,9 @@ repeat a = unsafeBackpermute (List.drop (S.rank (valuesOf @s') - rank a)) a
 --   [1,2]]]
 cycle ::
   forall s' s a.
-  (KnownNats s,
-   KnownNats s') =>
+  ( KnownNats s,
+    KnownNats s'
+  ) =>
   Array s a ->
   Array s' a
 cycle a = unsafeBackpermute (S.shapen (shape a) . (`mod` size a) . S.flatten (valuesOf @s')) a
@@ -2033,9 +2057,10 @@ cycle a = unsafeBackpermute (S.shapen (shape a) . (`mod` size a) . S.flatten (va
 -- > flat == rerank 1
 rerank ::
   forall r s s' a.
-  (KnownNats s,
-   KnownNats s',
-   s' ~ Eval (Rerank r s)) =>
+  ( KnownNats s,
+    KnownNats s',
+    s' ~ Eval (Rerank r s)
+  ) =>
   SNat r -> Array s a -> Array s' a
 rerank _ a = unsafeModifyShape a
 
@@ -2052,9 +2077,9 @@ rerank _ a = unsafeModifyShape a
 --   [15,19,23]]]
 reorder ::
   forall ds s s' a.
-  (KnownNats s,
-   KnownNats s',
-   s' ~ Eval (Reorder s ds)
+  ( KnownNats s,
+    KnownNats s',
+    s' ~ Eval (Reorder s ds)
   ) =>
   SNats ds ->
   Array s a ->
@@ -2101,9 +2126,10 @@ reorder SNats a = unsafeBackpermute (\s -> S.insertDims (valuesOf @ds) s []) a
 -- 1.0
 squeeze ::
   forall s t a.
-  (KnownNats s,
-   KnownNats t,
-   t ~ Eval (Squeeze s)) =>
+  ( KnownNats s,
+    KnownNats t,
+    t ~ Eval (Squeeze s)
+  ) =>
   Array s a ->
   Array t a
 squeeze = unsafeModifyShape
@@ -2115,9 +2141,10 @@ squeeze = unsafeModifyShape
 -- >>> toDynamic $ elongate (SNat @0) (toScalar 1)
 -- UnsafeArray [1] [1]
 elongate ::
-  (KnownNats s,
-   KnownNats s',
-   s' ~ Eval (InsertDim d 1 s)) =>
+  ( KnownNats s,
+    KnownNats s',
+    s' ~ Eval (InsertDim d 1 s)
+  ) =>
   Dim d ->
   Array s a ->
   Array s' a
@@ -2145,9 +2172,10 @@ transpose a = unsafeBackpermute List.reverse a
 --  [0,1,2]]
 inflate ::
   forall s' s d x a.
-  (KnownNats s,
-   KnownNats s',
-   s' ~ Eval (InsertDim d x s)) =>
+  ( KnownNats s,
+    KnownNats s',
+    s' ~ Eval (InsertDim d x s)
+  ) =>
   Dim d ->
   SNat x ->
   Array s a ->
@@ -2163,26 +2191,30 @@ inflate SNat _ a = unsafeBackpermute (S.deleteDim (valueOf @d)) a
 --  [[12,0,13,0,14,0,15],
 --   [16,0,17,0,18,0,19],
 --   [20,0,21,0,22,0,23]]]
-intercalate::
+intercalate ::
   forall d ds n n' s si st a.
-  ( KnownNats s
-  , KnownNats si
-  , KnownNats st
-  , KnownNats ds
-  , KnownNat n
-  , KnownNat n'
-  , ds ~ '[d]
-  , si ~ Eval (DeleteDim d s)
-  , n ~ Eval (GetDim d s)
-  , n' ~ Eval ((Fcf.-) (Eval ((Fcf.+) n n)) 1)
-  , st ~ Eval (InsertDim d n' si)
+  ( KnownNats s,
+    KnownNats si,
+    KnownNats st,
+    KnownNats ds,
+    KnownNat n,
+    KnownNat n',
+    ds ~ '[d],
+    si ~ Eval (DeleteDim d s),
+    n ~ Eval (GetDim d s),
+    n' ~ Eval ((Fcf.-) (Eval ((Fcf.+) n n)) 1),
+    st ~ Eval (InsertDim d n' si)
   ) =>
   Dim d -> Array si a -> Array s a -> Array st a
 intercalate SNat i a =
-  joins (Dims @ds)
-  (vector @n'
-  (List.intersperse i
-  (toList (extracts (Dims @ds) a))))
+  joins
+    (Dims @ds)
+    ( vector @n'
+        ( List.intersperse
+            i
+            (toList (extracts (Dims @ds) a))
+        )
+    )
 
 -- | Intersperse an element along dimensions.
 --
@@ -2195,17 +2227,17 @@ intercalate SNat i a =
 --   [20,0,21,0,22,0,23]]]
 intersperse ::
   forall d ds n n' s si st a.
-  ( KnownNats s
-  , KnownNats si
-  , KnownNats st
-  , KnownNats ds
-  , KnownNat n
-  , KnownNat n'
-  , ds ~ '[d]
-  , si ~ Eval (DeleteDim d s)
-  , n ~ Eval (GetDim d s)
-  , n' ~ n + n - 1
-  , st ~ Eval (InsertDim d n' si)
+  ( KnownNats s,
+    KnownNats si,
+    KnownNats st,
+    KnownNats ds,
+    KnownNat n,
+    KnownNat n',
+    ds ~ '[d],
+    si ~ Eval (DeleteDim d s),
+    n ~ Eval (GetDim d s),
+    n' ~ n + n - 1,
+    st ~ Eval (InsertDim d n' si)
   ) =>
   Dim d -> a -> Array s a -> Array st a
 intersperse (SNat :: SNat d) x a = intercalate (SNat @d) (konst @si x) a
@@ -2219,9 +2251,10 @@ intersperse (SNat :: SNat d) x a = intercalate (SNat @d) (konst @si x) a
 --  [3,7,11,15,19,23]]
 concats ::
   forall s s' newd ds a.
-  (KnownNats s,
-   KnownNats s',
-   s' ~ Eval (ConcatDims ds newd s)) =>
+  ( KnownNats s,
+    KnownNats s',
+    s' ~ Eval (ConcatDims ds newd s)
+  ) =>
   Dims ds ->
   SNat newd ->
   Array s a ->
@@ -2259,8 +2292,9 @@ reverses SNats a = unsafeBackpermute (reverseIndex (valuesOf @ds) (shape a)) a
 --   [16,17,18,19]]]
 rotates ::
   forall a ds s.
-  (KnownNats s,
-   True ~ Eval (IsDims ds s)) =>
+  ( KnownNats s,
+    True ~ Eval (IsDims ds s)
+  ) =>
   Dims ds ->
   [Int] ->
   Array s a ->
@@ -2280,13 +2314,13 @@ rotates SNats rs a = unsafeBackpermute (rotatesIndex (valuesOf @ds) rs (valuesOf
 --  [3,4]]
 sorts ::
   forall ds s a si so.
-  (Ord a,
-   KnownNats s,
-   KnownNats si,
-   KnownNats so,
-   si ~ Eval (DeleteDims ds s),
-   so ~ Eval (GetDims ds s),
-   s ~ Eval (InsertDims ds so si)
+  ( Ord a,
+    KnownNats s,
+    KnownNats si,
+    KnownNats so,
+    si ~ Eval (DeleteDims ds s),
+    so ~ Eval (GetDims ds s),
+    s ~ Eval (InsertDims ds so si)
   ) =>
   Dims ds -> Array s a -> Array s a
 sorts SNats a = joins (Dims @ds) $ unsafeModifyVector sortV (extracts (Dims @ds) a)
@@ -2298,13 +2332,13 @@ sorts SNats a = joins (Dims @ds) $ unsafeModifyVector sortV (extracts (Dims @ds)
 -- UnsafeArray [2,2] [2,3,1,4]
 sortsBy ::
   forall ds s a b si so.
-  (Ord b,
-   KnownNats s,
-   KnownNats si,
-   KnownNats so,
-   si ~ Eval (DeleteDims ds s),
-   so ~ Eval (GetDims ds s),
-   s ~ Eval (InsertDims ds so si)
+  ( Ord b,
+    KnownNats s,
+    KnownNats si,
+    KnownNats so,
+    si ~ Eval (DeleteDims ds s),
+    so ~ Eval (GetDims ds s),
+    s ~ Eval (InsertDims ds so si)
   ) =>
   Dims ds -> (Array si a -> Array si b) -> Array s a -> Array s a
 sortsBy SNats c a = joins (Dims @ds) $ unsafeModifyVector (sortByV c) (extracts (Dims @ds) a)
@@ -2315,13 +2349,13 @@ sortsBy SNats c a = joins (Dims @ds) $ unsafeModifyVector (sortByV c) (extracts 
 -- [1,0]
 orders ::
   forall ds s a si so.
-  (Ord a,
-   KnownNats s,
-   KnownNats si,
-   KnownNats so,
-   si ~ Eval (DeleteDims ds s),
-   so ~ Eval (GetDims ds s),
-   s ~ Eval (InsertDims ds so si)
+  ( Ord a,
+    KnownNats s,
+    KnownNats si,
+    KnownNats so,
+    si ~ Eval (DeleteDims ds s),
+    so ~ Eval (GetDims ds s),
+    s ~ Eval (InsertDims ds so si)
   ) =>
   Dims ds -> Array s a -> Array so Int
 orders SNats a = unsafeModifyVector orderV (extracts (Dims @ds) a)
@@ -2333,13 +2367,13 @@ orders SNats a = unsafeModifyVector orderV (extracts (Dims @ds) a)
 -- [0,1]
 ordersBy ::
   forall ds s a b si so.
-  (Ord b,
-   KnownNats s,
-   KnownNats si,
-   KnownNats so,
-   si ~ Eval (DeleteDims ds s),
-   so ~ Eval (GetDims ds s),
-   s ~ Eval (InsertDims ds so si)
+  ( Ord b,
+    KnownNats s,
+    KnownNats si,
+    KnownNats so,
+    si ~ Eval (DeleteDims ds s),
+    so ~ Eval (GetDims ds s),
+    s ~ Eval (InsertDims ds so si)
   ) =>
   Dims ds -> (Array si a -> Array si b) -> Array s a -> Array so Int
 ordersBy SNats c a = unsafeModifyVector (orderByV c) (extracts (Dims @ds) a)
@@ -2354,22 +2388,22 @@ ordersBy SNats c a = unsafeModifyVector (orderByV c) (extracts (Dims @ds) a)
 --  [2,5,8]]
 telecasts ::
   forall sa sb sc sia sib sic ma mb a b c soa sob ds.
-  (KnownNats sa,
-   KnownNats sb,
-   KnownNats sc,
-   KnownNats sia,
-   KnownNats sib,
-   KnownNats sic,
-   KnownNats soa,
-   KnownNats sob,
-   KnownNats ds,
-   ds ~ Eval (DimsOf soa),
-   sia ~ Eval (DeleteDims ma sa),
-   sib ~ Eval (DeleteDims mb sb),
-   soa ~ Eval (GetDims ma sa),
-   sob ~ Eval (GetDims mb sb),
-   soa ~ sob,
-   sc ~ Eval (InsertDims ds soa sic)
+  ( KnownNats sa,
+    KnownNats sb,
+    KnownNats sc,
+    KnownNats sia,
+    KnownNats sib,
+    KnownNats sic,
+    KnownNats soa,
+    KnownNats sob,
+    KnownNats ds,
+    ds ~ Eval (DimsOf soa),
+    sia ~ Eval (DeleteDims ma sa),
+    sib ~ Eval (DeleteDims mb sb),
+    soa ~ Eval (GetDims ma sa),
+    sob ~ Eval (GetDims mb sb),
+    soa ~ sob,
+    sc ~ Eval (InsertDims ds soa sic)
   ) =>
   SNats ma -> SNats mb -> (Array sia a -> Array sib b -> Array sic c) -> Array sa a -> Array sb b -> Array sc c
 telecasts SNats SNats f a b = join (zipWith f (extracts (SNats @ma) a) (extracts (SNats @mb) b))
@@ -2380,22 +2414,22 @@ telecasts SNats SNats f a b = join (zipWith f (extracts (SNats @ma) a) (extracts
 -- >>> pretty $ transmit (zipWith (+)) (toScalar 1) a
 -- [[1,2,3],
 --  [4,5,6]]
---
 transmit ::
   forall sa sb sc a b c ds sib sic sob.
-  (KnownNats sa,
-   KnownNats sb,
-   KnownNats sc,
-   KnownNats ds,
-   KnownNats sib,
-   KnownNats sic,
-   KnownNats sob,
-   ds ~ Eval (EnumFromTo (Eval (Rank sa)) (Eval (Rank sb) - 1)),
-   sib ~ Eval (DeleteDims ds sb),
-   sob ~ Eval (GetDims ds sb),
-   sb ~ Eval (InsertDims ds sob sib),
-   sc ~ Eval (InsertDims ds sob sic),
-   True ~ Eval (IsPrefixOf sa sb)) =>
+  ( KnownNats sa,
+    KnownNats sb,
+    KnownNats sc,
+    KnownNats ds,
+    KnownNats sib,
+    KnownNats sic,
+    KnownNats sob,
+    ds ~ Eval (EnumFromTo (Eval (Rank sa)) (Eval (Rank sb) - 1)),
+    sib ~ Eval (DeleteDims ds sb),
+    sob ~ Eval (GetDims ds sb),
+    sb ~ Eval (InsertDims ds sob sib),
+    sc ~ Eval (InsertDims ds sob sic),
+    True ~ Eval (IsPrefixOf sa sb)
+  ) =>
   (Array sa a -> Array sib b -> Array sic c) -> Array sa a -> Array sb b -> Array sc c
 transmit f a b = maps (Dims @ds) (f a) b
 
@@ -2408,8 +2442,9 @@ type Vector s a = Array '[s] a
 -- [2,3,4]
 vector ::
   forall n a t.
-  (FromVector t a,
-   KnownNat n) =>
+  ( FromVector t a,
+    KnownNat n
+  ) =>
   t ->
   Array '[n] a
 vector xs = array xs
@@ -2463,7 +2498,8 @@ cons =
 -- [[0,1],
 --  [2,3],
 --  [4,5]]
-snoc :: forall si s sl a.
+snoc ::
+  forall si s sl a.
   ( KnownNats si,
     KnownNats s,
     KnownNats sl,
@@ -2481,17 +2517,17 @@ snoc = append (SNat @0)
 -- (UnsafeArray [2] [0,1],UnsafeArray [2,2] [2,3,4,5])
 uncons ::
   forall a s sh st ls os ds.
-  (KnownNats s,
-   KnownNats sh,
-   KnownNats st,
-   ds ~ '[0],
-   sh ~ Eval (DeleteDims ds s),
-   KnownNats ls,
-   KnownNats os,
-   os ~ Eval (Replicate (Eval (Rank ds)) 1),
-   ls ~ Eval (GetLastPositions ds s),
-   Eval (SlicesOk ds os ls s) ~ True,
-   st ~ Eval (SetDims ds ls s)
+  ( KnownNats s,
+    KnownNats sh,
+    KnownNats st,
+    ds ~ '[0],
+    sh ~ Eval (DeleteDims ds s),
+    KnownNats ls,
+    KnownNats os,
+    os ~ Eval (Replicate (Eval (Rank ds)) 1),
+    ls ~ Eval (GetLastPositions ds s),
+    Eval (SlicesOk ds os ls s) ~ True,
+    st ~ Eval (SetDims ds ls s)
   ) =>
   Array s a -> (Array sh a, Array st a)
 uncons a = (heads (Dims @ds) a, tails (Dims @ds) a)
@@ -2515,7 +2551,8 @@ unsnoc ::
     ls ~ Eval (GetLastPositions ds s),
     si ~ Eval (SetDims ds ls s),
     sl ~ Eval (DeleteDims ds s)
-  ) => Array s a -> (Array si a, Array sl a)
+  ) =>
+  Array s a -> (Array si a, Array sl a)
 unsnoc a = (inits (Dims @ds) a, lasts (Dims @ds) a)
 
 -- | Convenience pattern for row extraction and consolidation at the beginning of an Array.
@@ -2529,19 +2566,20 @@ unsnoc a = (inits (Dims @ds) a, lasts (Dims @ds) a)
 -- UnsafeArray [4] [0,1,2,3]
 pattern (:<) ::
   forall s sh st a os ls ds.
-  (KnownNats s,
-   KnownNats sh,
-   KnownNats st,
-   True ~ Eval (InsertOk 0 st sh),
-   s ~ Eval (IncAt 0 st),
-   ds ~ '[0],
-   sh ~ Eval (DeleteDims ds s),
-   KnownNats ls,
-   KnownNats os,
-   Eval (SlicesOk ds os ls s) ~ True,
-   os ~ Eval (Replicate (Eval (Rank ds)) 1),
-   ls ~ Eval (GetLastPositions ds s),
-   st ~ Eval (SetDims ds ls s)) =>
+  ( KnownNats s,
+    KnownNats sh,
+    KnownNats st,
+    True ~ Eval (InsertOk 0 st sh),
+    s ~ Eval (IncAt 0 st),
+    ds ~ '[0],
+    sh ~ Eval (DeleteDims ds s),
+    KnownNats ls,
+    KnownNats os,
+    Eval (SlicesOk ds os ls s) ~ True,
+    os ~ Eval (Replicate (Eval (Rank ds)) 1),
+    ls ~ Eval (GetLastPositions ds s),
+    st ~ Eval (SetDims ds ls s)
+  ) =>
   Array sh a -> Array st a -> Array s a
 pattern x :< xs <- (uncons -> (x, xs))
   where
@@ -2562,22 +2600,22 @@ infix 5 :<
 -- UnsafeArray [4] [0,1,2,3]
 pattern (:>) ::
   forall si sl s a ds ls os.
-  (KnownNats si,
-   KnownNats sl,
-   KnownNats s,
-   True ~ Eval (InsertOk 0 si sl),
-   s ~ Eval (IncAt 0 si),
-   KnownNats ds,
-   KnownNats ls,
-   KnownNats os,
-   sl ~ Eval (DeleteDim 0 si),
-   ds ~ '[0],
-   Eval (SlicesOk ds os ls s) ~ True,
-   os ~ Eval (Replicate (Eval (Rank ds)) 0),
-   ls ~ Eval (GetLastPositions ds s),
-   si ~ Eval (SetDims ds ls s),
-   sl ~ Eval (DeleteDims ds s)
-   ) =>
+  ( KnownNats si,
+    KnownNats sl,
+    KnownNats s,
+    True ~ Eval (InsertOk 0 si sl),
+    s ~ Eval (IncAt 0 si),
+    KnownNats ds,
+    KnownNats ls,
+    KnownNats os,
+    sl ~ Eval (DeleteDim 0 si),
+    ds ~ '[0],
+    Eval (SlicesOk ds os ls s) ~ True,
+    os ~ Eval (Replicate (Eval (Rank ds)) 0),
+    ls ~ Eval (GetLastPositions ds s),
+    si ~ Eval (SetDims ds ls s),
+    sl ~ Eval (DeleteDims ds s)
+  ) =>
   Array si a -> Array sl a -> Array s a
 pattern xs :> x <- (unsnoc -> (xs, x))
   where
@@ -2603,7 +2641,9 @@ uniform ::
   forall s a g m.
   ( StatefulGen g m,
     UniformRange a,
-    KnownNats s) => g -> (a,a) -> m (Array s a)
+    KnownNats s
+  ) =>
+  g -> (a, a) -> m (Array s a)
 uniform g r = do
   v <- V.replicateM (S.size (valuesOf @s)) (uniformRM r g)
   pure $ array v
@@ -2620,7 +2660,6 @@ uniform g r = do
 -- [[49.36111111111111,-13.555555555555554,2.1111111111111107],
 --  [-13.555555555555554,3.7777777777777772,-0.5555555555555555],
 --  [2.1111111111111107,-0.5555555555555555,0.1111111111111111]]
---
 inverse :: (Eq a, Floating a, KnownNat m) => Matrix m m a -> Matrix m m a
 inverse a = mult (invtri (transpose (chol a))) (invtri (chol a))
 
@@ -2672,7 +2711,7 @@ chol a =
                 ( sqrt
                     ( unsafeIndex a [i, i]
                         - sum
-                          ( (\k -> unsafeIndex l [j, k] ^ (2::Int))
+                          ( (\k -> unsafeIndex l [j, k] ^ (2 :: Int))
                               <$> ([0 .. (j - 1)] :: [Int])
                           )
                     )
@@ -2680,4 +2719,3 @@ chol a =
                 (i == j)
           )
    in l
-
