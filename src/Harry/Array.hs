@@ -1,11 +1,8 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE RebindableSyntax #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# OPTIONS_GHC -Wno-x-partial #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 
 -- | Arrays with a dynamic shape (shape only known at runtime).
@@ -261,6 +258,8 @@ import Prelude as P hiding (cycle, drop, length, repeat, take, zip, zipWith)
 data Array a = UnsafeArray [Int] (V.Vector a)
   deriving stock (Generic)
   deriving stock (Eq, Ord, Show)
+
+type role Array representational
 
 instance Functor Array where
   fmap f = unsafeModifyVector (V.map f)
