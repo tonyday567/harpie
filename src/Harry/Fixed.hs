@@ -10,10 +10,10 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
--- | Arrays with a known shape at compile time.
+-- | Arrays with shape information and computations at a type-level.
 module Harry.Fixed
   ( -- * Usage
-    -- $setup
+    -- $usage
 
     -- * Fixed Arrays
     Array (..),
@@ -30,14 +30,12 @@ module Harry.Fixed
     Dims,
     pattern Dims,
 
-    -- * Sigma type
-    SomeArray (..),
-    someArray,
-
     -- * Conversion
     FromVector (..),
     toDynamic,
     with,
+    SomeArray (..),
+    someArray,
 
     -- * Shape Access
     shape,
@@ -123,7 +121,7 @@ module Harry.Fixed
     modifies,
     diffs,
 
-    -- ** Array expansion & contraction
+    -- * Array expansion & contraction
     expand,
     coexpand,
     contract,
@@ -226,6 +224,42 @@ import Prelude qualified
 -- >>> :set -XDataKinds
 -- >>> :set -Wno-type-defaults
 -- >>> :set -Wno-name-shadowing
+-- >>> import Prelude hiding (cycle, repeat, take, drop, zipWith, length)
+-- >>> import Harry.Fixed as F
+-- >>> import Harry.Shape qualified as S
+-- >>> import Harry.Shape (SNats (..), Fin (..), Fins (..))
+-- >>> import GHC.TypeNats
+-- >>> import Data.List qualified as List
+-- >>> import Prettyprinter hiding (dot,fill)
+-- >>> import Data.Functor.Rep
+-- >>> s = 1 :: Array '[] Int
+-- >>> s
+-- [1]
+-- >>> shape s
+-- []
+-- >>> pretty s
+-- 1
+-- >>> let v = range @'[3]
+-- >>> pretty v
+-- [0,1,2]
+-- >>> let m = range @[2,3]
+-- >>> pretty m
+-- [[0,1,2],
+--  [3,4,5]]
+-- >>> a = range @[2,3,4]
+-- >>> a
+-- [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
+-- >>> pretty a
+-- [[[0,1,2,3],
+--   [4,5,6,7],
+--   [8,9,10,11]],
+--  [[12,13,14,15],
+--   [16,17,18,19],
+--   [20,21,22,23]]]
+
+-- $usage
+--
+-- >>> :set -XDataKinds
 --
 -- Several names used in @harry@ conflict with [Prelude](https://hackage.haskell.org/package/base/docs/Prelude.html):
 --
@@ -235,20 +269,18 @@ import Prelude qualified
 --
 -- >>> import Harry.Fixed as F
 -- >>> import Harry.Shape qualified as S
--- >>> import Harry.Shape (SNats (..), Fin (..), Fins (..))
 --
--- An important base accounting of 'Array' shape is the singleton types 'SNat' (a type-level 'Natural' or 'Nat') from [GHC.TypeNats](https://hackage.haskell.org/package/base/docs/GHC-TypeNats.html) in base.
---
--- >>> import GHC.TypeNats
--- >>> import Data.List qualified as List
---
--- [@prettyprinter@](https://hackage.haskell.org/package/prettyprinter) is used to prettily render arrays to visualise shape information.
+-- [@prettyprinter@](https://hackage.haskell.org/package/prettyprinter) is used to prettily render arrays to better visualise shape.
 --
 -- >>> import Prettyprinter hiding (dot,fill)
 --
 -- The 'Representable' class from [@adjunctions@](https://hackage.haskell.org/package/adjunctions) is used heavily by the module.
 --
 -- >>> import Data.Functor.Rep
+--
+-- An important base accounting of 'Array' shape is the singleton types 'SNat' (a type-level 'Natural' or 'Nat') from [GHC.TypeNats](https://hackage.haskell.org/package/base/docs/GHC-TypeNats.html) in base.
+-- import GHC.TypeNats
+--
 --
 -- Examples of arrays:
 --
@@ -293,7 +325,7 @@ import Prelude qualified
 -- >>> toDynamic a
 -- UnsafeArray [2,3,4] [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
 
--- | A hyperrectangular (or multidimensional) array with a type-level shape
+-- | A hyperrectangular (or multidimensional) array with a type-level shape.
 --
 -- >>> array @[2,3,4] @Int [1..24]
 -- [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
@@ -377,7 +409,7 @@ instance
 -- > vectorAs . asVector == id
 -- > asVector . vectorAs == flat
 --
--- >>> asVector (array [0..5] :: Array [2,3] Int)
+-- >>> asVector (range @[2,3])
 -- [0,1,2,3,4,5]
 --
 -- >>> import Data.Vector qualified as V
@@ -399,7 +431,7 @@ instance FromVector (Array s a) a where
   asVector (Array v) = v
   vectorAs v = Array v
 
--- | Constructor of an array without shape validation.
+-- | Construct an array without shape validation.
 --
 -- >>> unsafeArray [0..4] :: Array [2,3] Int
 -- [0,1,2,3,4]
@@ -468,6 +500,33 @@ pattern Dims = SNats
 
 {-# COMPLETE Dims #-}
 
+-- | Convert to a dynamic array with shape at the value level.
+--
+-- >>> toDynamic a
+-- UnsafeArray [2,3,4] [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
+toDynamic :: (KnownNats s) => Array s a -> A.Array a
+toDynamic a = A.array (shape a) (asVector a)
+
+-- | Use a dynamic array in a fixed context.
+--
+-- >>> import qualified Harry.Array as A
+-- >>> with (A.range [2,3,4]) show
+-- "[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]"
+--
+-- This doesn't work for anything more complex where KnownNats need to be type computed:
+--
+-- >>> :t with (A.range [2,3,4]) (pretty . F.takes (Dims @'[0]) (S.SNats @'[1]))
+-- ...
+--     • Could not deduce ‘S.KnownNats (Fcf.Data.List.Drop_ 1 s)’
+-- ...
+with ::
+  forall a r.
+  A.Array a ->
+  (forall s. (KnownNats s) => Array s a -> r) ->
+  r
+with d f =
+  withSomeSNats (fromIntegral <$> A.shape d) $ \(SNats :: SNats s) -> withKnownNats (SNats @s) (f (array @s (A.asVector d)))
+
 -- | Sigma type for an 'Array'
 --
 -- A fixed Array where shape was unknown at runtime.
@@ -497,26 +556,6 @@ instance (Arbitrary a) => Arbitrary (SomeArray a) where
     let s' = Prelude.take 3 (getSmall <$> s)
     v <- V.replicateM (product (Prelude.fromIntegral <$> s')) arbitrary
     withSomeSNats s' $ \sn -> pure (someArray sn v)
-
--- | Convert to a dynamic array with shape at the value level.
---
--- >>> toDynamic a
--- UnsafeArray [2,3,4] [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
-toDynamic :: (KnownNats s) => Array s a -> A.Array a
-toDynamic a = A.array (shape a) (asVector a)
-
--- | Use a dynamic array in a fixed context.
---
--- >>> import qualified Harry.Array as A
--- >>> with (A.range [2,3,4]) show
--- "[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]"
-with ::
-  forall a r.
-  A.Array a ->
-  (forall s. (KnownNats s) => Array s a -> r) ->
-  r
-with d f =
-  withSomeSNats (fromIntegral <$> A.shape d) $ \(SNats :: SNats s) -> withKnownNats (SNats @s) (f (array @s (A.asVector d)))
 
 -- | Get shape of an Array as a value.
 --
@@ -555,7 +594,7 @@ length a = case shape a of
 
 -- | Is the Array empty (has zero number of elements).
 --
--- >>> isNull (array [] :: Array [1,0] ())
+-- >>> isNull (array [] :: Array [2,0] ())
 -- True
 -- >>> isNull (array [4] :: Array '[] Int)
 -- False
@@ -585,7 +624,7 @@ infixl 9 !
 -- >>> a !? [2,3,1]
 -- Nothing
 (!?) :: (KnownNats s) => Array s a -> [Int] -> Maybe a
-(!?) a xs = index a <$> toFins xs
+(!?) a xs = index a <$> safeFins xs
 
 infixl 9  !?
 
@@ -1236,7 +1275,7 @@ dropBs ::
   Array s' a
 dropBs _ _ a = unsafeBackpermute id a
 
--- | Select by an index along dimensions.
+-- | Select by dimensions and indexes.
 --
 -- >>> pretty $ indexes (Dims @[0,1]) (S.UnsafeFins [1,1]) a
 -- [16,17,18,19]
@@ -1587,7 +1626,7 @@ modifies ::
   Array s a
 modifies f SNats ps a = joins (Dims @ds) $ modify ps f (extracts (Dims @ds) a)
 
--- | Apply a binary function between successive slices, across dimensions and lags tuples
+-- | Apply a binary function between successive slices, across dimensions and lags.
 --
 -- >>> pretty $ diffs (Dims @'[1]) (S.SNats @'[1]) (zipWith (-)) a
 -- [[[4,4,4,4],
@@ -2099,7 +2138,7 @@ reshape = unsafeBackpermute (shapen s . flatten s')
     s = valuesOf @s
     s' = valuesOf @s'
 
--- | Make an Array single dimensional
+-- | Make an Array single dimensional.
 --
 -- >>> pretty $ flat (range @[2,2])
 -- [0,1,2,3]
@@ -2192,41 +2231,11 @@ reorder SNats a = unsafeBackpermute (\s -> S.insertDims (valuesOf @ds) s []) a
 -- | Remove single dimensions.
 --
 -- >>> let sq = array [1..24] :: Array '[2,1,3,4,1] Int
--- >>> pretty sq
--- [[[[[1],
---     [2],
---     [3],
---     [4]],
---    [[5],
---     [6],
---     [7],
---     [8]],
---    [[9],
---     [10],
---     [11],
---     [12]]]],
---  [[[[13],
---     [14],
---     [15],
---     [16]],
---    [[17],
---     [18],
---     [19],
---     [20]],
---    [[21],
---     [22],
---     [23],
---     [24]]]]]
--- >>> pretty $ squeeze sq
--- [[[1,2,3,4],
---   [5,6,7,8],
---   [9,10,11,12]],
---  [[13,14,15,16],
---   [17,18,19,20],
---   [21,22,23,24]]]
+-- >>> shape $ squeeze sq
+-- [2,3,4]
 --
--- >>> pretty $ squeeze (array [1] :: Array '[1,1] Double)
--- 1.0
+-- >>> shape $ squeeze (singleton 0)
+-- []
 squeeze ::
   forall s t a.
   ( KnownNats s,

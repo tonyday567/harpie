@@ -33,15 +33,19 @@ module Harry.Shape
     fin,
     safeFin,
     Fins (..),
-    toFins,
-    -- operators
+    fins,
+    safeFins,
+
+    -- * Shape Operators at value- and type- level.
     rank,
     Rank,
     range,
     Range,
     rerank,
     Rerank,
+    dimsOf,
     DimsOf,
+    endDimsOf,
     EndDimsOf,
     size,
     Size,
@@ -200,7 +204,6 @@ type role SNats nominal
 -- - The natsSing method of KnownNats
 -- - The SNats pattern
 -- - The withSomeSNats function
--- - The UnsafeSNats constructor
 --
 -- >>> :t SNats @[2,3,4]
 -- SNats @[2,3,4] :: KnownNats [2, 3, 4] => SNats [2, 3, 4]
@@ -304,7 +307,7 @@ someNatVals s =
 
 -- * shape primitives
 
--- | Supply the value-level of a 'KnownNats' as an [Int]
+-- | The value of a 'KnownNats'.
 --
 -- >>> valuesOf @[2,3,4]
 -- [2,3,4]
@@ -340,7 +343,8 @@ newtype Fin s
 instance Show (Fin n) where
   show (UnsafeFin x) = show x
 
--- | Construct a Fin
+-- | Construct a Fin.
+--
 -- Errors on out-of-bounds
 --
 -- >>> fin @2 1
@@ -374,15 +378,28 @@ newtype Fins s
 instance Show (Fins n) where
   show (UnsafeFins x) = show x
 
+-- | Construct a Fins.
+--
+-- Errors on out-of-bounds
+--
+-- >>> fins @[2,3,4] [1,2,3]
+-- [1,2,3]
+--
+-- >>> fins @[2,3,4] [1,2,5]
+-- *** Exception: value outside bounds
+-- ...
+fins :: forall s. (KnownNats s) => [Int] -> Fins s
+fins x = fromMaybe (error "value outside bounds") (safeFins x)
+
 -- | Construct a Fins safely.
 --
--- >>> toFins [1,2,3] :: Maybe (Fins [2,3,4])
+-- >>> safeFins [1,2,3] :: Maybe (Fins [2,3,4])
 -- Just [1,2,3]
 --
--- >>> toFins [2] :: Maybe (Fins '[2])
+-- >>> safeFins [2] :: Maybe (Fins '[2])
 -- Nothing
-toFins :: forall s. (KnownNats s) => [Int] -> Maybe (Fins s)
-toFins xs = bool Nothing (Just (UnsafeFins xs)) (isFins xs (valuesOf @s))
+safeFins :: forall s. (KnownNats s) => [Int] -> Maybe (Fins s)
+safeFins xs = bool Nothing (Just (UnsafeFins xs)) (isFins xs (valuesOf @s))
 
 -- | Number of dimensions
 --
@@ -442,7 +459,7 @@ rerank r xs =
   where
     r' = rank xs
 
--- | Create a new rank by adding 1s to the left, if the new rank is greater, or combining dimensions (from left to right) into rows, if the new rank is lower.
+-- | Create a new rank by adding ones to the left, if the new rank is greater, or combining dimensions (from left to right) into rows, if the new rank is lower.
 --
 -- >>> :k! Eval (Rerank 4 [2,3,4])
 -- ...
@@ -465,6 +482,13 @@ type instance
 
 -- | Enumerate the dimensions of a shape.
 --
+-- dimsOf [2,3,4]
+-- [0,1,2]
+dimsOf :: [Int] -> [Int]
+dimsOf s = range (rank s)
+
+-- | Enumerate the dimensions of a shape.
+--
 -- >>> :k! Eval (DimsOf [2,3,4])
 -- ...
 -- = [0, 1, 2]
@@ -475,6 +499,14 @@ type instance
     Eval (Range =<< Rank xs)
 
 -- | Enumerate the final dimensions of a shape.
+--
+-- >>> endDimsOf [1,0] [2,3,4]
+-- [2,1]
+endDimsOf :: [Int] -> [Int] -> [Int]
+endDimsOf xs s = take (rank xs) (List.reverse (dimsOf s))
+
+-- | Enumerate the final dimensions of a shape.
+--
 -- >>> :k! Eval (EndDimsOf [1,0] [2,3,4])
 -- ...
 -- = [2, 1]
@@ -503,7 +535,7 @@ data Size :: [Nat] -> Exp Nat
 
 type instance Eval (Size xs) = Eval (Foldr (Fcf.*) 1 xs)
 
--- | convert from n-dim shape list index to a flat index
+-- | Convert from a n-dimensional shape list index to a flat index, which, technically is the lexicographic position of the position in a row-major array.
 --
 -- >>> flatten [2,3,4] [1,1,1]
 -- 17
@@ -516,7 +548,7 @@ flatten _ [x'] = x'
 flatten ns xs = sum $ zipWith (*) xs (drop 1 $ scanr (*) 1 ns)
 {-# INLINE flatten #-}
 
--- | convert from a flat index to a shape index
+-- | Convert from a flat index to a shape index.
 --
 -- >>> shapen [2,3,4] 17
 -- [1,1,1]
@@ -795,6 +827,7 @@ type instance
       && Eval (LiftM2 TyEq (Rank xs) (Rank ds))
 
 -- | Is a value a valid dimension of a shape.
+--
 -- >>> isDim 2 [2,3,4]
 -- True
 -- >>> isDim 0 []
@@ -803,6 +836,7 @@ isDim :: Int -> [Int] -> Bool
 isDim d s = isFin d (rank s) || d == 0 && null s
 
 -- | Is a value a valid dimension of a shape.
+--
 -- >>> :k! Eval (IsDim 2 [2,3,4])
 -- ...
 -- = True
@@ -817,6 +851,7 @@ type instance
       || (0 == d && s == '[])
 
 -- | Are values valid dimensions of a shape.
+--
 -- >>> isDims [2,1] [2,3,4]
 -- True
 -- >>> isDims [0] []
@@ -839,6 +874,7 @@ type instance
     Eval (And =<< Map (Flip IsDim s) ds)
 
 -- | Get the last position of a dimension of a shape.
+--
 -- >>> lastPos 2 [2,3,4]
 -- 3
 -- >>> lastPos 0 []
@@ -848,6 +884,7 @@ lastPos d s =
   bool (getDim d s - 1) 0 (0 == d && null s)
 
 -- | Get the last position of a dimension of a shape.
+--
 -- >>> :k! Eval (LastPos 2 [2,3,4])
 -- ...
 -- = 3
@@ -864,6 +901,7 @@ type instance
       (Eval (GetDim d s) - 1)
 
 -- | Get the minimum dimension as a singleton dimension.
+--
 -- >>> minDim [2,3,4]
 -- [2]
 -- >>> minDim []
@@ -873,6 +911,7 @@ minDim [] = []
 minDim s = [minimum s]
 
 -- | Get the minimum dimension as a singleton dimension.
+--
 -- >>> :k! Eval (MinDim [2,3,4])
 -- ...
 -- = '[2]
@@ -931,7 +970,7 @@ type family GetIndexImpl (n :: Nat) (xs :: [k]) where
   GetIndexImpl 0 (x ': _) = 'Just x
   GetIndexImpl n (_ ': xs) = GetIndexImpl (n - 1) xs
 
--- | getDim i xs is the i'th element of xs. getDim 0 [] is 1 (to account for scalars). Error if out-of-bounds.
+-- | Get the dimension of a shape at the supplied index. Error if out-of-bounds.
 --
 -- >>> getDim 1 [2,3,4]
 -- 3
@@ -944,7 +983,7 @@ getDim :: Int -> [Int] -> Int
 getDim 0 [] = 1
 getDim i s = fromMaybe (error "getDim outside bounds") (s List.!? i)
 
--- | GetDim i xs is the i'th element of xs. getDim 0 [] is 1 (to account for scalars). Error if out-of-bounds or non-computable (usually unknown to the compiler).
+-- | Get the dimension of a shape at the supplied index. Error if out-of-bounds or non-computable (usually unknown to the compiler).
 --
 -- >>> :k! Eval (GetDim 1 [2,3,4])
 -- ...
@@ -1421,7 +1460,7 @@ type instance
   Eval (DeleteDims xs ds) =
     Eval (Foldl' (Flip DeleteDim) ds =<< PreDeletePositions xs)
 
--- | insert a list of dimensions according to dimension,position tuple lists.  Note that the list of positions references the final shape and not the initial shape.
+-- | Insert a list of dimensions according to dimensions and positions.  Note that the list of positions references the final shape and not the initial shape.
 --
 -- >>> insertDims [0] [5] []
 -- [5]
@@ -1471,7 +1510,7 @@ type instance
   Eval (SetDims ds xs ns) =
     Eval (Foldl' (Flip SetDimUncurried) ns =<< Zip ds xs)
 
--- | Compute new size given a drop,n tuple list
+-- | Drop a number of elements of a shape along the supplied dimensions.
 --
 -- >>> dropDims [0,2] [1,3] [2,3,4]
 -- [1,3,1]
@@ -1548,7 +1587,7 @@ rotateIndex d r s = modifyDim d (\x -> (x + r) `mod` getDim d s)
 rotatesIndex :: [Int] -> [Int] -> [Int] -> [Int] -> [Int]
 rotatesIndex ds rs s xs = foldr (\(d, r) acc -> rotateIndex d r s acc) xs (zip ds rs)
 
--- | Test whether an index is a diagonal 1.
+-- | Test whether an index is a diagonal one.
 --
 -- >>> isDiag [2,2,2]
 -- True

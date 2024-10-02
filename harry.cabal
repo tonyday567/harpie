@@ -9,7 +9,7 @@ author: Tony Day
 maintainer: tonyday567@gmail.com
 homepage: https://github.com/tonyday567/harry#readme
 bug-reports: https://github.com/tonyday567/harry/issues
-synopsis: Hyper-rectangular arrays.
+synopsis: Hyper-rectangular Haskell arrays.
 description:
     This package provides hyper-rectangular array functionality. Module names clash with each other and with the Prelude, so a clear import strategy is:
 
