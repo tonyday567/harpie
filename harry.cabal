@@ -24,7 +24,9 @@ tested-with:
     , GHC == 9.10.1
     , GHC == 9.8.2
     , GHC == 9.6.5
-extra-doc-files: ChangeLog.md
+extra-doc-files:
+    ChangeLog.md
+    readme.md
 
 source-repository head
     type: git
