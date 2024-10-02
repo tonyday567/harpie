@@ -10,10 +10,10 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
--- | Arrays with a fixed shape (known shape at compile time).
+-- | Arrays with a known shape at compile time.
 module Harry.Fixed
   ( -- * Usage
-    -- $usage
+    -- $setup
 
     -- * Fixed Arrays
     Array (..),
@@ -30,7 +30,7 @@ module Harry.Fixed
     Dims,
     pattern Dims,
 
-    -- * Dependent type
+    -- * Sigma type
     SomeArray (..),
     someArray,
 
@@ -39,7 +39,7 @@ module Harry.Fixed
     toDynamic,
     with,
 
-    -- * Shape interogation
+    -- * Shape Access
     shape,
     rank,
     size,
@@ -56,16 +56,17 @@ module Harry.Fixed
     backpermute,
     unsafeBackpermute,
 
-    -- * Scalar
+    -- * Scalars
     fromScalar,
     toScalar,
     isScalar,
     asSingleton,
     asScalar,
 
-    -- * Creation
+    -- * Array Creation
     empty,
     range,
+    corange,
     indices,
     ident,
     konst,
@@ -73,18 +74,16 @@ module Harry.Fixed
     diag,
     undiag,
 
-    -- * Operations
-
-    -- ** Element-level operators
+    -- * Element-level functions
     zipWith,
     modify,
     imap,
 
-    -- ** Operator generalisers
+    -- * Function generalisers
     rowWise,
     colWise,
 
-    -- ** Single-dimension operators
+    -- * Single-dimension functions
     take,
     takeB,
     drop,
@@ -97,8 +96,9 @@ module Harry.Fixed
     concatenate,
     couple,
     slice,
+    rotate,
 
-    -- * Multi-dimension Operators
+    -- * Multi-dimension functions
     takes,
     takeBs,
     drops,
@@ -123,16 +123,16 @@ module Harry.Fixed
     modifies,
     diffs,
 
-    -- ** Expansion
+    -- ** Array expansion & contraction
     expand,
-    expandr,
+    coexpand,
     contract,
     prod,
     dot,
     mult,
     windows,
 
-    -- ** Search
+    -- * Search
     find,
     findNoOverlap,
     isPrefixOf,
@@ -159,7 +159,6 @@ module Harry.Fixed
     intersperse,
     concats,
     reverses,
-    rotate,
     rotates,
 
     -- * Sorting
@@ -187,7 +186,7 @@ module Harry.Fixed
     iota,
     Matrix,
 
-    -- * Maths
+    -- * Math
     uniform,
     invtri,
     inverse,
@@ -227,13 +226,33 @@ import Prelude qualified
 -- >>> :set -XDataKinds
 -- >>> :set -Wno-type-defaults
 -- >>> :set -Wno-name-shadowing
+--
+-- Several names used in @harry@ conflict with [Prelude](https://hackage.haskell.org/package/base/docs/Prelude.html):
+--
 -- >>> import Prelude hiding (cycle, repeat, take, drop, zipWith, length)
+--
+-- In general, 'Array' functionality is contained in @Harry.Fixed@ and shape  functionality is contained in @Harry.Shape@. These two modules also have name clashes and at least one needs to be qualified:
+--
 -- >>> import Harry.Fixed as F
 -- >>> import Harry.Shape qualified as S
--- >>> import Harry.Shape (SNats, Fin (..))
+-- >>> import Harry.Shape (SNats (..), Fin (..), Fins (..))
+--
+-- An important base accounting of 'Array' shape is the singleton types 'SNat' (a type-level 'Natural' or 'Nat') from [GHC.TypeNats](https://hackage.haskell.org/package/base/docs/GHC-TypeNats.html) in base.
+--
 -- >>> import GHC.TypeNats
+-- >>> import Data.List qualified as List
+--
+-- [@prettyprinter@](https://hackage.haskell.org/package/prettyprinter) is used to prettily render arrays to visualise shape information.
+--
 -- >>> import Prettyprinter hiding (dot,fill)
+--
+-- The 'Representable' class from [@adjunctions@](https://hackage.haskell.org/package/adjunctions) is used heavily by the module.
+--
 -- >>> import Data.Functor.Rep
+--
+-- Examples of arrays:
+--
+-- An array with no dimensions (a scalar).
 --
 -- >>> s = 1 :: Array '[] Int
 -- >>> s
@@ -242,13 +261,22 @@ import Prelude qualified
 -- []
 -- >>> pretty s
 -- 1
+--
+-- A single-dimension array (a vector).
+--
 -- >>> let v = range @'[3]
 -- >>> pretty v
 -- [0,1,2]
+--
+-- A two-dimensional array (a matrix).
+--
 -- >>> let m = range @[2,3]
 -- >>> pretty m
 -- [[0,1,2],
 --  [3,4,5]]
+--
+-- An n-dimensional array (n should be finite).
+--
 -- >>> a = range @[2,3,4]
 -- >>> a
 -- [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
@@ -259,16 +287,19 @@ import Prelude qualified
 --  [[12,13,14,15],
 --   [16,17,18,19],
 --   [20,21,22,23]]]
+--
+-- Conversion to a dynamic, value-level shaped 'Harry.Array.Array'
+--
 -- >>> toDynamic a
 -- UnsafeArray [2,3,4] [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
 
--- | A multidimensional array with a type-level shape
+-- | A hyperrectangular (or multidimensional) array with a type-level shape
 --
--- >>> array @[2,3,4] [1..24::Int]
+-- >>> array @[2,3,4] @Int [1..24]
 -- [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
 -- >>> array [1..24] :: Array '[2,3,4] Int
 -- [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
--- >>> pretty (array [1..24] :: Array '[2,3,4] Int)
+-- >>> pretty (array @[2,3,4] @Int [1..24])
 -- [[[1,2,3,4],
 --   [5,6,7,8],
 --   [9,10,11,12]],
@@ -280,16 +311,21 @@ import Prelude qualified
 -- *** Exception: Shape Mismatch
 -- ...
 --
--- In many spots, [TypeApplication](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/type_applications.html) can be cleaner.
+-- In many situations, the use of  [TypeApplication](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/type_applications.html) can lead to a clean coding style.
 --
 -- >>> array @[2,3] @Int [1..6]
 -- [1,2,3,4,5,6]
 --
+-- The main computational entry and exit points are often via 'index' and 'tabulate' with arrays indexed by 'Fins':
 -- >>> index a (S.UnsafeFins [1,2,3])
 -- 23
 --
--- >>> tabulate (S.flatten (shape a) . S.fromFins) == a
--- True
+-- >>> :t tabulate id :: Array [2,3] (Fins [2,3])
+-- tabulate id :: Array [2,3] (Fins [2,3])
+--   :: Array [2, 3] (Fins [2, 3])
+-- >>> pretty (tabulate id :: Array [2,3] (Fins [2,3]))
+-- [[[0,0],[0,1],[0,2]],
+--  [[1,0],[1,1],[1,2]]]
 type role Array nominal representational
 
 newtype Array (s :: [Nat]) a where
@@ -363,7 +399,7 @@ instance FromVector (Array s a) a where
   asVector (Array v) = v
   vectorAs v = Array v
 
--- | Constructor of an array from a shape and a value without any shape validation.
+-- | Constructor of an array without shape validation.
 --
 -- >>> unsafeArray [0..4] :: Array [2,3] Int
 -- [0,1,2,3,4]
@@ -417,6 +453,7 @@ unsafeModifyVector f a = unsafeArray (asVector (f (vectorAs (asVector a))))
 -- | Representation of an index into a shape (a type-level [Nat]). The index is a dimension of the shape.
 type Dim = SNat
 
+-- | Pattern synonym for a 'Dim'
 pattern Dim :: () => (KnownNat n) => SNat n
 pattern Dim = SNat
 
@@ -425,14 +462,21 @@ pattern Dim = SNat
 -- | Representation of indexes into a shape (a type-level [Nat]). The indexes are dimensions of the shape.
 type Dims = SNats
 
+-- | Pattern synonym for a 'Dims'
 pattern Dims :: () => (KnownNats ns) => SNats ns
 pattern Dims = SNats
 
 {-# COMPLETE Dims #-}
 
--- | A fixed Array with a hidden shape.
+-- | Sigma type for an 'Array'
 --
--- The library design encourages the use of dynamic arrays in preference to dependent-type styles such as this. In particular, no attempt has been made to prove to the compiler that a particular Shape (resulting from any of the supplied functions) exists. Life is short.
+-- A fixed Array where shape was unknown at runtime.
+--
+-- The library design encourages the use of value-level shape arrays (in @Harry.Array@) via 'toDynamic' in preference to dependent-type styles of coding. In particular, no attempt has been made to prove to the compiler that a particular Shape (resulting from any of the supplied functions) exists. Life is short.
+--
+-- > P.take 4 <$> sample' arbitrary :: IO [SomeArray Int]
+-- [SomeArray SNats @'[] [0],SomeArray SNats @'[0] [],SomeArray SNats @[1, 1] [1],SomeArray SNats @[5, 1, 4] [2,1,0,2,-6,0,5,6,-1,-4,0,5,-1,6,4,-6,1,0,3,-1]]
+--
 data SomeArray a = forall s. SomeArray (SNats s) (Array s a)
 
 deriving instance (Show a) => Show (SomeArray a)
@@ -443,12 +487,10 @@ instance Functor SomeArray where
 instance Foldable SomeArray where
   foldMap f (SomeArray _ a) = foldMap f a
 
+-- | Contruct a SomeArray
 someArray :: forall s t a. (FromVector t a) => SNats s -> t -> SomeArray a
 someArray s t = SomeArray s (Array (asVector t))
 
--- |
--- > P.take 4 <$> sample' arbitrary :: IO [SomeArray Int]
--- [SomeArray SNats @'[] [0],SomeArray SNats @'[0] [],SomeArray SNats @[1, 1] [1],SomeArray SNats @[5, 1, 4] [2,1,0,2,-6,0,5,6,-1,-4,0,5,-1,6,4,-6,1,0,3,-1]]
 instance (Arbitrary a) => Arbitrary (SomeArray a) where
   arbitrary = do
     s <- arbitrary :: Gen [Small Nat]
@@ -456,7 +498,7 @@ instance (Arbitrary a) => Arbitrary (SomeArray a) where
     v <- V.replicateM (product (Prelude.fromIntegral <$> s')) arbitrary
     withSomeSNats s' $ \sn -> pure (someArray sn v)
 
--- | convert to a dynamic array with shape at the value level.
+-- | Convert to a dynamic array with shape at the value level.
 --
 -- >>> toDynamic a
 -- UnsafeArray [2,3,4] [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
@@ -504,6 +546,8 @@ size = S.size . shape
 --
 -- >>> length a
 -- 2
+-- >>> length (toScalar 0)
+-- 1
 length :: (KnownNats s) => Array s a -> Int
 length a = case shape a of
   [] -> 1
@@ -532,6 +576,8 @@ unsafeIndex a xs = index a (UnsafeFins xs)
 (!) :: (KnownNats s) => Array s a -> [Int] -> a
 (!) a xs = index a (UnsafeFins xs)
 
+infixl 9 !
+
 -- | Extract an element at an index, safely.
 --
 -- >>> a !? [1,2,3]
@@ -541,12 +587,40 @@ unsafeIndex a xs = index a (UnsafeFins xs)
 (!?) :: (KnownNats s) => Array s a -> [Int] -> Maybe a
 (!?) a xs = index a <$> toFins xs
 
--- | Tabulate unsafely
+infixl 9  !?
+
+-- | Tabulate unsafely.
+--
+-- >>> :t tabulate @(Array [2,3]) id
+-- tabulate @(Array [2,3]) id :: Array [2, 3] (Fins [2, 3])
+-- >>> :t unsafeTabulate @[2,3] id
+-- unsafeTabulate @[2,3] id :: Array [2, 3] [Int]
+-- >>> pretty $ unsafeTabulate @[2,3] id
+-- [[[0,0],[0,1],[0,2]],
+--  [[1,0],[1,1],[1,2]]]
 unsafeTabulate :: (KnownNats s) => ([Int] -> a) -> Array s a
 unsafeTabulate f = tabulate (f . fromFins)
 
--- | Safe backpermute
-backpermute :: (KnownNats s, KnownNats s') => (Fins s' -> Fins s) -> Array s a -> Array s' a
+-- | @backpermute@ is a tabulation where the contents of an array do not need to be accessed, and is thus a fulcrum for leveraging laziness and fusion via the rule:
+--
+-- > backpermute f (backpermute f' a) == backpermute (f . f') a
+--
+-- Many functions in this module are examples of backpermute usage.
+--
+-- >>> pretty $ backpermute @[4,3,2] (UnsafeFins . List.reverse . fromFins) a
+-- [[[0,12],
+--   [4,16],
+--   [8,20]],
+--  [[1,13],
+--   [5,17],
+--   [9,21]],
+--  [[2,14],
+--   [6,18],
+--   [10,22]],
+--  [[3,15],
+--   [7,19],
+--   [11,23]]]
+backpermute :: forall s' s a. (KnownNats s, KnownNats s') => (Fins s' -> Fins s) -> Array s a -> Array s' a
 backpermute f a = tabulate (index a . f)
 {-# INLINEABLE backpermute #-}
 
@@ -555,14 +629,28 @@ backpermute f a = tabulate (index a . f)
 -}
 
 -- | Unsafe backpermute
-unsafeBackpermute :: (KnownNats s, KnownNats s') => ([Int] -> [Int]) -> Array s a -> Array s' a
+--
+-- >>> pretty $ unsafeBackpermute @[4,3,2] List.reverse a
+-- [[[0,12],
+--   [4,16],
+--   [8,20]],
+--  [[1,13],
+--   [5,17],
+--   [9,21]],
+--  [[2,14],
+--   [6,18],
+--   [10,22]],
+--  [[3,15],
+--   [7,19],
+--   [11,23]]]
+unsafeBackpermute :: forall s' s a. (KnownNats s, KnownNats s') => ([Int] -> [Int]) -> Array s a -> Array s' a
 unsafeBackpermute f a = tabulate (index a . UnsafeFins . f . fromFins)
 
 {- RULES
    "unsafeBackpermute/unsafeBackpermute" forall f f' (a :: forall a. Array a)). unsafeBackpermute f (unsafeBackpermute f' a) == unsafeBackpermute (f . f') a
 -}
 
--- | Unwrapping scalars is probably a performance bottleneck.
+-- | Unwrap a scalar.
 --
 -- >>> s = array @'[] @Int [3]
 -- >>> :t fromScalar s
@@ -570,35 +658,33 @@ unsafeBackpermute f a = tabulate (index a . UnsafeFins . f . fromFins)
 fromScalar :: Array '[] a -> a
 fromScalar a = index a (UnsafeFins [])
 
--- | Convert a number to a scalar.
+-- | Wrap a scalar.
 --
 -- >>> :t toScalar @Int 2
 -- toScalar @Int 2 :: Array '[] Int
 toScalar :: a -> Array '[] a
 toScalar a = Array (V.singleton a)
 
--- | Is the Array a Scalar?
+-- | Is an array a scalar?
 --
 -- >>> isScalar (toScalar (2::Int))
 -- True
 isScalar :: (KnownNats s) => Array s a -> Bool
 isScalar a = rank a == 0
 
--- | Convert scalars to dimensioned arrays.
+-- | Convert a scalar to being a dimensioned array. Do nothing if not a scalar.
 --
 -- >>> asSingleton (toScalar 4)
 -- [4]
 asSingleton :: (KnownNats s, KnownNats s', s' ~ Eval (AsSingleton s)) => Array s a -> Array s' a
 asSingleton = unsafeModifyShape
 
--- | Convert arrays with shape [1] to scalars.
+-- | Convert an array with shape [1] to being a scalar (Do nothing if not a shape [1] array).
 --
 -- >>> pretty (asScalar (singleton 3))
 -- 3
 asScalar :: (KnownNats s, KnownNats s', s' ~ Eval (AsScalar s)) => Array s a -> Array s' a
 asScalar = unsafeModifyShape
-
--- * Creation
 
 -- | An array with no elements.
 --
@@ -607,13 +693,25 @@ asScalar = unsafeModifyShape
 empty :: Array '[0] a
 empty = array []
 
--- | A flat enumeration.
+-- | An enumeration of row-major or [lexicographic](https://en.wikipedia.org/wiki/Lexicographic_order) order.
 --
 -- >>> pretty (range :: Array [2,3] Int)
 -- [[0,1,2],
 --  [3,4,5]]
 range :: forall s. (KnownNats s) => Array s Int
 range = tabulate (S.flatten (valuesOf @s) . fromFins)
+
+-- | An enumeration of col-major or [colexicographic](https://en.wikipedia.org/wiki/Lexicographic_order) order.
+--
+-- >>> pretty (corange @[2,3,4])
+-- [[[0,6,12,18],
+--   [2,8,14,20],
+--   [4,10,16,22]],
+--  [[1,7,13,19],
+--   [3,9,15,21],
+--   [5,11,17,23]]]
+corange :: forall s. (KnownNats s) => Array s Int
+corange = tabulate (S.flatten (List.reverse (valuesOf @s)) . List.reverse . fromFins)
 
 -- | Indices of an array shape.
 --
@@ -663,7 +761,7 @@ diag ::
   Array s' a
 diag a = unsafeBackpermute (replicate (rank a) . getDim 0) a
 
--- | Expand the array to form a diagonal array
+-- | Expand an array to form a diagonal array
 --
 -- >>> pretty $ undiag (range @'[3])
 -- [[0,0,0],
@@ -712,11 +810,11 @@ imap ::
   Array s b
 imap f a = zipWith f indices a
 
--- | Apply a function that takes dimensions and (type-level) parameters and applies a parameters to the initial dimensions. ie
+-- | With a function that takes dimensions and (type-level) parameters, apply the parameters to the initial dimensions. ie
 --
 -- > rowWise f xs = f [0..rank xs - 1] xs
 --
--- >>> toDynamic $ rowWise indexesT (Dims @[1,0]) a
+-- >>> toDynamic $ rowWise indexesT (S.SNats @[1,0]) a
 -- UnsafeArray [4] [12,13,14,15]
 rowWise ::
   forall a ds s s' xs proxy.
@@ -730,11 +828,11 @@ rowWise ::
   Array s' a
 rowWise f xs a = f (Dims @ds) xs a
 
--- | Apply a function that takes a (dimension,parameter) list and applies a parameter list to the the last dimensions (in reverse). ie
+-- | With a function that takes dimensions and (type-level) parameters, apply the parameters to the the last dimensions. ie
 --
 -- > colWise f xs = f (List.reverse [0 .. (rank a - 1)]) xs
 --
--- >>> toDynamic $ colWise indexesT (Dims @[1,0]) a
+-- >>> toDynamic $ colWise indexesT (S.SNats @[1,0]) a
 -- UnsafeArray [2] [1,13]
 colWise ::
   forall a ds s s' xs proxy.
@@ -993,25 +1091,29 @@ concatenate Dim a0 a1 = tabulate (go . fromFins)
     ds0 = shape a0
     d' = valueOf @d
 
--- | Combine two arrays as rows of a new array.
+-- | Combine two arrays as a new dimension of a new array.
 --
--- >>> pretty $ couple (array @'[3] [1,2,3]) (array @'[3] @Int [4,5,6])
+-- >>> pretty $ couple (Dim @0) (array @'[3] [1,2,3]) (array @'[3] @Int [4,5,6])
 -- [[1,2,3],
 --  [4,5,6]]
--- >>> couple (toScalar @Int 0) (toScalar 1)
+-- >>> couple (Dim @0) (toScalar @Int 0) (toScalar 1)
 -- [0,1]
 couple ::
-  forall a s s' se.
-  ( KnownNats s,
+  forall d a s s' se.
+  ( KnownNat d,
+    KnownNats s,
     KnownNats s',
     KnownNats se,
-    s' ~ Eval (Concatenate 0 se se),
-    se ~ Eval (InsertDim 0 1 s)
+    s' ~ Eval (Concatenate d se se),
+    se ~ Eval (InsertDim d 1 s)
   ) =>
-  Array s a -> Array s a -> Array s' a
-couple a a' = concatenate (Dim @0) (elongate (Dim @0) a) (elongate (Dim @0) a')
+  Dim d ->
+  Array s a ->
+  Array s a ->
+  Array s' a
+couple d a a' = concatenate d (elongate d a) (elongate d a')
 
--- | Slice along a dimension with the supplied (offset, length).
+-- | Slice along a dimension with the supplied offset & length.
 --
 -- >>> pretty $ slice (Dim @2) (SNat @1) (SNat @2) a
 -- [[[1,2],
@@ -1054,7 +1156,7 @@ rotate Dim r a = unsafeBackpermute (rotateIndex (valueOf @d) r (shape a)) a
 
 -- * multi-dimensional operators
 
--- | Takes the top-most elements across the supplied dimension,n tuples.
+-- | Across the specified dimensions, takes the top-most elements.
 --
 -- >>> pretty $ takes (Dims @[0,1]) (S.SNats @[1,2]) a
 -- [[[0,1,2,3],
@@ -1071,7 +1173,7 @@ takes ::
   Array s' a
 takes _ _ a = unsafeBackpermute id a
 
--- | Takes the bottom-most elements across the supplied dimension,n tuples.
+-- | Across the specified dimesnions, takes the bottom-most elements.
 --
 -- >>> pretty (takeBs (Dims @[0,1]) (S.SNats @[1,2]) a)
 -- [[[16,17,18,19],
@@ -1092,7 +1194,7 @@ takeBs _ _ a = unsafeBackpermute (List.zipWith (+) start) a
   where
     start = List.zipWith (-) (shape a) (S.setDims (valuesOf @ds) (valuesOf @xs) (shape a))
 
--- | Drops the top-most elements across dimension,n tuples.
+-- | Across the specified dimensions, drops the top-most elements.
 --
 -- >>> pretty $ drops (Dims @[0,2]) (S.SNats @[1,3]) a
 -- [[[15],
@@ -1114,7 +1216,7 @@ drops _ _ a = unsafeBackpermute (List.zipWith (+) start) a
   where
     start = List.zipWith (-) (valuesOf @s) (valuesOf @s')
 
--- | Drops the bottom-most elements across dimension,n tuples.
+-- | Across the specified dimensions, drops the bottom-most elements.
 --
 -- >>> pretty $ dropBs (Dims @[0,2]) (S.SNats @[1,3]) a
 -- [[[0],
@@ -1151,9 +1253,9 @@ indexes ::
   Array s' a
 indexes Dims xs a = unsafeBackpermute (S.insertDims (valuesOf @ds) (fromFins xs)) a
 
---- | Select by dimensions and indexes, supplying indexes as a type.
----
--- >>> pretty $ indexesT (Dims @[0,1]) (SNats @[1,1]) a
+-- | Select by dimensions and indexes, supplying indexes as a type.
+--
+-- >>> pretty $ indexesT (Dims @[0,1]) (S.SNats @[1,1]) a
 -- [16,17,18,19]
 indexesT ::
   forall ds xs s s' a.
@@ -1198,7 +1300,7 @@ slices _ _ _ a = unsafeBackpermute (List.zipWith (+) o) a
   where
     o = S.setDims (valuesOf @ds) (valuesOf @offs) (replicate (rank a) 0)
 
--- | Select the first element along the supplied dimensions
+-- | Select the first element along the supplied dimensions.
 --
 -- >>> pretty $ heads (Dims @[0,2]) a
 -- [0,4,8]
@@ -1214,7 +1316,7 @@ heads ::
   Array s' a
 heads ds a = indexes ds (UnsafeFins $ replicate (rankOf @ds) 0) a
 
--- | Select the last element along the supplied dimensions
+-- | Select the last element along the supplied dimensions.
 --
 -- >>> pretty $ lasts (Dims @[0,2]) a
 -- [15,19,23]
@@ -1232,7 +1334,7 @@ lasts ds a = indexes ds (UnsafeFins lastds) a
   where
     lastds = (\i -> getDim i (shape a) - 1) <$> (valuesOf @ds)
 
--- | Select the tail elements along the supplied dimensions
+-- | Select the tail elements along the supplied dimensions.
 --
 -- >>> pretty $ tails (Dims @[0,2]) a
 -- [[[13,14,15],
@@ -1255,7 +1357,7 @@ tails ::
   Array s' a
 tails ds a = slices ds (SNats @os) (SNats @ls) a
 
--- | Select the init elements along the supplied dimensions
+-- | Select the init elements along the supplied dimensions.
 --
 -- >>> pretty $ inits (Dims @[0,2]) a
 -- [[[0,1,2],
@@ -1278,10 +1380,11 @@ inits ::
   Array s' a
 inits ds a = slices ds (SNats @os) (SNats @ls) a
 
--- | Extracts dimensions to an outer layer.
+-- | Extracts specified dimensions to an outer layer.
 --
--- >>> pretty $ shape <$> extracts (Dims @'[0]) a
--- [[3,4],[3,4]]
+-- >>> :t extracts (Dims @'[0]) (range @[2,3,4])
+-- extracts (Dims @'[0]) (range @[2,3,4])
+--   :: Array '[2] (Array [3, 4] Int)
 extracts ::
   forall ds st si so a.
   ( KnownNats st,
@@ -1318,7 +1421,7 @@ reduces ::
   Array so b
 reduces ds f a = fmap f (extracts ds a)
 
--- | Join inner and outer dimension layers by supplied dimensions. No checks on shape.
+-- | Join inner and outer dimension layers by supplied dimensions.
 --
 -- >>> let e = extracts (Dims @[1,0]) a
 -- >>> let j = joins (Dims @[1,0]) e
@@ -1459,7 +1562,7 @@ zips ::
   Array s' c
 zips SNats f a b = joins (Dims @ds) (zipWith f (extracts (Dims @ds) a) (extracts (Dims @ds) b))
 
--- | Modify using the supplied function along dimension and positions.
+-- | Modify using the supplied function along dimensions and positions.
 --
 -- >>> pretty $ modifies (fmap (100+)) (Dims @'[2]) (S.UnsafeFins [0]) a
 -- [[[100,1,2,3],
@@ -1484,7 +1587,7 @@ modifies ::
   Array s a
 modifies f SNats ps a = joins (Dims @ds) $ modify ps f (extracts (Dims @ds) a)
 
--- | Apply a binary function between successive slices, across (dimension, lag) tuples
+-- | Apply a binary function between successive slices, across dimensions and lags tuples
 --
 -- >>> pretty $ diffs (Dims @'[1]) (S.SNats @'[1]) (zipWith (-)) a
 -- [[[4,4,4,4],
@@ -1561,11 +1664,11 @@ expand f a b = tabulate (\i -> f (index a (UnsafeFins $ List.take r (fromFins i)
 --  [(1,3),(1,4),(1,5)],
 --  [(2,3),(2,4),(2,5)]]
 --
--- >>> pretty $ expandr (,) v (fmap (+3) v)
+-- >>> pretty $ coexpand (,) v (fmap (+3) v)
 -- [[(0,3),(1,3),(2,3)],
 --  [(0,4),(1,4),(2,4)],
 --  [(0,5),(1,5),(2,5)]]
-expandr ::
+coexpand ::
   forall sc sa sb a b c.
   ( KnownNats sa,
     KnownNats sb,
@@ -1576,7 +1679,7 @@ expandr ::
   Array sa a ->
   Array sb b ->
   Array sc c
-expandr f a b = tabulate (\i -> f (index a (UnsafeFins $ List.drop r (fromFins i))) (index b (UnsafeFins $ List.take r (fromFins i))))
+coexpand f a b = tabulate (\i -> f (index a (UnsafeFins $ List.drop r (fromFins i))) (index b (UnsafeFins $ List.take r (fromFins i))))
   where
     r = rank a
 
@@ -1732,7 +1835,7 @@ mult ::
   Array st a
 mult = dot sum (*)
 
--- | windows xs are xs-sized windows of an array
+-- | @windows xs@ are xs-sized windows of an array
 --
 -- >>> shape $ windows (Dims @[2,2]) (range @[4,3,2])
 -- [3,2,2,2,2]
@@ -1813,7 +1916,7 @@ findNoOverlap i a = r
     go r' s = index f (UnsafeFins s) && not (any (index r' . UnsafeFins) (List.filter (\x -> isFins x (shape f)) $ fmap (List.zipWith (+) s) (cl (shape i))))
     r = unsafeTabulate (go r)
 
--- | Check if the first array is a prefix of the second
+-- | Check if the first array is a prefix of the second.
 --
 -- >>> isPrefixOf (array @[2,2] [0,1,4,5]) a
 -- True
@@ -1830,7 +1933,7 @@ isPrefixOf ::
   Array s' a -> Array s a -> Bool
 isPrefixOf p a = p == cut a
 
--- | Check if the first array is a suffix of the second
+-- | Check if the first array is a suffix of the second.
 --
 -- >>> isSuffixOf (array @[2,2] [18,19,22,23]) a
 -- True
@@ -1847,7 +1950,7 @@ isSuffixOf ::
   Array s' a -> Array s a -> Bool
 isSuffixOf p a = p == cutSuffix a
 
--- | Check if the first array is an infix of the second
+-- | Check if the first array is an infix of the second.
 --
 -- >>> isInfixOf (array @[2,2] [18,19,22,23]) a
 -- True
@@ -2163,9 +2266,7 @@ transpose ::
   forall a s s'. (KnownNats s, KnownNats s', s' ~ Eval (Reverse s)) => Array s a -> Array s' a
 transpose a = unsafeBackpermute List.reverse a
 
--- | Inflate an array by inserting a new dimension given a supplied dimension and size.
---
--- alt name: replicate
+-- | Inflate (or replicate) an array by inserting a new dimension given a supplied dimension and size.
 --
 -- >>> pretty $ inflate (SNat @0) (SNat @2) (array @'[3] [0,1,2])
 -- [[0,1,2],
@@ -2433,10 +2534,10 @@ transmit ::
   (Array sa a -> Array sib b -> Array sic c) -> Array sa a -> Array sb b -> Array sc c
 transmit f a b = maps (Dims @ds) (f a) b
 
--- | <https://en.wikipedia.org/wiki/Vector_(mathematics_and_physics) Wiki Vector>
+-- | A one-dimensional array.
 type Vector s a = Array '[s] a
 
--- | A one-dimensional array.
+-- | Create a one-dimensional array.
 --
 -- >>> pretty $ vector @3 @Int [2,3,4]
 -- [2,3,4]
@@ -2451,10 +2552,10 @@ vector xs = array xs
 
 -- | vector with an explicit SNat rather than a KnownNat constraint.
 --
--- >>> pretty $ vector @3 @Int [2,3,4]
+-- >>> pretty $ vector' @Int (SNat @3) [2,3,4]
 -- [2,3,4]
 vector' ::
-  forall n a t.
+  forall a n t.
   (FromVector t a) =>
   SNat n ->
   t ->
@@ -2468,7 +2569,7 @@ vector' n xs = withKnownNat n (vector xs)
 iota :: forall n. (KnownNat n) => Vector n Int
 iota = range
 
--- | <https://en.wikipedia.org/wiki/Matrix_(mathematics) Wiki Matrix>
+-- | A two-dimensional array.
 type Matrix m n a = Array '[m, n] a
 
 -- * row (first dimension) specializations
@@ -2625,7 +2726,7 @@ infix 5 :>
 
 {-# COMPLETE (:>) :: Array #-}
 
--- | GENERATE an array of uniform random variates between a range.
+-- | Generate an array of uniform random variates between a range.
 --
 -- >>> import System.Random.Stateful hiding (uniform)
 -- >>> g <- newIOGenM (mkStdGen 42)
@@ -2654,9 +2755,6 @@ uniform g r = do
 --
 -- >>> e = array @[3,3] @Double [4,12,-16,12,37,-43,-16,-43,98]
 -- >>> pretty (inverse e)
--- [*** Exception: multiplication not defined
--- ...
---
 -- [[49.36111111111111,-13.555555555555554,2.1111111111111107],
 --  [-13.555555555555554,3.7777777777777772,-0.5555555555555555],
 --  [2.1111111111111107,-0.5555555555555555,0.1111111111111111]]
@@ -2667,24 +2765,25 @@ inverse a = mult (invtri (transpose (chol a))) (invtri (chol a))
 --
 -- >>> t = array @[3,3] @Double [1,0,1,0,1,2,0,0,1]
 -- >>> pretty (invtri t)
--- [*** Exception: multiplication not defined
--- ...
---
 -- [[1.0,0.0,-1.0],
 --  [0.0,1.0,-2.0],
 --  [0.0,0.0,1.0]]
--- > ident == mult t (invtri t)
+--
+-- >>> ident == mult t (invtri t)
 -- True
 invtri :: forall a n. (KnownNat n, Floating a, Eq a) => Matrix n n a -> Matrix n n a
-invtri a = sum (fmap (l ^) (iota @n)) * ti
+invtri a = i
   where
     ti = undiag (fmap recip (diag a))
-    tl = a - undiag (diag a)
-    l = negate (ti * tl)
+    tl = zipWith (-) a (undiag (diag a))
+    l = fmap negate (dot sum (*) ti tl)
+    pow xs x = foldr ($) (ident @[n,n]) (replicate x (mult xs))
+    zero' = konst @[n,n] 0
+    add = zipWith (+)
+    sum' = foldl' add zero'
+    i = mult (sum' (fmap (pow l) (range @'[n]))) ti
 
--- | cholesky decomposition
---
--- Uses the <https://en.wikipedia.org/wiki/Cholesky_decomposition#The_Cholesky_algorithm Cholesky-Crout> algorithm.
+-- | Cholesky decomposition using the <https://en.wikipedia.org/wiki/Cholesky_decomposition#The_Cholesky_algorithm Cholesky-Crout> algorithm.
 --
 -- >>> e = array @[3,3] @Double [4,12,-16,12,37,-43,-16,-43,98]
 -- >>> pretty (chol e)

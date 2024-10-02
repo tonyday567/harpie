@@ -51,6 +51,7 @@ module Harry.Array
     -- * Creation
     empty,
     range,
+    corange,
     indices,
     ident,
     konst,
@@ -111,7 +112,7 @@ module Harry.Array
 
     -- ** Expansion
     expand,
-    expandr,
+    coexpand,
     contract,
     prod,
     dot,
@@ -554,6 +555,18 @@ empty = array [0] []
 range :: [Int] -> Array Int
 range xs = tabulate xs (flatten xs)
 
+-- | An enumeration of col-major or [colexicographic](https://en.wikipedia.org/wiki/Lexicographic_order) order.
+--
+-- >>> pretty (corange [2,3,4])
+-- [[[0,6,12,18],
+--   [2,8,14,20],
+--   [4,10,16,22]],
+--  [[1,7,13,19],
+--   [3,9,15,21],
+--   [5,11,17,23]]]
+corange :: [Int] -> Array Int
+corange xs = tabulate xs (flatten (List.reverse xs) . List.reverse)
+
 -- | Indices of an array shape.
 --
 -- >>> pretty $ indices [3,3]
@@ -766,8 +779,8 @@ insert ::
 insert d i a b = tabulate (incAt d (shape a)) go
   where
     go s
-      | s !! d == i = index b (deleteDim d s)
-      | s !! d < i = index a s
+      | getDim d s == i = index b (deleteDim d s)
+      | getDim d s < i = index a s
       | otherwise = index a (decAt d s)
 
 -- | Delete along a dimension at a position.
@@ -847,15 +860,15 @@ concatenate d a0 a1 = tabulate (S.concatenate d (shape a0) (shape a1)) go
         (getDim d s >= getDim d ds0)
     ds0 = shape a0
 
--- | Combine two arrays as rows of a new array.
+-- | Combine two arrays as a new dimension of a new array.
 --
--- >>> pretty $ couple (asArray [1,2,3]) (asArray [4,5,6::Int])
+-- >>> pretty $ couple 0 (asArray [1,2,3]) (asArray [4,5,6::Int])
 -- [[1,2,3],
 --  [4,5,6]]
-couple :: Array a -> Array a -> Array a
-couple a a' = concatenate 0 (elongate 0 a) (elongate 0 a')
+couple :: Int -> Array a -> Array a -> Array a
+couple d a a' = concatenate d (elongate d a) (elongate d a')
 
--- | Slice along a dimension with the supplied (offset, length).
+-- | Slice along a dimension with the supplied offset & length.
 --
 -- >>> let s = slice 2 1 2 a
 -- >>> pretty s
@@ -1237,16 +1250,16 @@ expand f a b = tabulate (shape a <> shape b) (\i -> f (index a (List.take r i)) 
 --  [(1,3),(1,4),(1,5)],
 --  [(2,3),(2,4),(2,5)]]
 --
--- >>> pretty $ expandr (,) v (fmap (+3) v)
+-- >>> pretty $ coexpand (,) v (fmap (+3) v)
 -- [[(0,3),(1,3),(2,3)],
 --  [(0,4),(1,4),(2,4)],
 --  [(0,5),(1,5),(2,5)]]
-expandr ::
+coexpand ::
   (a -> b -> c) ->
   Array a ->
   Array b ->
   Array c
-expandr f a b = tabulate (shape a <> shape b) (\i -> f (index a (List.drop r i)) (index b (List.take r i)))
+coexpand f a b = tabulate (shape a <> shape b) (\i -> f (index a (List.drop r i)) (index b (List.take r i)))
   where
     r = rank a
 

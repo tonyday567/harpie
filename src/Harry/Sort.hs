@@ -1,3 +1,4 @@
+-- | 'Vector' sort routines.
 module Harry.Sort
   ( sortV,
     sortByV,

@@ -312,7 +312,7 @@ valuesOf :: forall s. (KnownNats s) => [Int]
 valuesOf = fmap fromIntegral (fromSNats (SNats :: SNats s))
 {-# INLINE valuesOf #-}
 
--- | The rank of a 'Shape'.
+-- | The rank (or length) of a KnownNats.
 --
 -- >>> rankOf @[2,3,4]
 -- 3
@@ -320,7 +320,7 @@ rankOf :: forall s. (KnownNats s) => Int
 rankOf = length (valuesOf @s)
 {-# INLINE rankOf #-}
 
--- | The size of a 'Shape'.
+-- | The size (or product) of a KnownNats.
 --
 -- >>> sizeOf @[2,3,4]
 -- 24
@@ -369,7 +369,7 @@ newtype Fins s
   = UnsafeFins
   { fromFins :: [Int]
   }
-  deriving stock (Eq, Ord)
+  deriving stock (Eq, Ord, Functor)
 
 instance Show (Fins n) where
   show (UnsafeFins x) = show x
@@ -670,6 +670,11 @@ type instance
       (Eval (Map (Flip GetDim ds) xs))
       (L.TypeError ('Text "Reorder dimension indices out of bounds"))
 
+-- | Test if a Reorder is valid.
+--
+-- >>> :k! Eval (ReorderOk [2,3,4] [0,1])
+-- ...
+-- = False
 data ReorderOk :: [Nat] -> [Nat] -> Exp Bool
 
 type instance
