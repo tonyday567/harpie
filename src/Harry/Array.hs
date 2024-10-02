@@ -277,7 +277,6 @@ import Prelude as P hiding (cycle, drop, length, repeat, take, zip, zipWith)
 --  [[12,13,14,15],
 --   [16,17,18,19],
 --   [20,21,22,23]]]
---
 
 -- | A hyperrectangular (or multidimensional) array with a value-level shape.
 --
@@ -541,7 +540,6 @@ tabulate ds f =
 -- This is a more general backpermute function than contained in the canonical [Regular, Shape-polymorphic, Parallel Arrays in Haskell](https://benl.ouroborus.net/papers/2010-rarrays/repa-icfp2010.pdf) which is similar in spirit to:
 --
 -- > backpermute f a = tabulate (f (shape a)) (index a . f)
---
 backpermute :: ([Int] -> [Int]) -> ([Int] -> [Int]) -> Array a -> Array a
 backpermute f g a = tabulate (f (shape a)) (index a . g)
 {-# INLINEABLE backpermute #-}

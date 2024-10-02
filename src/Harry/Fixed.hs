@@ -535,7 +535,6 @@ with d f =
 --
 -- > P.take 4 <$> sample' arbitrary :: IO [SomeArray Int]
 -- [SomeArray SNats @'[] [0],SomeArray SNats @'[0] [],SomeArray SNats @[1, 1] [1],SomeArray SNats @[5, 1, 4] [2,1,0,2,-6,0,5,6,-1,-4,0,5,-1,6,4,-6,1,0,3,-1]]
---
 data SomeArray a = forall s. SomeArray (SNats s) (Array s a)
 
 deriving instance (Show a) => Show (SomeArray a)
@@ -626,7 +625,7 @@ infixl 9 !
 (!?) :: (KnownNats s) => Array s a -> [Int] -> Maybe a
 (!?) a xs = index a <$> safeFins xs
 
-infixl 9  !?
+infixl 9 !?
 
 -- | Tabulate unsafely.
 --
@@ -2786,8 +2785,8 @@ invtri a = i
     ti = undiag (fmap recip (diag a))
     tl = zipWith (-) a (undiag (diag a))
     l = fmap negate (dot sum (*) ti tl)
-    pow xs x = foldr ($) (ident @[n,n]) (replicate x (mult xs))
-    zero' = konst @[n,n] 0
+    pow xs x = foldr ($) (ident @[n, n]) (replicate x (mult xs))
+    zero' = konst @[n, n] 0
     add = zipWith (+)
     sum' = foldl' add zero'
     i = mult (sum' (fmap (pow l) (range @'[n]))) ti
