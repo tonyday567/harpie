@@ -537,9 +537,6 @@ tabulate ds f =
 --   [7,19],
 --   [11,23]]]
 --
--- This is a more general backpermute function than contained in the canonical [Regular, Shape-polymorphic, Parallel Arrays in Haskell](https://benl.ouroborus.net/papers/2010-rarrays/repa-icfp2010.pdf) which is similar in spirit to:
---
--- > backpermute f a = tabulate (f (shape a)) (index a . f)
 backpermute :: ([Int] -> [Int]) -> ([Int] -> [Int]) -> Array a -> Array a
 backpermute f g a = tabulate (f (shape a)) (index a . g)
 {-# INLINEABLE backpermute #-}

@@ -279,8 +279,11 @@ import Prelude qualified
 -- >>> import Data.Functor.Rep
 --
 -- An important base accounting of 'Array' shape is the singleton types 'SNat' (a type-level 'Natural' or 'Nat') from [GHC.TypeNats](https://hackage.haskell.org/package/base/docs/GHC-TypeNats.html) in base.
--- import GHC.TypeNats
+-- >>> import GHC.TypeNats
 --
+-- The (first-class-families)[https://hackage.haskell.org/package/first-class-families] library was used to code most of function constraints.
+--
+-- >>> import Fcf qualified
 --
 -- Examples of arrays:
 --
