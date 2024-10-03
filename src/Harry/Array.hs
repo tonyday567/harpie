@@ -536,7 +536,6 @@ tabulate ds f =
 --  [[3,15],
 --   [7,19],
 --   [11,23]]]
---
 backpermute :: ([Int] -> [Int]) -> ([Int] -> [Int]) -> Array a -> Array a
 backpermute f g a = tabulate (f (shape a)) (index a . g)
 {-# INLINEABLE backpermute #-}
