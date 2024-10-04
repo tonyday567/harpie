@@ -6,11 +6,11 @@
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 
 -- | Arrays with shape information and computations at a value-level.
-module Harry.Array
+module Harpy.Array
   ( -- * Usage
     -- $usage
 
-    -- * Harry Arrays
+    -- * Harpy Arrays
     Array (..),
     array,
     (><),
@@ -186,9 +186,9 @@ import Data.Function
 import Data.List qualified as List
 import Data.Vector qualified as V
 import GHC.Generics
-import Harry.Shape hiding (asScalar, asSingleton, concatenate, range, rank, reorder, rerank, rotate, size, squeeze)
-import Harry.Shape qualified as S
-import Harry.Sort
+import Harpy.Shape hiding (asScalar, asSingleton, concatenate, range, rank, reorder, rerank, rotate, size, squeeze)
+import Harpy.Shape qualified as S
+import Harpy.Sort
 import Prettyprinter hiding (dot, fill)
 import System.Random hiding (uniform)
 import System.Random.Stateful hiding (uniform)
@@ -197,8 +197,8 @@ import Prelude as P hiding (cycle, drop, length, repeat, take, zip, zipWith)
 -- $setup
 -- >>> :m -Prelude
 -- >>> import Prelude hiding (take, drop, zipWith, length, cycle, repeat)
--- >>> import Harry.Array as A
--- >>> import Harry.Shape qualified as S
+-- >>> import Harpy.Array as A
+-- >>> import Harpy.Shape qualified as S
 -- >>> import Data.Vector qualified as V
 -- >>> import Prettyprinter hiding (dot, fill)
 -- >>> import Data.List qualified as List
@@ -227,14 +227,14 @@ import Prelude as P hiding (cycle, drop, length, repeat, take, zip, zipWith)
 
 -- $usage
 --
--- Several names used in @harry@ conflict with [Prelude](https://hackage.haskell.org/package/base/docs/Prelude.html):
+-- Several names used in @harpy@ conflict with [Prelude](https://hackage.haskell.org/package/base/docs/Prelude.html):
 --
 -- >>> import Prelude hiding (cycle, repeat, take, drop, zipWith, length)
 --
--- In general, 'Array' functionality is contained in @Harry.Array@ and shape  functionality is contained in @Harry.Shape@. These two modules also have name clashes and at least one needs to be qualified:
+-- In general, 'Array' functionality is contained in @Harpy.Array@ and shape  functionality is contained in @Harpy.Shape@. These two modules also have name clashes and at least one needs to be qualified:
 --
--- >>> import Harry.Array as A
--- >>> import Harry.Shape qualified as S
+-- >>> import Harpy.Array as A
+-- >>> import Harpy.Shape qualified as S
 --
 -- [@prettyprinter@](https://hackage.haskell.org/package/prettyprinter) is used to prettily render arrays to better visualise shape.
 --

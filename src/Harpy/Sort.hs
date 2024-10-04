@@ -1,5 +1,5 @@
 -- | 'Vector' sort routines.
-module Harry.Sort
+module Harpy.Sort
   ( sortV,
     sortByV,
     orderV,

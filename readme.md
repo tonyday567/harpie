@@ -1,10 +1,10 @@
-harry
+harpy
 ===
 
-[![Hackage](https://img.shields.io/hackage/v/harry.svg)](https://hackage.haskell.org/package/harry)
-[![Build Status](https://github.com/tonyday567/harry/workflows/haskell-ci/badge.svg)](https://github.com/tonyday567/harry/actions?query=workflow%3Ahaskell-ci)
+[![Hackage](https://img.shields.io/hackage/v/harpy.svg)](https://hackage.haskell.org/package/harpy)
+[![Build Status](https://github.com/tonyday567/harpy/workflows/haskell-ci/badge.svg)](https://github.com/tonyday567/harpy/actions?query=workflow%3Ahaskell-ci)
 
-**harry** is a [hyper-rectangular](https://en.wikipedia.org/wiki/Hyperrectangle) array library written in Haskell:
+**harpy** is a [hyper-rectangular](https://en.wikipedia.org/wiki/Hyperrectangle) array library written in Haskell:
 
 - It provides for arrays where shape is specified and manipulated at either the value- or type- level, and provides a similar API for both situations.
 
@@ -20,9 +20,9 @@ Usage
 Naming conventions clash with the prelude and with each other, so importing should be qualified.
 
 ``` haskell
-import qualified Harry.Array as A
-import qualified Harry.Shape as S
-import qualified Harry.Fixed as F
+import qualified Harpy.Array as A
+import qualified Harpy.Shape as S
+import qualified Harpy.Fixed as F
 
 -- >>> a = F.range @[2,3,4]
 -- >>> F.shape a
@@ -61,19 +61,19 @@ Consistency of type- and value- level list algorithms.
 
 The library is an attempt to provide a consistent approach to array programming whether or not array shape is held and computed at value-level or at type-level. 
 
-The Harry.Shape module contains common list algorithms for value-level shapes (ie Int list operatorions) and type-level shapes (a type-level Nat list operations) that is as close to the same as possible. They cannot be identical because type and value programming in Haskell are very different languages. The (first-class-families)[https://hackage.haskell.org/package/first-class-families] library was used to achieve this.
+The Harpy.Shape module contains common list algorithms for value-level shapes (ie Int list operatorions) and type-level shapes (a type-level Nat list operations) that is as close to the same as possible. They cannot be identical because type and value programming in Haskell are very different languages. The (first-class-families)[https://hackage.haskell.org/package/first-class-families] library was used to achieve this.
 
 Type safety and dependent typing
 ---
 
-'Harry.Fixed' arrays sit at around level 4.5 in (Justin Le's type safety heirarchy)[https://blog.jle.im/entry/levels-of-type-safety-haskell-lists.html]. They are designed with static type-safety in mind, a run-time error in shape or index computation is a bug. Typed shape information, however, is modelled on GHC.TypeNats with Nat and thus [Nat] being opaque types rather than structured peano numbers. This makes compiler KnownNat and KnownNats discovery and proof witnessing problematic.
+'Harpy.Fixed' arrays sit at around level 4.5 in (Justin Le's type safety heirarchy)[https://blog.jle.im/entry/levels-of-type-safety-haskell-lists.html]. They are designed with static type-safety in mind, a run-time error in shape or index computation is a bug. Typed shape information, however, is modelled on GHC.TypeNats with Nat and thus [Nat] being opaque types rather than structured peano numbers. This makes compiler KnownNat and KnownNats discovery and proof witnessing problematic.
 
 Instead of dependently-typed approaches, the library leans into switching from fixed to untyped shape representation if shape is not known at runtime. In the experience of writing this iteration of the library, it became obvious that type-level programming has it's own share of bugs and has trade-offs versus the much richer language of Haskell value-level programming.
 
 Is it fast?
 ---
 
-Maybe. Does [vector](https://hackage.haskell.org/package/vector) streaming lead to efficient code? If it does then harry should be able to access this efficiency.  
+Maybe. Does [vector](https://hackage.haskell.org/package/vector) streaming lead to efficient code? If it does then harpy should be able to access this efficiency.  
 
 There are plenty of faster array programming options out there, in Haskell and elsewhere. If you need close-to-the-metal, GPU-targetted computation speed, try:
 
@@ -86,13 +86,13 @@ There are plenty of faster array programming options out there, in Haskell and e
 backpermute
 ---
 
-A canonical backpermute function is detailed in [Regular, Shape-polymorphic, Parallel Arrays in Haskell](https://benl.ouroborus.net/papers/2010-rarrays/repa-icfp2010.pdf) and would be implemented in harry as:
+A canonical backpermute function is detailed in [Regular, Shape-polymorphic, Parallel Arrays in Haskell](https://benl.ouroborus.net/papers/2010-rarrays/repa-icfp2010.pdf) and would be implemented in harpy as:
 
 -- > repa_backpermute f a = tabulate (f (shape a)) (index a . f)
 
-The harry backpermute splits the function application into two parts, the shape manipulation and the array manipulation:
+The harpy backpermute splits the function application into two parts, the shape manipulation and the array manipulation:
 
--- > harry_backpermute f g a = tabulate (f (shape a)) (index a . g)
+-- > harpy_backpermute f g a = tabulate (f (shape a)) (index a . g)
 
 This, more general specification, allows more opportunities for the fusion rule to kick in:
 

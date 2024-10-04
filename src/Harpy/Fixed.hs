@@ -11,7 +11,7 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 -- | Arrays with shape information and computations at a type-level.
-module Harry.Fixed
+module Harpy.Fixed
   ( -- * Usage
     -- $usage
 
@@ -205,10 +205,10 @@ import Fcf qualified
 import Fcf.Data.List
 import GHC.Generics
 import GHC.TypeNats
-import Harry.Array qualified as A
-import Harry.Shape hiding (asScalar, asSingleton, concatenate, range, rank, reorder, rerank, rotate, size, squeeze)
-import Harry.Shape qualified as S
-import Harry.Sort
+import Harpy.Array qualified as A
+import Harpy.Shape hiding (asScalar, asSingleton, concatenate, range, rank, reorder, rerank, rotate, size, squeeze)
+import Harpy.Shape qualified as S
+import Harpy.Sort
 import Prettyprinter hiding (dot, fill)
 import System.Random hiding (uniform)
 import System.Random.Stateful hiding (uniform)
@@ -225,9 +225,9 @@ import Prelude qualified
 -- >>> :set -Wno-type-defaults
 -- >>> :set -Wno-name-shadowing
 -- >>> import Prelude hiding (cycle, repeat, take, drop, zipWith, length)
--- >>> import Harry.Fixed as F
--- >>> import Harry.Shape qualified as S
--- >>> import Harry.Shape (SNats (..), Fin (..), Fins (..))
+-- >>> import Harpy.Fixed as F
+-- >>> import Harpy.Shape qualified as S
+-- >>> import Harpy.Shape (SNats (..), Fin (..), Fins (..))
 -- >>> import GHC.TypeNats
 -- >>> import Data.List qualified as List
 -- >>> import Prettyprinter hiding (dot,fill)
@@ -261,14 +261,14 @@ import Prelude qualified
 --
 -- >>> :set -XDataKinds
 --
--- Several names used in @harry@ conflict with [Prelude](https://hackage.haskell.org/package/base/docs/Prelude.html):
+-- Several names used in @harpy@ conflict with [Prelude](https://hackage.haskell.org/package/base/docs/Prelude.html):
 --
 -- >>> import Prelude hiding (cycle, repeat, take, drop, zipWith, length)
 --
--- In general, 'Array' functionality is contained in @Harry.Fixed@ and shape  functionality is contained in @Harry.Shape@. These two modules also have name clashes and at least one needs to be qualified:
+-- In general, 'Array' functionality is contained in @Harpy.Fixed@ and shape  functionality is contained in @Harpy.Shape@. These two modules also have name clashes and at least one needs to be qualified:
 --
--- >>> import Harry.Fixed as F
--- >>> import Harry.Shape qualified as S
+-- >>> import Harpy.Fixed as F
+-- >>> import Harpy.Shape qualified as S
 --
 -- [@prettyprinter@](https://hackage.haskell.org/package/prettyprinter) is used to prettily render arrays to better visualise shape.
 --
@@ -323,7 +323,7 @@ import Prelude qualified
 --   [16,17,18,19],
 --   [20,21,22,23]]]
 --
--- Conversion to a dynamic, value-level shaped 'Harry.Array.Array'
+-- Conversion to a dynamic, value-level shaped 'Harpy.Array.Array'
 --
 -- >>> toDynamic a
 -- UnsafeArray [2,3,4] [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
@@ -512,7 +512,7 @@ toDynamic a = A.array (shape a) (asVector a)
 
 -- | Use a dynamic array in a fixed context.
 --
--- >>> import qualified Harry.Array as A
+-- >>> import qualified Harpy.Array as A
 -- >>> with (A.range [2,3,4]) show
 -- "[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]"
 --
@@ -534,7 +534,7 @@ with d f =
 --
 -- A fixed Array where shape was unknown at runtime.
 --
--- The library design encourages the use of value-level shape arrays (in @Harry.Array@) via 'toDynamic' in preference to dependent-type styles of coding. In particular, no attempt has been made to prove to the compiler that a particular Shape (resulting from any of the supplied functions) exists. Life is short.
+-- The library design encourages the use of value-level shape arrays (in @Harpy.Array@) via 'toDynamic' in preference to dependent-type styles of coding. In particular, no attempt has been made to prove to the compiler that a particular Shape (resulting from any of the supplied functions) exists. Life is short.
 --
 -- > P.take 4 <$> sample' arbitrary :: IO [SomeArray Int]
 -- [SomeArray SNats @'[] [0],SomeArray SNats @'[0] [],SomeArray SNats @[1, 1] [1],SomeArray SNats @[5, 1, 4] [2,1,0,2,-6,0,5,6,-1,-4,0,5,-1,6,4,-6,1,0,3,-1]]

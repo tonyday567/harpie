@@ -8,7 +8,7 @@
 {-# LANGUAGE ViewPatterns #-}
 
 -- | Functions for manipulating shape. The module tends to supply equivalent functionality at type-level and value-level with functions of the same name (except for capitalization).
-module Harry.Shape
+module Harpy.Shape
   ( -- * Type-level Nat
     SNat,
     pattern SNat,
@@ -184,7 +184,7 @@ import Prelude as P hiding (minimum)
 -- >>> import Prelude
 -- >>> import Fcf
 -- >>> import GHC.Exts ()
--- >>> import Harry.Shape as S
+-- >>> import Harpy.Shape as S
 
 -- | Get the value of a type level Nat.
 -- Use with explicit type application

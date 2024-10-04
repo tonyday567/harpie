@@ -1,5 +1,5 @@
 packages:
-  harry.cabal
+  harpy.cabal
 
 write-ghc-environment-files: always
 
