@@ -2,10 +2,9 @@ harpie
 ===
 
 [![Hackage](https://img.shields.io/hackage/v/harpie.svg)](https://hackage.haskell.org/package/harpie)
-[![Build Status](https://github.com/tonyday567/harpie/workflows/build/badge.svg)](https://github.com/tonyday567/harpie/actions) <img src=https://static.wikia.nocookie.net/monster/images/2/28/Harpy.jpg/revision/latest?cb=20110129191316 alt="harpie" width="100"/>
+[![Build Status](https://github.com/tonyday567/harpie/workflows/build/badge.svg)](https://github.com/tonyday567/harpie/actions) <img src="https://static.wikia.nocookie.net/monster/images/2/28/Harpy.jpg" alt="harpie" width="100"/>
 
-
-Haskell array programming.
+Haskell array programming, interface and environment (harpie).
 
 **harpie** is an array programming library written in Haskell:
 
