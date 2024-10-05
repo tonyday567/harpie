@@ -1,14 +1,13 @@
-harpy
+harpie
 ===
 
-[![Hackage](https://img.shields.io/hackage/v/harpy.svg)](https://hackage.haskell.org/package/harpy)
-[![Build Status](https://github.com/tonyday567/harpy/workflows/haskell-ci/badge.svg)](https://github.com/tonyday567/harpy/actions)
+[![Hackage](https://img.shields.io/hackage/v/harpie.svg)](https://hackage.haskell.org/package/harpie)
+[![Build Status](https://github.com/tonyday567/harpie/workflows/build/badge.svg)](https://github.com/tonyday567/harpie/actions) <img src=https://static.wikia.nocookie.net/monster/images/2/28/Harpy.jpg/revision/latest?cb=20110129191316 alt="harpie" width="100"/>
 
-![harpy](https://www.google.com/imgres?imgurl=https://static.wikia.nocookie.net/monster/images/2/28/Harpy.jpg/revision/latest?cb%3D20110129191316&imgrefurl=https://monster.fandom.com/wiki/Harpy&h=752&w=640&tbnid=XzGJDgyCjmNV3M&source=sa.im&tbnh=243&tbnw=207&usg=AI4_-kQpaMbN5iHwbHSL4GCz97aRogD5tA&vet=1&docid=5a-fLXFvkVebuM "harpy")
 
 Haskell array programming.
 
-**harpy** is an array programming library written in Haskell:
+**harpie** is an array programming library written in Haskell:
 
 - It provides for arrays where shape is specified and manipulated at either the value- or type- level, and provides a similar API for both situations.
 
@@ -26,9 +25,9 @@ Usage
 Naming conventions clash with the prelude and with each other, so importing should be qualified.
 
 ``` haskell
-import qualified Harpy.Array as A
-import qualified Harpy.Shape as S
-import qualified Harpy.Fixed as F
+import qualified Harpie.Array as A
+import qualified Harpie.Shape as S
+import qualified Harpie.Fixed as F
 
 -- >>> a = F.range @[2,3,4]
 -- >>> F.shape a
@@ -66,19 +65,19 @@ Consistency of type- and value- level list algorithms.
 
 The library is an attempt to provide a consistent approach to array programming whether or not array shape is held and computed at value-level or at type-level. 
 
-The Harpy.Shape module contains common list algorithms for value-level shapes (ie Int list operatorions) and type-level shapes (a type-level Nat list operations) that is as close to the same as possible. They cannot be identical because type and value programming in Haskell are very different languages. The (first-class-families)[https://hackage.haskell.org/package/first-class-families] library was used to achieve this.
+The Harpie.Shape module contains common list algorithms for value-level shapes (ie Int list operatorions) and type-level shapes (a type-level Nat list operations) that is as close to the same as possible. They cannot be identical because type and value programming in Haskell are very different languages. The (first-class-families)[https://hackage.haskell.org/package/first-class-families] library was used to achieve this.
 
 Is it safe?
 ---
 
-'Harpy.Fixed' arrays sit at around level 4.5 in (Justin Le's type safety heirarchy)[https://blog.jle.im/entry/levels-of-type-safety-haskell-lists.html]. They are designed with static type-safety in mind, a run-time error in shape or index computation is a bug. Typed shape information, however, is modelled on GHC.TypeNats with Nat and thus [Nat] being opaque types rather than structured peano numbers. This makes compiler KnownNat and KnownNats discovery and proof witnessing problematic.
+'Harpie.Fixed' arrays sit at around level 4.5 in (Justin Le's type safety heirarchy)[https://blog.jle.im/entry/levels-of-type-safety-haskell-lists.html]. They are designed with static type-safety in mind, a run-time error in shape or index computation is a bug. Typed shape information, however, is modelled on GHC.TypeNats with Nat and thus [Nat] being opaque types rather than structured peano numbers. This makes compiler KnownNat and KnownNats discovery and proof witnessing problematic.
 
 Instead of dependently-typed approaches, the library leans into switching from fixed to untyped shape representation if shape is not known at runtime. In the experience of writing this iteration of the library, it became obvious that type-level programming has it's own share of bugs and has trade-offs versus the much richer language of Haskell value-level programming.
 
 Is it fast?
 ---
 
-Maybe. Does [vector](https://hackage.haskell.org/package/vector) streaming lead to efficient code? If it does then harpy should be able to access this efficiency.
+Maybe. Does [vector](https://hackage.haskell.org/package/vector) streaming lead to efficient code? If it does then harpie should be able to access this efficiency.
 
 There are plenty of faster array programming options out there, in Haskell and elsewhere. If you need close-to-the-metal performance, try:
 
@@ -92,15 +91,15 @@ There are plenty of faster array programming options out there, in Haskell and e
 backpermute FTW
 ---
 
-As computational complexity increases, either in array programmimg or in connectivity to other problem domains, harpy performance is (one-day) expected to come into her own.
+As computational complexity increases, either in array programmimg or in connectivity to other problem domains, harpie performance is (one-day) expected to come into her own.
 
-A canonical backpermute function is detailed in [Regular, Shape-polymorphic, Parallel Arrays in Haskell](https://benl.ouroborus.net/papers/2010-rarrays/repa-icfp2010.pdf) and would be implemented in harpy as:
+A canonical backpermute function is detailed in [Regular, Shape-polymorphic, Parallel Arrays in Haskell](https://benl.ouroborus.net/papers/2010-rarrays/repa-icfp2010.pdf) and would be implemented in harpie as:
 
 -- > repa_backpermute f a = tabulate (f (shape a)) (index a . f)
 
-The harpy backpermute splits the function application into two parts, the shape manipulation and the array manipulation:
+The harpie backpermute splits the function application into two parts, the shape manipulation and the array manipulation:
 
--- > harpy_backpermute f g a = tabulate (f (shape a)) (index a . g)
+-- > harpie_backpermute f g a = tabulate (f (shape a)) (index a . g)
 
 This, more general specification, should (one-day) allow more opportunities for the fusion rule to kick in:
 

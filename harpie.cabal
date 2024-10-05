@@ -1,5 +1,5 @@
 cabal-version: 3.0
-name: harpy
+name: harpie
 version: 0.1.0.0
 license: BSD-3-Clause
 license-file: LICENSE
@@ -7,17 +7,17 @@ copyright: Tony Day (c) 2016-2024
 category: math
 author: Tony Day
 maintainer: tonyday567@gmail.com
-homepage: https://github.com/tonyday567/harpy#readme
-bug-reports: https://github.com/tonyday567/harpy/issues
+homepage: https://github.com/tonyday567/harpie#readme
+bug-reports: https://github.com/tonyday567/harpie/issues
 synopsis: Hyper-rectangular Haskell arrays.
 description:
     This package provides hyper-rectangular array functionality. Module names clash with each other and with the Prelude, so a clear import strategy is:
 
     == Usage
 
-    >>> import Harpy.Fixed qualified as F
-    >>> import Harpy.Shape qualified as S
-    >>> import Harpy.Array qualified as A
+    >>> import Harpie.Fixed qualified as F
+    >>> import Harpie.Shape qualified as S
+    >>> import Harpie.Array qualified as A
 
 build-type: Simple
 tested-with:
@@ -30,7 +30,7 @@ extra-doc-files:
 
 source-repository head
     type: git
-    location: https://github.com/tonyday567/harpy
+    location: https://github.com/tonyday567/harpie
 
 common ghc-options-stanza
     ghc-options:
@@ -61,10 +61,10 @@ library
         , vector               >=0.12.3 && <0.14
         , vector-algorithms    >=0.9.0 && <0.10
     exposed-modules:
-        Harpy.Array
-        Harpy.Fixed
-        Harpy.Shape
-        Harpy.Sort
+        Harpie.Array
+        Harpie.Fixed
+        Harpie.Shape
+        Harpie.Sort
 
 test-suite doctests
     import: ghc2021-stanza

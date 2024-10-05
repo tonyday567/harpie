@@ -1,0 +1,51 @@
+
+
+* harpie
+
+[[https://hackage.haskell.org/package/harpie][file:https://img.shields.io/hackage/v/harpie.svg
+]][[https://github.com/tonyday567/harry/actions?query=workflow%3Ahaskell-ci][file:https://github.com/tonyday567/harpie/workflows/haskell-ci/badge.svg]]
+
+* Development
+
+#+begin_src haskell-ng :results output
+:r
+:set -Wno-name-shadowing
+:set -Wno-type-defaults
+import qualified Harpie.Shape as S
+import qualified Harpie.Fixed as F
+import qualified Harpie.Array as A
+import Prettyprinter
+import GHC.TypeNats
+import Data.Vector qualified as V
+#+end_src
+
+* ToDo cabal repl bug
+
+#+begin_src haskell-ng :results output
+cabal repl
+Build profile: -w ghc-9.8.2 -O1
+In order, the following will be built (use -v for more details):
+ - harpie-0.1 (lib) (ephemeral targets)
+Preprocessing library for harpie-0.1..
+GHCi, version 9.8.2: https://www.haskell.org/ghc/  :? for help
+Loaded GHCi configuration from /Users/tonyday567/haskell/harpie/.ghci
+[1 of 4] Compiling Harpie.Shape      ( src/Harpie/Shape.hs, interpreted )
+[2 of 4] Compiling Harpie.Sort       ( src/Harpie/Sort.hs, interpreted )
+[3 of 4] Compiling Harpie.Dynamic    ( src/Harpie/Dynamic.hs, interpreted )
+[4 of 4] Compiling Harpie.Fixed      ( src/Harpie/Fixed.hs, interpreted )
+Ok, four modules loaded.
+ghci> import Harpie.Fixed as F
+ghci> a = F.range @[2,3,4]
+ghci> F.extracts (Dims @'[0]) a
+[[0,4,8,12,12,16,20,481112440832,481112440832,123158152609792,Error: cabal: repl failed for harpie-0.1. The build process segfaulted (i.e.
+SIGSEGV).
+#+end_src
+
+#+begin_src haskell-ng :results output
+F.indexes (Dims @'[0]) (UnsafeFins [0]) a
+#+end_src
+#+begin_src haskell-ng :results output
+c = diag <$> (F.extracts (Dims @[0,1,4,5]) $ F.expand (,) (F.indices @[2,3,4]) (F.indices @[4,3,2]))
+ghci> c ! [1,2,2,1]
+[([1,2,0],[0,2,1]),([1,2,1],[1,2,1]),([1,2,2],[2,2,1]),([1,2,3],[3,2,1])]
+#+end_src
