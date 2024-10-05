@@ -9,15 +9,39 @@ author: Tony Day
 maintainer: tonyday567@gmail.com
 homepage: https://github.com/tonyday567/harpie#readme
 bug-reports: https://github.com/tonyday567/harpie/issues
-synopsis: Hyper-rectangular Haskell arrays.
+synopsis: Haskell array programming.
 description:
-    This package provides hyper-rectangular array functionality. Module names clash with each other and with the Prelude, so a clear import strategy is:
+    This package provides Haskell array programming, interface and environment.
+
+    Module names clash with each other and with the Prelude.
 
     == Usage
 
     >>> import Harpie.Fixed qualified as F
     >>> import Harpie.Shape qualified as S
     >>> import Harpie.Array qualified as A
+
+    >>> a = F.range @[2,3,4]
+    >>> F.shape a
+    [2,3,4]
+    >>> pretty a
+    [[[0,1,2,3],
+      [4,5,6,7],
+      [8,9,10,11]],
+     [[12,13,14,15],
+      [16,17,18,19],
+      [20,21,22,23]]]
+
+    >>> a = A.range [2,3,4]
+    >>> F.shape a
+    [2,3,4]
+    >>> pretty a
+    [[[0,1,2,3],
+      [4,5,6,7],
+      [8,9,10,11]],
+     [[12,13,14,15],
+      [16,17,18,19],
+      [20,21,22,23]]]
 
 build-type: Simple
 tested-with:
