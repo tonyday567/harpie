@@ -1356,9 +1356,6 @@ getLastPositions ds s =
 -- >>> :k! Eval (GetLastPositions [2,0] [2,3,4])
 -- ...
 -- = [3, 1]
--- >>> :k! Eval (GetLastPositions '[0] '[0])
--- ...
--- = '[0 GHC.Internal.TypeNats.- 1]
 data GetLastPositions :: [Nat] -> [Nat] -> Exp [Nat]
 
 type instance
