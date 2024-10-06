@@ -985,11 +985,17 @@ getDim i s = fromMaybe (error "getDim outside bounds") (maybeGetDim s i)
 
 maybeGetDim :: [a] -> Int -> Maybe a
 maybeGetDim xs n
-  | n < 0     = Nothing
-  | otherwise = foldr (\x r k -> case k of
-                                   0 -> Just x
-                                   _ -> r (k-1)) (const Nothing) xs n
-{-# INLINABLE maybeGetDim #-}
+  | n < 0 = Nothing
+  | otherwise =
+      foldr
+        ( \x r k -> case k of
+            0 -> Just x
+            _ -> r (k - 1)
+        )
+        (const Nothing)
+        xs
+        n
+{-# INLINEABLE maybeGetDim #-}
 
 -- | Get the dimension of a shape at the supplied index. Error if out-of-bounds or non-computable (usually unknown to the compiler).
 --
