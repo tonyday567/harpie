@@ -1282,7 +1282,7 @@ dropBs _ _ a = unsafeBackpermute id a
 -- >>> pretty $ indexes (Dims @[0,1]) (S.UnsafeFins [1,1]) a
 -- [16,17,18,19]
 indexes ::
-  forall ds s s' xs a.
+  forall s' s ds xs a.
   ( KnownNats s,
     KnownNats s',
     s' ~ Eval (DeleteDims ds s),

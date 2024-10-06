@@ -981,7 +981,15 @@ type family GetIndexImpl (n :: Nat) (xs :: [k]) where
 -- 1
 getDim :: Int -> [Int] -> Int
 getDim 0 [] = 1
-getDim i s = fromMaybe (error "getDim outside bounds") (s List.!? i)
+getDim i s = fromMaybe (error "getDim outside bounds") (maybeGetDim s i)
+
+maybeGetDim :: [a] -> Int -> Maybe a
+maybeGetDim xs n
+  | n < 0     = Nothing
+  | otherwise = foldr (\x r k -> case k of
+                                   0 -> Just x
+                                   _ -> r (k-1)) (const Nothing) xs n
+{-# INLINABLE maybeGetDim #-}
 
 -- | Get the dimension of a shape at the supplied index. Error if out-of-bounds or non-computable (usually unknown to the compiler).
 --
@@ -1350,7 +1358,7 @@ getLastPositions ds s =
 -- = [3, 1]
 -- >>> :k! Eval (GetLastPositions '[0] '[0])
 -- ...
--- = '[0 GHC.TypeNats.- 1]
+-- = '[0 GHC.Internal.TypeNats.- 1]
 data GetLastPositions :: [Nat] -> [Nat] -> Exp [Nat]
 
 type instance
