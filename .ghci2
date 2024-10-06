@@ -3,4 +3,6 @@
 :load Harpie.Fixed
 import Harpie.Fixed as F
 import Harpie.Shape as S
-print (F.index (F.indexes (Dims @'[0]) (S.fins @'[2] [0]) (F.range @[2,3,4])) (UnsafeFins [0,1]))
+a = F.range @[2,3,4]
+x1 = indexes (Dims @'[0]) (S.fins @'[2] [0]) a
+print (F.index x1 (UnsafeFins [0,1]))
