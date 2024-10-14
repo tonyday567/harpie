@@ -1,6 +1,6 @@
 cabal-version: 3.0
 name: harpie
-version: 0.1.0.1
+version: 0.1.1.0
 license: BSD-3-Clause
 license-file: LICENSE
 copyright: Tony Day (c) 2016-2024
@@ -74,7 +74,7 @@ library
     import: ghc2021-stanza
     hs-source-dirs: src
     build-depends:
-        , QuickCheck           >=2.15.0 && <2.16
+        , QuickCheck           >=2.14 && <2.16
         , adjunctions          >=4.0 && <5
         , base                 >=4.14 && <5
         , distributive         >=0.4 && <0.7
