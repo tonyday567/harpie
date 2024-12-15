@@ -206,7 +206,7 @@ type role SNats nominal
 -- - The withSomeSNats function
 --
 -- >>> :t SNats @[2,3,4]
--- SNats @[2,3,4] :: KnownNats [2, 3, 4] => SNats [2, 3, 4]
+-- SNats @[2,3,4] :: SNats [2, 3, 4]
 -- >>> SNats @[2,3,4]
 -- SNats @[2, 3, 4]
 newtype SNats (ns :: [Nat]) = UnsafeSNats [Nat]
