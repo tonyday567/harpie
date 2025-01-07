@@ -190,7 +190,13 @@ module Harpie.Fixed
     invtri,
     inverse,
     chol,
-  )
+    Triangle (..),
+    asUpper,
+    upperAs,
+    asLower,
+    lowerAs,
+    cholTri,
+)
 where
 
 import Data.Bool
@@ -2805,28 +2811,61 @@ invtri a = i
 -- >>> mult (chol e) (transpose (chol e)) == e
 -- True
 chol :: (KnownNat m, Floating a) => Matrix m m a -> Matrix m m a
-chol a =
-  let l =
-        unsafeTabulate
-          ( \[i, j] ->
-              bool
-                ( 1
-                    / unsafeIndex l [j, j]
-                    * ( unsafeIndex a [i, j]
-                          - sum
-                            ( (\k -> unsafeIndex l [i, k] * unsafeIndex l [j, k])
-                                <$> ([0 .. (j - 1)] :: [Int])
-                            )
-                      )
-                )
-                ( sqrt
-                    ( unsafeIndex a [i, i]
-                        - sum
-                          ( (\k -> unsafeIndex l [j, k] ^ (2 :: Int))
-                              <$> ([0 .. (j - 1)] :: [Int])
-                          )
-                    )
-                )
-                (i == j)
-          )
-   in l
+chol a = l
+  where
+    csum = \s@[i,j] -> a ! s - sum ( (\k -> l ! [i, k] * l ! [j, k]) <$> ([0 .. (j - 1)]))
+    l = unsafeTabulate (\s@[i, j] -> bool ( 1 / l ! [j, j] *) sqrt (i==j) (csum s))
+
+cholTri :: (KnownNat m, Floating a) => Matrix m m a -> Triangle m a
+cholTri a = asLower l
+  where
+    csum = \s@[i,j] -> a ! s - sum ( (\k -> l ! [i, k] * l ! [j, k]) <$> ([0 .. (j - 1)]))
+    l = unsafeTabulate (\s@[i, j] -> bool ( 1 / l ! [j, j] *) sqrt (i==j) (csum s))
+
+newtype Triangle n a where
+  Triangle :: V.Vector a -> Triangle n a
+  deriving stock (Functor, Foldable, Generic, Traversable)
+  deriving newtype (Eq, Eq1, Ord, Ord1, Show, Show1)
+
+instance
+  (KnownNat n) =>
+  Data.Distributive.Distributive (Triangle n)
+  where
+  distribute :: (KnownNat n, Functor f) => f (Triangle n a) -> Triangle n (f a)
+  distribute = distributeRep
+  {-# INLINE distribute #-}
+
+instance
+  forall n.
+  (KnownNat n) =>
+  Representable (Triangle n)
+  where
+  type Rep (Triangle n) = Fins [n,n]
+
+  tabulate f =
+    Triangle . V.generate (S.sizeTri n) $ (f . UnsafeFins . (shapenTri n))
+
+    where
+      n = valueOf @n
+  {-# INLINE tabulate #-}
+
+  index (Triangle v) i = V.unsafeIndex v (flattenTri n (fromFins i))
+    where
+      n = valueOf @n
+  {-# INLINE index #-}
+
+instance FromVector (Triangle n a) a where
+  asVector (Triangle v) = v
+  vectorAs v = Triangle v
+
+asUpper :: (KnownNat n) => Array [n,n] a -> Triangle n a
+asUpper a = tabulate (index a)
+
+upperAs :: (KnownNat n, Num a) => Triangle n a -> Array [n,n] a
+upperAs a = unsafeTabulate (\i@[x,y] -> bool 0 (index a (fins [x,y-x])) (isUpper i))
+
+asLower :: (KnownNat n) => Array [n,n] a -> Triangle n a
+asLower a = tabulate (unsafeIndex a . (\[x,y] -> [y+x,x]) . fromFins)
+
+lowerAs :: (KnownNat n, Num a) => Triangle n a -> Array [n,n] a
+lowerAs a = unsafeTabulate (\i@[x,y] -> bool 0 (index a (fins [y,x-y])) (isLower i))

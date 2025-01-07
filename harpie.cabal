@@ -87,6 +87,7 @@ library
     exposed-modules:
         Harpie.Array
         Harpie.Fixed
+        Harpie.Lexico
         Harpie.Shape
         Harpie.Sort
 

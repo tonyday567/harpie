@@ -156,7 +156,16 @@ module Harpie.Shape
     -- * Fcf re-exports
     Eval,
     type (++),
-  )
+
+    -- * Triangle
+    sizeTri,
+    flattenTri,
+    shapenTri,
+    comboTri,
+    triCols,
+    isUpper,
+    isLower,
+    )
 where
 
 import Data.Bool
@@ -1652,3 +1661,45 @@ data DimWindows :: [Nat] -> [Nat] -> Exp [Nat]
 type instance
   Eval (DimWindows ws s) =
     Eval (Eval (Range =<< Rank s) ++ Eval (EnumFromTo (Eval ((Fcf.*) 2 (Eval (Rank s)))) (Eval (Rank ws) - 1)))
+
+-- | Number of elements (specialised to a trangular matrix).
+sizeTri :: Int -> Int
+sizeTri d = sum [1 .. d]
+
+-- | Convert from a n-dimensional shape list index of a Triangle to a flat index, which, technically is the lexicographic position of the position in a row-major array.
+--
+-- >>> flattenTri 4 [1,1]
+-- 6
+--
+-- >>> flattenTri 0 [1,1]
+-- 0
+flattenTri :: Int -> [Int] -> Int
+flattenTri n [x,y] = (sum $ List.take x (List.reverse [1..n])) + y
+flattenTri _ _ = error "bad tringle index"
+{-# INLINE flattenTri #-}
+
+triCols :: Int -> [Int]
+triCols n = List.unfoldr (\(acc,n') -> bool (Just (acc, (acc+n',n'-1))) Nothing (n'==0)) (0,n)
+
+-- | Convert from a flat index to a shape index.
+--
+-- >>> shapenTri 6 17
+-- [1,1]
+--
+shapenTri :: Int -> Int -> [Int]
+shapenTri d0 x0 = go d0 x0 0
+  where
+    go d x acc = bool (go (d-1) (x-d) (acc+1)) [acc,x] (x < d)
+{-# INLINE shapenTri #-}
+
+comboTri :: Int -> [Int] -> [[Int]]
+comboTri 0 _ = [[]]
+comboTri d l = [x : ys | x : xs <- List.reverse (List.inits l), ys <- comboTri (d-1) xs]
+
+isUpper :: [Int] -> Bool
+isUpper [x,y] = x <= y
+isUpper _ = False
+
+isLower :: [Int] -> Bool
+isLower [x,y] = y <= x
+isLower _ = False
