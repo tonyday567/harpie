@@ -982,11 +982,7 @@ drops ds xs a = backpermute dsNew (List.zipWith (\d' s' -> bool (d' + s') s' (d'
 -- >>> let s = indexes [0,1] [1,1] a
 -- >>> pretty s
 -- [16,17,18,19]
-indexes ::
-  Dims ->
-  [Int] ->
-  Array a ->
-  Array a
+indexes :: Dims -> [Int] -> Array a -> Array a
 indexes ds xs a = backpermute (deleteDims ds) (insertDims ds xs) a
 
 -- | Slice along dimensions with the supplied offsets and lengths.
@@ -996,12 +992,7 @@ indexes ds xs a = backpermute (deleteDims ds) (insertDims ds xs) a
 -- [[[13,14],
 --   [17,18],
 --   [21,22]]]
-slices ::
-  Dims ->
-  [Int] ->
-  [Int] ->
-  Array a ->
-  Array a
+slices :: Dims -> [Int] -> [Int] -> Array a -> Array a
 slices ds os ls a = dimsWise (\d (o, l) -> slice d o l) ds (List.zip os ls) a
 
 -- | Select the first element along the supplied dimensions.
