@@ -2795,6 +2795,8 @@ invtri a = i
     sum' = foldl' add zero'
     i = mult (sum' (fmap (pow l) (range @'[n]))) ti
 
+
+
 -- | Cholesky decomposition using the <https://en.wikipedia.org/wiki/Cholesky_decomposition#The_Cholesky_algorithm Cholesky-Crout> algorithm.
 --
 -- >>> e = array @[3,3] @Double [4,12,-16,12,37,-43,-16,-43,98]
@@ -2805,28 +2807,7 @@ invtri a = i
 -- >>> mult (chol e) (transpose (chol e)) == e
 -- True
 chol :: (KnownNat m, Floating a) => Matrix m m a -> Matrix m m a
-chol a =
-  let l =
-        unsafeTabulate
-          ( \[i, j] ->
-              bool
-                ( 1
-                    / unsafeIndex l [j, j]
-                    * ( unsafeIndex a [i, j]
-                          - sum
-                            ( (\k -> unsafeIndex l [i, k] * unsafeIndex l [j, k])
-                                <$> ([0 .. (j - 1)] :: [Int])
-                            )
-                      )
-                )
-                ( sqrt
-                    ( unsafeIndex a [i, i]
-                        - sum
-                          ( (\k -> unsafeIndex l [j, k] ^ (2 :: Int))
-                              <$> ([0 .. (j - 1)] :: [Int])
-                          )
-                    )
-                )
-                (i == j)
-          )
-   in l
+chol a = l
+  where
+    csum = \s@[i,j] -> a ! s - sum ( (\k -> l ! [i, k] * l ! [j, k]) <$> ([0 .. (j - 1)]))
+    l = unsafeTabulate (\s@[i, j] -> bool ( 1 / l ! [j, j] *) sqrt (i==j) (csum s))
