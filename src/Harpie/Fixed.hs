@@ -257,6 +257,8 @@ import Prelude qualified
 --  [[12,13,14,15],
 --   [16,17,18,19],
 --   [20,21,22,23]]]
+-- >>> e = array @[3,3] @Double [4,12,-16,12,37,-43,-16,-43,98]
+-- >>> l = chol e
 
 -- $usage
 --
@@ -2795,8 +2797,6 @@ invtri a = i
     sum' = foldl' add zero'
     i = mult (sum' (fmap (pow l) (range @'[n]))) ti
 
-
-
 -- | Cholesky decomposition using the <https://en.wikipedia.org/wiki/Cholesky_decomposition#The_Cholesky_algorithm Cholesky-Crout> algorithm.
 --
 -- >>> e = array @[3,3] @Double [4,12,-16,12,37,-43,-16,-43,98]
@@ -2806,8 +2806,16 @@ invtri a = i
 --  [-8.0,5.0,3.0]]
 -- >>> mult (chol e) (transpose (chol e)) == e
 -- True
-chol :: (KnownNat m, Floating a) => Matrix m m a -> Matrix m m a
+chol :: (KnownNat m, Floating a, KnownNats '[m,m]) => Matrix m m a -> Matrix m m a
 chol a = l
   where
-    csum = \s@[i,j] -> a ! s - sum ( (\k -> l ! [i, k] * l ! [j, k]) <$> ([0 .. (j - 1)]))
-    l = unsafeTabulate (\s@[i, j] -> bool ( 1 / l ! [j, j] *) sqrt (i==j) (csum s))
+    l = tabulate (\s -> norm_ 1 l s (index a s - cross_ l s))
+
+norm_ :: (Floating a, KnownNat m) => Int -> Matrix m m a -> Fins '[m,m] -> a -> a
+norm_ d l (UnsafeFins s) = bool ( 1 / diag l ! [S.getDim d s] *) sqrt (S.isDiag s)
+
+cross_ :: (Num a, KnownNat m) => Matrix m m a -> Fins '[m,m] -> a
+cross_ l s = sum ( fmap (\k -> l ! [i, k] * l ! [j, k]) (A.range [j]))
+  where
+    [i,j] = fromFins s
+
