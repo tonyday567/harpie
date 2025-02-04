@@ -190,6 +190,8 @@ module Harpie.Fixed
     invtri,
     inverse,
     chol,
+    cross_,
+    norm_,
   )
 where
 
@@ -2818,4 +2820,3 @@ cross_ :: (Num a, KnownNat m) => Matrix m m a -> Fins '[m,m] -> a
 cross_ l s = sum ( fmap (\k -> l ! [i, k] * l ! [j, k]) (A.range [j]))
   where
     [i,j] = fromFins s
-
