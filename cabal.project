@@ -2,4 +2,3 @@ packages:
   harpie.cabal
 
 write-ghc-environment-files: always
-

@@ -230,7 +230,7 @@ import Prelude qualified
 -- >>> import Prelude hiding (cycle, repeat, take, drop, zipWith, length)
 -- >>> import Harpie.Fixed as F
 -- >>> import Harpie.Shape qualified as S
--- >>> import Harpie.Shape (SNats (..), Fin (..), Fins (..))
+-- >>> import Harpie.Shape (SNats, Fin (..), Fins (..))
 -- >>> import GHC.TypeNats
 -- >>> import Data.List qualified as List
 -- >>> import Prettyprinter hiding (dot,fill)

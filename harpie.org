@@ -14,7 +14,7 @@
 :set -XDataKinds
 import qualified Harpie.Shape as S
 import qualified Harpie.Fixed as F
-import qualified Harpie.Array as A
+impot qualified Harpie.Array as A
 import Prettyprinter
 import GHC.TypeNats
 import Data.Vector qualified as V
@@ -31,11 +31,21 @@ pretty l
 Configuration is affected by the following files:
 - cabal.project
 - cabal.project.local
-Build profile: -w ghc-9.10.1 -O1
+Build profile: -w ghc-9.12.2 -O1
 In order, the following will be built (use -v for more details):
- - harpie-0.1.3.0 (interactive) (lib) (file src/Harpie/Fixed.hs changed)
+ - harpie-0.1.3.0 (interactive) (lib) (first run)
 Preprocessing library for harpie-0.1.3.0...
-GHCi, version 9.10.1: https://www.haskell.org/ghc/  :? for help
+GHCi, version 9.12.2: https://www.haskell.org/ghc/  :? for help
+<no location info>: warning: [GHC-32850] [-Wmissing-home-modules]
+    These modules are needed for compilation but not listed in your .cabal file's other-modules for ‘harpie-0.1.3.0-inplace’ :
+        Harpie.Array Harpie.Shape Harpie.Sort
+
+[1 of 4] Compiling Harpie.Shape     ( src/Harpie/Shape.hs, interpreted )
+[2 of 4] Compiling Harpie.Sort      ( src/Harpie/Sort.hs, interpreted )
+[3 of 4] Compiling Harpie.Array     ( src/Harpie/Array.hs, interpreted )
+[4 of 4] Compiling Harpie.Fixed     ( src/Harpie/Fixed.hs, interpreted )
+Ok, four modules loaded.
+4
 Loaded GHCi configuration from /Users/tonyday567/haskell/harpie/.ghci
 [1 of 4] Compiling Harpie.Shape     ( src/Harpie/Shape.hs, interpreted )
 [2 of 4] Compiling Harpie.Sort      ( src/Harpie/Sort.hs, interpreted )
@@ -43,6 +53,9 @@ Loaded GHCi configuration from /Users/tonyday567/haskell/harpie/.ghci
 [4 of 4] Compiling Harpie.Fixed     ( src/Harpie/Fixed.hs, interpreted )
 Ok, four modules loaded.
 Ok, four modules reloaded.
+<interactive>:7:17: error: [GHC-76037]
+    Not in scope: data constructor ‘Harpie.Array’
+    Note: No module named ‘Harpie’ is imported.
 [[[0,1,2,3],
   [4,5,6,7],
   [8,9,10,11]],
@@ -220,30 +233,34 @@ F.tabulate (F.cross_ (F.range @[3,3])) :: F.Array [3,3] Int
 * Next extracts
 
 
+** Harpie.Array
+
 After an extracts, diag collects together elements where the indices are equal.
-
-
 
  #+begin_src haskell-ng :results output
  a = A.range [3,3]
- e = expand (*) a a
- vsep $ arrayAs $ fmap pretty $ diag $ extracts [1,3] e
- shape $ diag $ extracts [1,3] e
+ ppretty = vsep . arrayAs . fmap pretty
+ acc = asArray . scanl (+) (konst [3,3] 0) . arrayAs
+ cross a = join . diag . extracts [0,1] . join . acc . drop 0 (-1) . diag . extracts [1,3] $ expand (*) a a
+ pretty (cross a)
  #+end_src
 
  #+RESULTS:
- #+begin_example
- [[0,0,0],
-  [0,9,18],
-  [0,18,36]]
- [[1,4,7],
-  [4,16,28],
-  [7,28,49]]
- [[4,10,16],
-  [10,25,40],
-  [16,40,64]]
- [3]
- #+end_example
+ : [[0,0,0],
+ :  [0,9,18],
+ :  [7,46,85]]
+
+
+#+begin_src haskell-ng :results output
+e'' = join $ asArray $ scanl (+) (konst [3,3] 0) (arrayAs $ A.drop 0 (-1) e')
+join $ diag $ extracts [0,1] e''
+#+end_src
+
+#+RESULTS:
+: UnsafeArray [3,3] [0,0,0,0,9,18,7,46,85]
+
+
+*** collect
 
 #+begin_src haskell-ng :results output
 :set -Wno-incomplete-patterns
@@ -259,38 +276,71 @@ pretty $ tabulate [3,3] (collect a)
 :  [0,9,46],
 :  [0,18,85]]
 
-#+begin_src haskell-ng :results output
-e' = diag $ extracts [1,3] e
-pretty e'
-#+end_src
 
-#+RESULTS:
-: [UnsafeArray [3,3] [0,0,0,0,9,18,0,18,36],UnsafeArray [3,3] [1,4,7,4,16,28,7,28,49],UnsafeArray [3,3] [4,10,16,10,25,40,16,40,64]]
-
-#+begin_src haskell-ng :results output
-e'' = join $ asArray $ scanl (+) (konst [3,3] 0) (arrayAs $ A.drop 0 (-1) e')
-join $ diag $ extracts [0,1] e''
-#+end_src
-
-#+RESULTS:
-: UnsafeArray [3,3] [0,0,0,0,9,18,7,46,85]
 
 
  #+begin_src haskell-ng :results output
-
  e = expand (*) a a
  e' = diag $ extracts [1,3] e
+ pretty $ fmap pretty e'
  e'' = join $ asArray $ scanl (+) (konst [3,3] 0) (arrayAs $ A.drop 0 (-1) e')
  e''' = join $ diag $ extracts [0,1] e''
  pretty e'''
  #+end_src
 
  #+RESULTS:
- : [[0,0,0],
- :  [0,9,18],
- :  [7,46,85]]
+ #+begin_example
+ [[[0,0,0],
+  [0,9,18],
+  [0,18,36]],[[1,4,7],
+  [4,16,28],
+  [7,28,49]],[[4,10,16],
+  [10,25,40],
+  [16,40,64]]]
+ [[0,0,0],
+  [0,9,18],
+  [7,46,85]]
+ #+end_example
+
+
+#+begin_src haskell-ng :results output
+a = F.range @[3,3]
+e = F.expand (*) a a
+F.shape e
+ex = F.extracts (F.Dims @[1,3]) e
+exd = F.diag ex
+exdd = F.dropB (F.Dim @0) (SNat @1) exd
+pretty $ fmap pretty e'
+
+-- ex = F.extracts @[1,3] e
+-- e' = F.diag $ F.extracts @[1,3] e
+-- pretty $ fmap pretty e'
+-- e'' = join $ asArray $ scanl (+) (konst [3,3] 0) (arrayAs $ A.drop 0 (-1) e')
+-- e''' = join $ diag $ extracts [0,1] e''
+-- pretty e'''
+-- F.dropB (F.Dim @0) (SNat @1) e'
+#+end_src
+
+#+RESULTS:
+: [3,3,3,3]
+: [[[0,0,0],
+:  [0,9,18],
+:  [0,18,36]],[[1,4,7],
+:  [4,16,28],
+:  [7,28,49]],[[4,10,16],
+:  [10,25,40],
+:  [16,40,64]]]
+
+#+begin_src haskell-ng :results output
+:k! Eval (DropDim 0 1 '[3])
+#+end_src
+
+#+RESULTS:
+: Eval (DropDim 0 1 '[3]) :: [Natural]
+: = '[2]
 
  #+begin_src haskell-ng :results output
+ F.shape e
  maps [1] id (join e')
  pretty $ join e'
  #+end_src
@@ -308,3 +358,134 @@ join $ diag $ extracts [0,1] e''
    [10,25,40],
    [16,40,64]]]
  #+end_example
+
+* cross
+
+#+begin_src haskell-ng :results output
+
+c = F.tabulate (F.cross_ (F.range @[3,3])) :: F.Array [3,3] Int
+pretty c
+#+end_src
+
+#+RESULTS:
+: [[0,0,7],
+:  [0,9,46],
+:  [0,18,85]]
+
+
+
+* Next the harpie bug
+
+** package-db version (ok)
+
+#+begin_src sh :results output
+ghc --interactive -package-db /Users/tonyday567/haskell/harpie/dist-newstyle/build/aarch64-osx/ghc-9.12.2/harpie-0.1.3.0/package.conf.inplace
+#+end_src
+
+#+begin_src haskell-ng
+:set -XDataKinds
+:load Harpie.Fixed
+import Harpie.Fixed as F
+import Harpie.Shape as S
+a = F.range @[2,3,4]
+x1 = indexes (Dims @'[0]) (S.fins @'[2] [0]) a
+print (F.index x1 (UnsafeFins [0,1]))
+#+end_src
+
+1
+
+** -isrc version (bugged)
+
+#+begin_src sh :results output
+ghc --interactive -isrc
+#+end_src
+
+#+begin_src haskell-ng
+:set -XDataKinds
+import Harpie.Fixed as F
+import Harpie.Shape as S
+a = F.range @[2,3,4]
+x1 = F.indexes (Dims @'[0]) (S.fins @'[2] [0]) a
+print (F.index x1 (UnsafeFins [0,1]))
+#+end_src
+
+4
+
+(or segfaults)
+
+** alternatives
+
+- [X] org (not ok)
+- [X] cabal repl (not ok)
+  #+begin_quote
+> cabal repl
+Configuration is affected by the following files:
+- cabal.project
+- cabal.project.local
+Build profile: -w ghc-9.12.2 -O1
+In order, the following will be built (use -v for more details):
+ - harpie-0.1.3.0 (interactive) (lib) (first run)
+Preprocessing library for harpie-0.1.3.0...
+GHCi, version 9.12.2: https://www.haskell.org/ghc/  :? for help
+<no location info>: warning: [GHC-32850] [-Wmissing-home-modules]
+    These modules are needed for compilation but not listed in your .cabal file's other-modules for ‘harpie-0.1.3.0-inplace’ :
+        Harpie.Array Harpie.Shape Harpie.Sort
+
+[1 of 4] Compiling Harpie.Shape     ( src/Harpie/Shape.hs, interpreted )
+[2 of 4] Compiling Harpie.Sort      ( src/Harpie/Sort.hs, interpreted )
+[3 of 4] Compiling Harpie.Array     ( src/Harpie/Array.hs, interpreted )
+[4 of 4] Compiling Harpie.Fixed     ( src/Harpie/Fixed.hs, interpreted )
+Ok, four modules loaded.
+4
+Loaded GHCi configuration from /Users/tonyday567/haskell/harpie/.ghci
+[1 of 4] Compiling Harpie.Shape     ( src/Harpie/Shape.hs, interpreted )
+[2 of 4] Compiling Harpie.Sort      ( src/Harpie/Sort.hs, interpreted )
+[3 of 4] Compiling Harpie.Array     ( src/Harpie/Array.hs, interpreted )
+[4 of 4] Compiling Harpie.Fixed     ( src/Harpie/Fixed.hs, interpreted )
+Ok, four modules loaded.
+#+end_quote
+- [X] stack ghci (not ok)
+- [X] docspec (ok)
+- [X] runhaskell can reproduce the error
+
+  #+begin_src sh
+  harpie git:(color) ✗ runhaskell bug.hs
+1
+➜  harpie git:(color) ✗ runhaskell bug.hs
+1
+➜  harpie git:(color) ✗ runhaskell bug.hs
+1
+➜  harpie git:(color) ✗ runhaskell --ghc-arg='-isrc' bug.hs
+[1]    32322 bus error  runhaskell --ghc-arg='-isrc' bug.hs
+➜  harpie git:(color) ✗ runhaskell --ghc-arg='-isrc' bug.hs
+[1]    32459 bus error  runhaskell --ghc-arg='-isrc' bug.hs
+➜  harpie git:(color) ✗ runhaskell --ghc-arg='-isrc' bug.hs
+[1]    32596 bus error  runhaskell --ghc-arg='-isrc' bug.hs
+➜  harpie git:(color) ✗ runhaskell --ghc-arg='-isrc' bug.hs
+4
+  #+end_src
+- [X] doctest (not ok)
+
+  #+begin_quote
+  cabal repl --with-compiler=doctest
+Configuration is affected by the following files:
+- cabal.project
+- cabal.project.local
+Build profile: -w ghc-9.12.2 -O1
+In order, the following will be built (use -v for more details):
+ - harpie-0.1.3.0 (interactive) (lib) (first run)
+Preprocessing library for harpie-0.1.3.0...
+Examples: 660  Tried: 65  Errors: 0  Failures: 0
+doctest: Uncaught exception ghc-internal:GHC.Internal.IO.Exception.IOException:
+
+user error (Language.Haskell.GhciWrapper.close: Interpreter exited with an error (ExitFailure (-11)))
+
+While handling user error (Language.Haskell.GhciWrapper.close: Interpreter exited with an error (ExitFailure (-11)))
+
+HasCallStack backtrace:
+  throwIO, called at src/Run.hs:150:12 in dctst-0.24.0-b15a444d:Run
+
+Error: [Cabal-7125]
+repl failed for harpie-0.1.3.0.
+  #+end_quote
+- [X] without the environment flag, ghc --interactive is difficult to work at all.

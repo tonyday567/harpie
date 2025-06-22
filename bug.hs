@@ -1,0 +1,12 @@
+-- ghc --interactive -package-db /Users/tonyday567/haskell/harpie/dist-newstyle/build/aarch64-osx/ghc-9.12.2/harpie-0.1.3.0/package.conf.inplace
+
+{-# LANGUAGE DataKinds #-}
+
+module Main where
+
+import Harpie.Fixed as F
+import Harpie.Shape as S
+
+a = F.range @[2,3,4]
+x1 = indexes (Dims @'[0]) (S.fins @'[2] [0]) a
+main = print (F.index x1 (UnsafeFins [0,1]))
