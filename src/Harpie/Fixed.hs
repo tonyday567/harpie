@@ -2808,15 +2808,15 @@ invtri a = i
 --  [-8.0,5.0,3.0]]
 -- >>> mult (chol e) (transpose (chol e)) == e
 -- True
-chol :: (KnownNat m, Floating a, KnownNats '[m,m]) => Matrix m m a -> Matrix m m a
+chol :: (KnownNat m, Floating a, KnownNats '[m, m]) => Matrix m m a -> Matrix m m a
 chol a = l
   where
     l = tabulate (\s -> norm_ 1 l s (index a s - cross_ l s))
 
-norm_ :: (Floating a, KnownNat m) => Int -> Matrix m m a -> Fins '[m,m] -> a -> a
-norm_ d l (UnsafeFins s) = bool ( 1 / diag l ! [S.getDim d s] *) sqrt (S.isDiag s)
+norm_ :: (Floating a, KnownNat m) => Int -> Matrix m m a -> Fins '[m, m] -> a -> a
+norm_ d l (UnsafeFins s) = bool (1 / diag l ! [S.getDim d s] *) sqrt (S.isDiag s)
 
-cross_ :: (Num a, KnownNat m) => Matrix m m a -> Fins '[m,m] -> a
-cross_ l s = sum ( fmap (\k -> l ! [i, k] * l ! [j, k]) (A.range [j]))
+cross_ :: (Num a, KnownNat m) => Matrix m m a -> Fins '[m, m] -> a
+cross_ l s = sum (fmap (\k -> l ! [i, k] * l ! [j, k]) (A.range [j]))
   where
-    [i,j] = fromFins s
+    [i, j] = fromFins s
