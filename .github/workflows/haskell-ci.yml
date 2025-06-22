@@ -80,7 +80,7 @@ jobs:
       - name: Build
         run: cabal build all
 
-      - if: ${{ matrix.os == 'ubuntu-latest' && matrix.ghc-version == '9.12'}}
+      - # if: ${{ matrix.os == 'ubuntu-latest' && matrix.ghc-version == '9.12'}}
         name: doctests
         run: cabal run doctests
 
