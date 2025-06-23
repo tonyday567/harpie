@@ -374,7 +374,47 @@ pretty c
 
 
 
-* Next the harpie bug
+* Next issue #1 bug
+
+#+begin_src sh :results output
+ghc --interactive -isrc
+#+end_src
+
+Computes an incorrect result for:
+
+#+begin_src haskell-ng
+:set -XDataKinds
+:load Harpie.Fixed
+import Harpie.Fixed as F
+import Harpie.Shape as S
+a = F.range @[2,3,4]
+x1 = indexes (Dims @'[0]) (S.fins @'[2] [0]) a
+print (F.index x1 (UnsafeFins [0,1]))
+#+end_src
+
+but
+
+#+begin_src sh :results output
+ghc --interactive -package-db /Users/tonyday567/haskell/harpie/dist-newstyle/build/aarch64-osx/ghc-9.12.2/harpie-0.1.3.0/package.conf.inplace
+#+end_src
+
+is fine.
+
+Reproduced using runhaskell:
+
+#+begin_src sh :results output
+runhaskell test/bug-issue1.hs
+#+end_src
+
+#+RESULTS:
+: 1
+
+#+begin_src sh :results output
+runhaskell --ghc-arg='-isrc' test/bug-issue1.hs
+#+end_src
+
+#+RESULTS:
+: 4
 
 ** package-db version (ok)
 
@@ -488,4 +528,3 @@ HasCallStack backtrace:
 Error: [Cabal-7125]
 repl failed for harpie-0.1.3.0.
   #+end_quote
-- [X] without the environment flag, ghc --interactive is difficult to work at all.
