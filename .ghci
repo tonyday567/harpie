@@ -1,6 +1,1 @@
-:set -XNoImplicitPrelude
 :set -XDataKinds
-:set -XExtendedDefaultRules
-:set -XFlexibleContexts
-:set -XTypeFamilies
-
