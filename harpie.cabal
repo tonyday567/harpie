@@ -102,3 +102,29 @@ test-suite doctests
 
   ghc-options: -threaded
   type: exitcode-stdio-1.0
+
+common ghc-options-exe-stanza
+    ghc-options:
+        -fforce-recomp
+        -funbox-strict-fields
+        -rtsopts
+        -threaded
+        -with-rtsopts=-N
+
+executable harpie-bug-issue1
+    import: ghc-options-exe-stanza
+    import: ghc-options-stanza
+    import: ghc2021-stanza
+    main-is: harpie-bug-issue1.hs
+    hs-source-dirs: test
+    build-depends:
+      adjunctions >=4.0 && <5,
+      base >=4.14 && <5,
+      distributive >=0.4 && <0.7,
+      first-class-families >=0.8.1 && <0.9,
+      harpie,
+      prettyprinter >=1.7 && <1.8,
+      quickcheck-instances >=0.3.31 && <0.4,
+      random >=1.2 && <1.4,
+      vector >=0.12.3 && <0.14,
+      vector-algorithms >=0.9.0 && <0.10,

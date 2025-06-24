@@ -1286,6 +1286,8 @@ dropBs _ _ a = unsafeBackpermute id a
 --
 -- >>> pretty $ indexes (Dims @[0,1]) (S.UnsafeFins [1,1]) a
 -- [16,17,18,19]
+-- >>> F.indexes (S.SNats @'[1]) (S.fins @'[3] [1]) (F.range @[2,3])
+-- [1,4]
 indexes ::
   forall s' s ds xs a.
   ( KnownNats s,
