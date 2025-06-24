@@ -376,23 +376,59 @@ pretty c
 
 * Next issue #1 bug
 
+** cabal repl
+
+`cabal repl` segfaults or computes the wrong answer.
+
+#+begin_src haskell-ng :results output
+ghci> import Harpie.Fixed qualified as F
+ghci> import Harpie.Shape qualified as S
+ghci> F.indexes (S.SNats @'[1]) (S.fins @'[3] [1]) (F.range @[2,3])
+[Error: [Cabal-7125]
+repl failed for harpie-0.1.3.0. The build process segfaulted (i.e. SIGSEGV).
+#+end_src
+
+`ståck ghci` and `ghc --interactive -isrc` both reproduce this result.
+
+** cabal repl harpie:exe:harpie-bug-issue1
+
+`cabl repl harpie:exe:harpie-bug-issue1` (created to reproduce the error in an executable) gives the correct answer:
+
+#+begin_src haskell-ng :results output
+ghci> import Harpie.Fixed qualified as F
+ghci> import Harpie.Shape qualified as S
+ghci> F.indexes (S.SNats @'[1]) (S.fins @'[3] [1]) (range @[2,3])
+[1,4]
+#+end_src
+
+Using the inplace package-db also works:
+
 #+begin_src sh :results output
-ghc --interactive -isrc
+ghc --interactive -package-db /Users/tonyday567/haskell/harpie/dist-newstyle/build/aarch64-osx/ghc-9.12.2/harpie-0.1.3.0/package.conf.inplace
 #+end_src
 
-Computes an incorrect result for:
+A doctest with this code also passes with cabal-docspec and doctest-parallel.
 
-#+begin_src haskell-ng
-:set -XDataKinds
-:load Harpie.Fixed
-import Harpie.Fixed as F
-import Harpie.Shape as S
-a = F.range @[2,3,4]
-x1 = indexes (Dims @'[0]) (S.fins @'[2] [0]) a
-print (F.index x1 (UnsafeFins [0,1]))
+** runhaskell
+
+The bug is reproduced with runhaskell:
+
+#+begin_src sh :results output
+➜  harpie git:(simplification) ✗ runhaskell test/harpie-bug-issue1.hs
+using module functions: [1,4]
+using inplace functions:[1,4]
+➜  harpie git:(simplification) ✗ runhaskell --ghc-arg='-isrc' test/harpie-bug-issue1.hs
+
+using module functions: [0,1]
+using inplace functions:[0,1]
+➜  harpie git:(simplification) ✗
+➜  harpie git:(simplification) ✗ runhaskell --ghc-arg='-isrc' test/harpie-bug-issue1.hs
+
+using module functions: [[1]    62817 segmentation fault  runhaskell --ghc-arg='-isrc' test/harpie-bug-issue1.hs
+➜  harpie git:(simplification) ✗
 #+end_src
 
-but
+** ghc --interactive
 
 #+begin_src sh :results output
 ghc --interactive -package-db /Users/tonyday567/haskell/harpie/dist-newstyle/build/aarch64-osx/ghc-9.12.2/harpie-0.1.3.0/package.conf.inplace
@@ -400,131 +436,139 @@ ghc --interactive -package-db /Users/tonyday567/haskell/harpie/dist-newstyle/bui
 
 is fine.
 
-Reproduced using runhaskell:
-
-#+begin_src sh :results output
-runhaskell test/bug-issue1.hs
-#+end_src
-
-#+RESULTS:
-: 1
-
-#+begin_src sh :results output
-runhaskell --ghc-arg='-isrc' test/bug-issue1.hs
-#+end_src
-
-#+RESULTS:
-: 4
-
-** package-db version (ok)
-
-#+begin_src sh :results output
-ghc --interactive -package-db /Users/tonyday567/haskell/harpie/dist-newstyle/build/aarch64-osx/ghc-9.12.2/harpie-0.1.3.0/package.conf.inplace
-#+end_src
-
-#+begin_src haskell-ng
-:set -XDataKinds
-:load Harpie.Fixed
-import Harpie.Fixed as F
-import Harpie.Shape as S
-a = F.range @[2,3,4]
-x1 = indexes (Dims @'[0]) (S.fins @'[2] [0]) a
-print (F.index x1 (UnsafeFins [0,1]))
-#+end_src
-
-1
-
-** -isrc version (bugged)
-
 #+begin_src sh :results output
 ghc --interactive -isrc
 #+end_src
 
-#+begin_src haskell-ng
-:set -XDataKinds
-import Harpie.Fixed as F
-import Harpie.Shape as S
-a = F.range @[2,3,4]
-x1 = F.indexes (Dims @'[0]) (S.fins @'[2] [0]) a
-print (F.index x1 (UnsafeFins [0,1]))
+is not.
+
+
+* Next issue #5
+
+** ghc-9.8 doctest parallel run
+
+#+begin_src sh :results output
+➜  harpie git:(simplification) ✗ cabal build --write-ghc-environment-files=always
+➜  harpie git:(simplification) ✗ cabal run doctests
+Configuration is affected by the following files:
+- cabal.project
+- cabal.project.local
+[INFO   ] [ThreadId 4] Examples: 606  Tried: 606  Errors: 0  Unexpected output: 0
 #+end_src
 
-4
+** docspec is ok with ghc-9.12
 
-(or segfaults)
+#+begin_src sh :results output
+➜  harpie git:(simplification) ✗ cabal-docspec
+[   0.00031] ghc.info: ghc
+[   0.00683] process.0.start: cwd=/var/folders/gn/pj_vmm396lx33phgx2m8qlyw0000gn/T/ ghc --info
+[   0.11000] docspec.component: harpie-0.1.3.0 lib
+[   0.11031] docspec.phase1: Harpie.Array: /Users/tonyday567/haskell/harpie/./src/Harpie/Array.hs
+[   0.11081] docspec.phase1: Harpie.Fixed: /Users/tonyday567/haskell/harpie/./src/Harpie/Fixed.hs
+[   0.11105] docspec.phase1: Harpie.Shape: /Users/tonyday567/haskell/harpie/./src/Harpie/Shape.hs
+[   0.11128] docspec.phase1: Harpie.Sort: /Users/tonyday567/haskell/harpie/./src/Harpie/Sort.hs
+[   0.42187] docspec.phase2: Harpie.Array
+[   4.11229] docspec.phase2: Harpie.Fixed
+[   9.83338] docspec.phase2: Harpie.Shape
+[  10.99746] docspec.phase2: Harpie.Sort
+[  11.07196] doctest.summary:
+Total:       661; Tried:  661; Skipped:    0; Success:  661; Errors:    0; Failures    0
+Examples:    606; Tried:  606; Skipped:    0; Success:  606; Errors:    0; Failures    0
+Setup:        55; Tried:   55; Skipped:    0; Success:   55; Errors:    0; Failures    0
 
-** alternatives
+[  11.07261] peu.completed: OK
+➜  harpie git:(simplification) ✗
+#+end_src
 
-- [X] org (not ok)
-- [X] cabal repl (not ok)
-  #+begin_quote
-> cabal repl
-Configuration is affected by the following files:
-- cabal.project
-- cabal.project.local
-Build profile: -w ghc-9.12.2 -O1
-In order, the following will be built (use -v for more details):
- - harpie-0.1.3.0 (interactive) (lib) (first run)
-Preprocessing library for harpie-0.1.3.0...
-GHCi, version 9.12.2: https://www.haskell.org/ghc/  :? for help
-<no location info>: warning: [GHC-32850] [-Wmissing-home-modules]
-    These modules are needed for compilation but not listed in your .cabal file's other-modules for ‘harpie-0.1.3.0-inplace’ :
-        Harpie.Array Harpie.Shape Harpie.Sort
+** doctest attempt:
 
-[1 of 4] Compiling Harpie.Shape     ( src/Harpie/Shape.hs, interpreted )
-[2 of 4] Compiling Harpie.Sort      ( src/Harpie/Sort.hs, interpreted )
-[3 of 4] Compiling Harpie.Array     ( src/Harpie/Array.hs, interpreted )
-[4 of 4] Compiling Harpie.Fixed     ( src/Harpie/Fixed.hs, interpreted )
-Ok, four modules loaded.
-4
-Loaded GHCi configuration from /Users/tonyday567/haskell/harpie/.ghci
-[1 of 4] Compiling Harpie.Shape     ( src/Harpie/Shape.hs, interpreted )
-[2 of 4] Compiling Harpie.Sort      ( src/Harpie/Sort.hs, interpreted )
-[3 of 4] Compiling Harpie.Array     ( src/Harpie/Array.hs, interpreted )
-[4 of 4] Compiling Harpie.Fixed     ( src/Harpie/Fixed.hs, interpreted )
-Ok, four modules loaded.
-#+end_quote
-- [X] stack ghci (not ok)
-- [X] docspec (ok)
-- [X] runhaskell can reproduce the error
+#+begin_src sh :results output
+cabal repl --with-compiler=doctest -v
+#+end_src
 
-  #+begin_src sh
-  harpie git:(color) ✗ runhaskell bug.hs
-1
-➜  harpie git:(color) ✗ runhaskell bug.hs
-1
-➜  harpie git:(color) ✗ runhaskell bug.hs
-1
-➜  harpie git:(color) ✗ runhaskell --ghc-arg='-isrc' bug.hs
-[1]    32322 bus error  runhaskell --ghc-arg='-isrc' bug.hs
-➜  harpie git:(color) ✗ runhaskell --ghc-arg='-isrc' bug.hs
-[1]    32459 bus error  runhaskell --ghc-arg='-isrc' bug.hs
-➜  harpie git:(color) ✗ runhaskell --ghc-arg='-isrc' bug.hs
-[1]    32596 bus error  runhaskell --ghc-arg='-isrc' bug.hs
-➜  harpie git:(color) ✗ runhaskell --ghc-arg='-isrc' bug.hs
-4
-  #+end_src
-- [X] doctest (not ok)
+#+begin_src sh :results output
+src/Harpie/Fixed.hs:521: failure in expression `with (A.range [2,3,4]) show'
+expected: "[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]"
+ but got: "*** Exception: Shape Mismatch
+           ^
+          CallStack (from HasCallStack):
+            error, called at src/Harpie/Fixed.hs:473:14 in harpie-0.1.3.0-inplace:Harpie.Fixed
 
-  #+begin_quote
-  cabal repl --with-compiler=doctest
-Configuration is affected by the following files:
-- cabal.project
-- cabal.project.local
-Build profile: -w ghc-9.12.2 -O1
-In order, the following will be built (use -v for more details):
- - harpie-0.1.3.0 (interactive) (lib) (first run)
-Preprocessing library for harpie-0.1.3.0...
-Examples: 660  Tried: 65  Errors: 0  Failures: 0
-doctest: Uncaught exception ghc-internal:GHC.Internal.IO.Exception.IOException:
+src/Harpie/Fixed.hs:863: failure in expression `toDynamic $ rowWise indexesT (S.SNats @[1,0]) a'
+expected: UnsafeArray [4] [12,13,14,15]
+ but got: UnsafeArray [4] [0,1,2,3]
+                           ^
 
-user error (Language.Haskell.GhciWrapper.close: Interpreter exited with an error (ExitFailure (-11)))
-
-While handling user error (Language.Haskell.GhciWrapper.close: Interpreter exited with an error (ExitFailure (-11)))
-
-HasCallStack backtrace:
-  throwIO, called at src/Run.hs:150:12 in dctst-0.24.0-b15a444d:Run
-
+Examples: 661  Tried: 101  Errors: 0  Failures: 2
+doctest: user error (Language.Haskell.GhciWrapper.close: Interpreter exited with an error (ExitFailure (-11)))
 Error: [Cabal-7125]
-repl failed for harpie-0.1.3.0.
-  #+end_quote
+repl failed for harpie-0.1.3.0-inplace.
+CallStack (from HasCallStack):
+  dieWithException, called at src/Distribution/Client/ProjectOrchestration.hs:1241:21 in cabal-install-3.14.2.0-inplace:Distribution.Client.ProjectOrchestration
+
+➜  harpie git:(simplification) ✗
+#+end_src
+
+** ghc-9.12
+
+#+begin_src sh :results output
+➜  harpie git:(simplification) ✗ cabal run doctests
+Configuration is affected by the following files:
+- cabal.project
+- cabal.project.local
+[ERROR  ] [ThreadId 21] /Users/tonyday567/haskell/harpie/src/Harpie/Shape.hs:414: failure in expression `:k! Eval (Rank [2,3,4])'
+[ERROR  ] [ThreadId 21] expected: ...
+[ERROR  ] [ThreadId 21]           = 3
+[ERROR  ] [ThreadId 21]  but got: Eval (Rank [2,3,4]) :: GHC.Num.Natural.Natural
+[ERROR  ] [ThreadId 21]           = Eval (Length [2, 3, 4])
+[ERROR  ] [ThreadId 21]             ^
+
+[ERROR  ] [ThreadId 21] /Users/tonyday567/haskell/harpie/src/Harpie/Shape.hs:464: failure in expression `:k! Eval (Rerank 4 [2,3,4])'
+[ERROR  ] [ThreadId 21] expected: ...
+[ERROR  ] [ThreadId 21]           = [1, 2, 3, 4]
+[ERROR  ] [ThreadId 21]  but got: Eval (Rerank 4 [2,3,4]) :: [GHC.Num.Natural.Natural]
+[ERROR  ] [ThreadId 21]           = If
+[ERROR  ] [ThreadId 21]             ^
+[ERROR  ] [ThreadId 21]               (Eval (Not =<< (4 <= 3)))
+[ERROR  ] [ThreadId 21]               (Eval
+[ERROR  ] [ThreadId 21]                  (Fcf.Data.List.UnfoldrCase
+[ERROR  ] [ThreadId 21]                     (Fcf.Data.List.NumIter 1)
+[ERROR  ] [ThreadId 21]                     (If (Eval (Not =<< (1 <= 0))) (Just '(1, 0)) Nothing))
+[ERROR  ] [ThreadId 21]                Fcf.Class.Monoid.<> [2, 3, 4])
+[ERROR  ] [ThreadId 21]               ('[Eval
+[ERROR  ] [ThreadId 21]                    (Foldr
+[ERROR  ] [ThreadId 21]                       (*)
+[ERROR  ] [ThreadId 21]                       1
+[ERROR  ] [ThreadId 21]                       (Fcf.Data.List.Take_
+[ERROR  ] [ThreadId 21]                          ((3 GHC.Internal.TypeNats.- 4) GHC.Internal.TypeNats.+ 1)
+[ERROR  ] [ThreadId 21]                          [2, 3, 4]))]
+[ERROR  ] [ThreadId 21]                Fcf.Class.Monoid.<> Fcf.Data.List.Drop_
+[ERROR  ] [ThreadId 21]                                      ((3 GHC.Internal.TypeNats.- 4) GHC.Internal.TypeNats.+ 1)
+[ERROR  ] [ThreadId 21]                                      [2, 3, 4])
+
+[ERROR  ] [ThreadId 21] /Users/tonyday567/haskell/harpie/src/Harpie/Shape.hs:647: failure in expression `:k! Eval (IsSubset [2,3,4] [2,3,4])'
+[ERROR  ] [ThreadId 21] expected: ...
+[ERROR  ] [ThreadId 21]           = True
+[ERROR  ] [ThreadId 21]  but got: Eval (IsSubset [2,3,4] [2,3,4]) :: Bool
+[ERROR  ] [ThreadId 21]           = Eval (TyEq 3 3)
+[ERROR  ] [ThreadId 21]             ^
+
+[ERROR  ] [ThreadId 21] /Users/tonyday567/haskell/harpie/src/Harpie/Shape.hs:673: failure in expression `:k! Eval (ExceptDims [1,2] [2,3,4])'
+[ERROR  ] [ThreadId 21] expected: ...
+[ERROR  ] [ThreadId 21]           = '[0]
+[ERROR  ] [ThreadId 21]  but got: Eval (ExceptDims [1,2] [2,3,4]) :: [GHC.Num.Natural.Natural]
+[ERROR  ] [ThreadId 21]           = Eval
+[ERROR  ] [ThreadId 21]             ^
+[ERROR  ] [ThreadId 21]               (Foldl'
+[ERROR  ] [ThreadId 21]                  (Flip DeleteDim)
+[ERROR  ] [ThreadId 21]                  [0, 1, 2]
+[ERROR  ] [ThreadId 21]                  (Eval
+[ERROR  ] [ThreadId 21]                     (Fcf.Data.List.Rev
+[ERROR  ] [ThreadId 21]                        (Eval
+[ERROR  ] [ThreadId 21]                           (Harpie.Shape.PreDeletePositionsGo
+[ERROR  ] [ThreadId 21]                              (Eval (Map (Harpie.Shape.DecPast 1) '[2])) '[1]))
+[ERROR  ] [ThreadId 21]                        '[])))
+
+[INFO   ] [ThreadId 4] Examples: 606  Tried: 603  Errors: 0  Unexpected output: 4
+➜  harpie git:(simplification) ✗
+#+end_src
