@@ -230,7 +230,7 @@ F.tabulate (F.cross_ (F.range @[3,3])) :: F.Array [3,3] Int
 #+RESULTS:
 : [0,0,7,0,9,46,0,18,85]
 
-* Next extracts
+* extracts
 
 
 ** Harpie.Array
@@ -374,7 +374,18 @@ pretty c
 
 
 
-* Next issue #1 bug
+* issue #1 bug
+
+** to reproduce with `cabal repl`
+
+#+begin_src haskell-ng :results output
+ghci> :load Harpie.Fixed
+ghci> import Harpie.Shape qualified as S
+ghci> import Harpie.Fixed qualified as F
+ghci> F.indexes (S.SNats @'[1]) (S.fins @'[3] [1]) (F.range @[2,3])
+[Error: [Cabal-7125]
+repl failed for harpie-0.1.3.0. The build process segfaulted (i.e. SIGSEGV).
+#+end_src
 
 ** cabal repl
 
@@ -401,13 +412,20 @@ ghci> F.indexes (S.SNats @'[1]) (S.fins @'[3] [1]) (range @[2,3])
 [1,4]
 #+end_src
 
-Using the inplace package-db also works:
+** write-ghc-environment-files: always
 
-#+begin_src sh :results output
-ghc --interactive -package-db /Users/tonyday567/haskell/harpie/dist-newstyle/build/aarch64-osx/ghc-9.12.2/harpie-0.1.3.0/package.conf.inplace
-#+end_src
+With write-ghc-environment-files switch on (a requirement of doctest-parallel), there are many other ways of running the same code.
+
+
+`ghci` and `ghc --interactive` works as expected.
+
+but
+
+`ghc --interactive -isrc` gives the bug.
 
 A doctest with this code also passes with cabal-docspec and doctest-parallel.
+
+Without an environment file, getting any of these commands to run is problematic.
 
 ** runhaskell
 
@@ -424,26 +442,20 @@ using inplace functions:[0,1]
 ➜  harpie git:(simplification) ✗
 ➜  harpie git:(simplification) ✗ runhaskell --ghc-arg='-isrc' test/harpie-bug-issue1.hs
 
-using module functions: [[1]    62817 segmentation fault  runhaskell --ghc-arg='-isrc' test/harpie-bug-issue1.hs
+using module functions: [[1]    62817 segmentation fault
 ➜  harpie git:(simplification) ✗
 #+end_src
 
-** ghc --interactive
-
 #+begin_src sh :results output
-ghc --interactive -package-db /Users/tonyday567/haskell/harpie/dist-newstyle/build/aarch64-osx/ghc-9.12.2/harpie-0.1.3.0/package.conf.inplace
+runghc --ghc-arg='-isrc' test/harpie-bug-issue1.hs
+using module functions: [[1]    18646 segmentation fault  runghc --ghc-arg='-isrc' test/harpie-bug-issue1.hs
+➜  harpie git:(main) ✗ runghc test/harpie-bug-issue1.hs --ghc-arg='-isrc'
+using module functions: [1,4]
+using inplace functions:[1,4]
 #+end_src
 
-is fine.
 
-#+begin_src sh :results output
-ghc --interactive -isrc
-#+end_src
-
-is not.
-
-
-* Next issue #5
+* issue #5
 
 ** ghc-9.8 doctest parallel run
 

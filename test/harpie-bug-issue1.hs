@@ -7,11 +7,6 @@ import Harpie.Shape qualified as S
 import Data.Functor.Rep (tabulate, index)
 import Fcf qualified
 
--- :t indexesT (Dims @'[0]) (Dims @'[0]) a
--- F.indexes (S.SNats @'[2]) (S.UnsafeFins [0]) a
--- cabal repl harpie:exe:harpie-bug-issue1
-
-
 -- | bug-issue1
 --
 -- >>> F.indexes (S.SNats @'[1]) (S.fins @'[3] [1]) (range @[2,3])
