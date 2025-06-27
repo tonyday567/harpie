@@ -192,10 +192,41 @@ executable harpie-bug-issue1
       adjunctions >=4.0 && <5,
       base >=4.14 && <5,
       distributive >=0.4 && <0.7,
-      first-class-families >=0.8.1 && <0.9,
       harpie,
-      prettyprinter >=1.7 && <1.8,
-      quickcheck-instances >=0.3.31 && <0.4,
-      random >=1.2 && <1.4,
       vector >=0.12.3 && <0.14,
-      vector-algorithms >=0.9.0 && <0.10,
+
+executable harpie-bug-issue1-dev
+    import: ghc-options-exe-stanza
+    import: ghc-options-stanza
+    import: ghc2024-stanza
+    main-is: harpie-bug-issue1-dev.hs
+    hs-source-dirs: test
+    build-depends:
+      adjunctions >=4.0 && <5,
+      base >=4.14 && <5,
+      distributive >=0.4 && <0.7,
+      vector >=0.12.3 && <0.14,
+
+executable harpie-bug-issue1-dev-indexes
+    import: ghc-options-exe-stanza
+    import: ghc-options-stanza
+    import: ghc2024-stanza
+    main-is: harpie-bug-issue1-dev-indexes.hs
+    hs-source-dirs: test
+    build-depends:
+      adjunctions >=4.0 && <5,
+      base >=4.14 && <5,
+      distributive >=0.4 && <0.7,
+      vector >=0.12.3 && <0.14,
+
+executable harpie-bug-issue1-dev-backpermute
+    import: ghc-options-exe-stanza
+    import: ghc-options-stanza
+    import: ghc2024-stanza
+    main-is: harpie-bug-issue1-dev-backpermute.hs
+    hs-source-dirs: test
+    build-depends:
+      adjunctions >=4.0 && <5,
+      base >=4.14 && <5,
+      distributive >=0.4 && <0.7,
+      vector >=0.12.3 && <0.14,

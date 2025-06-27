@@ -1,0 +1,3114 @@
+Loaded package environment from /Users/tonyday567/haskell/harpie/.ghc.environment.aarch64-darwin-9.12.2
+[1 of 2] Compiling Main             ( test/harpie-bug-issue1-dev-indexes.hs, test/harpie-bug-issue1-dev-indexes.o )
+
+==================== Tidy Core ====================
+Result size of Tidy Core
+  = {terms: 1,817, types: 3,048, coercions: 1,065, joins: 3/24}
+
+-- RHS size: {terms: 3, types: 4, coercions: 2, joins: 0/0}
+natsSing [InlPrag=INLINE]
+  :: forall (ns :: [Nat]). KnownNats ns => SNats ns
+[GblId[ClassOp], Arity=1, Str=<SL>, Unf=OtherCon []]
+natsSing
+  = \ (@(ns_a4P4 :: [Nat])) (v_B1 :: KnownNats ns_a4P4) ->
+      v_B1
+      `cast` (Main.N:KnownNats <ns_a4P4>_N
+              :: KnownNats ns_a4P4 ~R# SNats ns_a4P4)
+
+-- RHS size: {terms: 1, types: 1, coercions: 9, joins: 0/0}
+Main.$fKnownNats[] [InlPrag=INLINE (sat-args=0)] :: KnownNats '[]
+[GblId[DFunId(nt)], Unf=OtherCon []]
+Main.$fKnownNats[]
+  = (GHC.Types.[] @Nat)
+    `cast` (Sym (Main.N:SNats <'[]>_N)
+            ; Sym (Main.N:KnownNats <'[]>_N)
+            :: [Nat] ~R# KnownNats '[])
+
+-- RHS size: {terms: 4, types: 5, coercions: 0, joins: 0/0}
+$cliftShowList_r9nB
+  :: forall (s :: [Nat]) a.
+     (Int -> a -> ShowS) -> ([a] -> ShowS) -> [V.Vector a] -> ShowS
+[GblId]
+$cliftShowList_r9nB
+  = \ (@(s_a8XG :: [Nat])) (@a_a8Y8) ->
+      liftShowList @V.Vector Data.Vector.$fShow1Vector @a_a8Y8
+
+-- RHS size: {terms: 4, types: 5, coercions: 0, joins: 0/0}
+$cliftShowsPrec_r9nC
+  :: forall (s :: [Nat]) a.
+     (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> V.Vector a -> ShowS
+[GblId]
+$cliftShowsPrec_r9nC
+  = \ (@(s_a8XG :: [Nat])) (@a_a8XQ) ->
+      liftShowsPrec @V.Vector Data.Vector.$fShow1Vector @a_a8XQ
+
+-- RHS size: {terms: 6, types: 8, coercions: 0, joins: 0/0}
+$cshowList_r9nD
+  :: forall (s :: [Nat]) a. Show a => [V.Vector a] -> ShowS
+[GblId, Arity=1, Unf=OtherCon []]
+$cshowList_r9nD
+  = \ (@(s_a8WX :: [Nat])) (@a_a8WY) ($dShow1_a8WZ :: Show a_a8WY) ->
+      showList
+        @(V.Vector a_a8WY) (Data.Vector.$fShowVector @a_a8WY $dShow1_a8WZ)
+
+-- RHS size: {terms: 6, types: 8, coercions: 0, joins: 0/0}
+$cshow_r9nE
+  :: forall (s :: [Nat]) a. Show a => V.Vector a -> String
+[GblId, Arity=1, Unf=OtherCon []]
+$cshow_r9nE
+  = \ (@(s_a8WX :: [Nat])) (@a_a8WY) ($dShow1_a8WZ :: Show a_a8WY) ->
+      show
+        @(V.Vector a_a8WY) (Data.Vector.$fShowVector @a_a8WY $dShow1_a8WZ)
+
+-- RHS size: {terms: 6, types: 8, coercions: 0, joins: 0/0}
+$cshowsPrec_r9nF
+  :: forall (s :: [Nat]) a. Show a => Int -> V.Vector a -> ShowS
+[GblId, Arity=1, Unf=OtherCon []]
+$cshowsPrec_r9nF
+  = \ (@(s_a8WX :: [Nat])) (@a_a8WY) ($dShow1_a8WZ :: Show a_a8WY) ->
+      showsPrec
+        @(V.Vector a_a8WY) (Data.Vector.$fShowVector @a_a8WY $dShow1_a8WZ)
+
+-- RHS size: {terms: 10, types: 14, coercions: 25, joins: 0/0}
+Main.$fShowArray [InlPrag=CONLIKE]
+  :: forall (s :: [Nat]) a. Show a => Show (Array s a)
+[GblId[DFunId], Arity=1, Unf=OtherCon []]
+Main.$fShowArray
+  = \ (@(s_a8WX :: [Nat])) (@a_a8WY) ($dShow1_a8WZ :: Show a_a8WY) ->
+      GHC.Internal.Show.C:Show
+        @(Array s_a8WX a_a8WY)
+        (($cshowsPrec_r9nF @s_a8WX @a_a8WY $dShow1_a8WZ)
+         `cast` (<Int>_R
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8WX>_N) <a_a8WY>_N
+                 %<Many>_N ->_R <ShowS>_R
+                 :: (Int -> V.Vector a_a8WY -> ShowS)
+                    ~R# (Int -> Array s_a8WX a_a8WY -> ShowS)))
+        (($cshow_r9nE @s_a8WX @a_a8WY $dShow1_a8WZ)
+         `cast` (Sym (Main.N:Array <s_a8WX>_N) <a_a8WY>_N
+                 %<Many>_N ->_R <String>_R
+                 :: (V.Vector a_a8WY -> String)
+                    ~R# (Array s_a8WX a_a8WY -> String)))
+        (($cshowList_r9nD @s_a8WX @a_a8WY $dShow1_a8WZ)
+         `cast` (([Sym (Main.N:Array <s_a8WX>_N) <a_a8WY>_N])_R
+                 %<Many>_N ->_R <ShowS>_R
+                 :: ([V.Vector a_a8WY] -> ShowS)
+                    ~R# ([Array s_a8WX a_a8WY] -> ShowS)))
+
+-- RHS size: {terms: 5, types: 7, coercions: 42, joins: 0/0}
+Main.$fShow1Array [InlPrag=CONLIKE]
+  :: forall (s :: [Nat]). Show1 (Array s)
+[GblId[DFunId], Unf=OtherCon []]
+Main.$fShow1Array
+  = \ (@(s_a8XG :: [Nat])) ->
+      Data.Functor.Classes.C:Show1
+        @(Array s_a8XG)
+        (Main.$fShowArray @s_a8XG)
+        (($cliftShowsPrec_r9nC @s_a8XG)
+         `cast` (forall (a :: <*>_N).
+                 <Int -> a -> ShowS>_R
+                 %<Many>_N ->_R <[a] -> ShowS>_R
+                 %<Many>_N ->_R <Int>_R
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8XG>_N) <a>_N
+                 %<Many>_N ->_R <ShowS>_R
+                 :: (forall a.
+                     (Int -> a -> ShowS)
+                     -> ([a] -> ShowS) -> Int -> V.Vector a -> ShowS)
+                    ~R# (forall a.
+                         (Int -> a -> ShowS)
+                         -> ([a] -> ShowS) -> Int -> Array s_a8XG a -> ShowS)))
+        (($cliftShowList_r9nB @s_a8XG)
+         `cast` (forall (a :: <*>_N).
+                 <Int -> a -> ShowS>_R
+                 %<Many>_N ->_R <[a] -> ShowS>_R
+                 %<Many>_N ->_R ([Sym (Main.N:Array <s_a8XG>_N) <a>_N])_R
+                 %<Many>_N ->_R <ShowS>_R
+                 :: (forall a.
+                     (Int -> a -> ShowS) -> ([a] -> ShowS) -> [V.Vector a] -> ShowS)
+                    ~R# (forall a.
+                         (Int -> a -> ShowS)
+                         -> ([a] -> ShowS) -> [Array s_a8XG a] -> ShowS)))
+
+-- RHS size: {terms: 5, types: 7, coercions: 0, joins: 0/0}
+$cliftCompare_r9nG
+  :: forall (s :: [Nat]) a b.
+     (a -> b -> Ordering) -> V.Vector a -> V.Vector b -> Ordering
+[GblId]
+$cliftCompare_r9nG
+  = \ (@(s_a8Wq :: [Nat])) (@a_a8WE) (@b_a8WF) ->
+      liftCompare @V.Vector Data.Vector.$fOrd1Vector @a_a8WE @b_a8WF
+
+-- RHS size: {terms: 6, types: 8, coercions: 0, joins: 0/0}
+$cmin_r9nH
+  :: forall (s :: [Nat]) a.
+     Ord a =>
+     V.Vector a -> V.Vector a -> V.Vector a
+[GblId, Arity=1, Unf=OtherCon []]
+$cmin_r9nH
+  = \ (@(s_a8UN :: [Nat])) (@a_a8UO) ($dOrd2_a8UP :: Ord a_a8UO) ->
+      min
+        @(V.Vector a_a8UO) (Data.Vector.$fOrdVector @a_a8UO $dOrd2_a8UP)
+
+-- RHS size: {terms: 6, types: 8, coercions: 0, joins: 0/0}
+$cmax_r9nI
+  :: forall (s :: [Nat]) a.
+     Ord a =>
+     V.Vector a -> V.Vector a -> V.Vector a
+[GblId, Arity=1, Unf=OtherCon []]
+$cmax_r9nI
+  = \ (@(s_a8UN :: [Nat])) (@a_a8UO) ($dOrd2_a8UP :: Ord a_a8UO) ->
+      max
+        @(V.Vector a_a8UO) (Data.Vector.$fOrdVector @a_a8UO $dOrd2_a8UP)
+
+-- RHS size: {terms: 6, types: 8, coercions: 0, joins: 0/0}
+$c>=_r9nJ
+  :: forall (s :: [Nat]) a. Ord a => V.Vector a -> V.Vector a -> Bool
+[GblId, Arity=1, Unf=OtherCon []]
+$c>=_r9nJ
+  = \ (@(s_a8UN :: [Nat])) (@a_a8UO) ($dOrd2_a8UP :: Ord a_a8UO) ->
+      >= @(V.Vector a_a8UO) (Data.Vector.$fOrdVector @a_a8UO $dOrd2_a8UP)
+
+-- RHS size: {terms: 6, types: 8, coercions: 0, joins: 0/0}
+$c>_r9nK
+  :: forall (s :: [Nat]) a. Ord a => V.Vector a -> V.Vector a -> Bool
+[GblId, Arity=1, Unf=OtherCon []]
+$c>_r9nK
+  = \ (@(s_a8UN :: [Nat])) (@a_a8UO) ($dOrd2_a8UP :: Ord a_a8UO) ->
+      > @(V.Vector a_a8UO) (Data.Vector.$fOrdVector @a_a8UO $dOrd2_a8UP)
+
+-- RHS size: {terms: 6, types: 8, coercions: 0, joins: 0/0}
+$c<=_r9nL
+  :: forall (s :: [Nat]) a. Ord a => V.Vector a -> V.Vector a -> Bool
+[GblId, Arity=1, Unf=OtherCon []]
+$c<=_r9nL
+  = \ (@(s_a8UN :: [Nat])) (@a_a8UO) ($dOrd2_a8UP :: Ord a_a8UO) ->
+      <= @(V.Vector a_a8UO) (Data.Vector.$fOrdVector @a_a8UO $dOrd2_a8UP)
+
+-- RHS size: {terms: 6, types: 8, coercions: 0, joins: 0/0}
+$c<_r9nM
+  :: forall (s :: [Nat]) a. Ord a => V.Vector a -> V.Vector a -> Bool
+[GblId, Arity=1, Unf=OtherCon []]
+$c<_r9nM
+  = \ (@(s_a8UN :: [Nat])) (@a_a8UO) ($dOrd2_a8UP :: Ord a_a8UO) ->
+      < @(V.Vector a_a8UO) (Data.Vector.$fOrdVector @a_a8UO $dOrd2_a8UP)
+
+-- RHS size: {terms: 6, types: 8, coercions: 0, joins: 0/0}
+$ccompare_r9nN
+  :: forall (s :: [Nat]) a.
+     Ord a =>
+     V.Vector a -> V.Vector a -> Ordering
+[GblId, Arity=1, Unf=OtherCon []]
+$ccompare_r9nN
+  = \ (@(s_a8UN :: [Nat])) (@a_a8UO) ($dOrd2_a8UP :: Ord a_a8UO) ->
+      compare
+        @(V.Vector a_a8UO) (Data.Vector.$fOrdVector @a_a8UO $dOrd2_a8UP)
+
+-- RHS size: {terms: 5, types: 7, coercions: 0, joins: 0/0}
+$cliftEq_r9nO
+  :: forall (s :: [Nat]) a b.
+     (a -> b -> Bool) -> V.Vector a -> V.Vector b -> Bool
+[GblId]
+$cliftEq_r9nO
+  = \ (@(s_a8Uk :: [Nat])) (@a_a8Uu) (@b_a8Uv) ->
+      liftEq @V.Vector Data.Vector.$fEq1Vector @a_a8Uu @b_a8Uv
+
+-- RHS size: {terms: 6, types: 8, coercions: 0, joins: 0/0}
+$c/=_r9nP
+  :: forall (s :: [Nat]) a. Eq a => V.Vector a -> V.Vector a -> Bool
+[GblId, Arity=1, Unf=OtherCon []]
+$c/=_r9nP
+  = \ (@(s_a8TO :: [Nat])) (@a_a8TP) ($dEq1_a8TQ :: Eq a_a8TP) ->
+      /= @(V.Vector a_a8TP) (Data.Vector.$fEqVector @a_a8TP $dEq1_a8TQ)
+
+-- RHS size: {terms: 6, types: 8, coercions: 0, joins: 0/0}
+$c==_r9nQ
+  :: forall (s :: [Nat]) a. Eq a => V.Vector a -> V.Vector a -> Bool
+[GblId, Arity=1, Unf=OtherCon []]
+$c==_r9nQ
+  = \ (@(s_a8TO :: [Nat])) (@a_a8TP) ($dEq1_a8TQ :: Eq a_a8TP) ->
+      == @(V.Vector a_a8TP) (Data.Vector.$fEqVector @a_a8TP $dEq1_a8TQ)
+
+-- RHS size: {terms: 8, types: 12, coercions: 26, joins: 0/0}
+Main.$fEqArray [InlPrag=CONLIKE]
+  :: forall (s :: [Nat]) a. Eq a => Eq (Array s a)
+[GblId[DFunId], Arity=1, Unf=OtherCon []]
+Main.$fEqArray
+  = \ (@(s_a8TO :: [Nat])) (@a_a8TP) ($dEq1_a8TQ :: Eq a_a8TP) ->
+      GHC.Classes.C:Eq
+        @(Array s_a8TO a_a8TP)
+        (($c==_r9nQ @s_a8TO @a_a8TP $dEq1_a8TQ)
+         `cast` (Sym (Main.N:Array <s_a8TO>_N) <a_a8TP>_N
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8TO>_N) <a_a8TP>_N
+                 %<Many>_N ->_R <Bool>_R
+                 :: (V.Vector a_a8TP -> V.Vector a_a8TP -> Bool)
+                    ~R# (Array s_a8TO a_a8TP -> Array s_a8TO a_a8TP -> Bool)))
+        (($c/=_r9nP @s_a8TO @a_a8TP $dEq1_a8TQ)
+         `cast` (Sym (Main.N:Array <s_a8TO>_N) <a_a8TP>_N
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8TO>_N) <a_a8TP>_N
+                 %<Many>_N ->_R <Bool>_R
+                 :: (V.Vector a_a8TP -> V.Vector a_a8TP -> Bool)
+                    ~R# (Array s_a8TO a_a8TP -> Array s_a8TO a_a8TP -> Bool)))
+
+-- RHS size: {terms: 4, types: 6, coercions: 22, joins: 0/0}
+Main.$fEq1Array [InlPrag=CONLIKE]
+  :: forall (s :: [Nat]). Eq1 (Array s)
+[GblId[DFunId], Unf=OtherCon []]
+Main.$fEq1Array
+  = \ (@(s_a8Uk :: [Nat])) ->
+      Data.Functor.Classes.C:Eq1
+        @(Array s_a8Uk)
+        (Main.$fEqArray @s_a8Uk)
+        (($cliftEq_r9nO @s_a8Uk)
+         `cast` (forall (a :: <*>_N) (b :: <*>_N).
+                 <a -> b -> Bool>_R
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8Uk>_N) <a>_N
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8Uk>_N) <b>_N
+                 %<Many>_N ->_R <Bool>_R
+                 :: (forall a b.
+                     (a -> b -> Bool) -> V.Vector a -> V.Vector b -> Bool)
+                    ~R# (forall a b.
+                         (a -> b -> Bool) -> Array s_a8Uk a -> Array s_a8Uk b -> Bool)))
+
+-- RHS size: {terms: 6, types: 8, coercions: 0, joins: 0/0}
+$cp1Ord_r9nR :: forall (s :: [Nat]) a. Ord a => Eq (Array s a)
+[GblId, Arity=1, Unf=OtherCon []]
+$cp1Ord_r9nR
+  = \ (@(s_a8UN :: [Nat])) (@a_a8UO) ($dOrd2_a8UP :: Ord a_a8UO) ->
+      Main.$fEqArray
+        @s_a8UN @a_a8UO (GHC.Classes.$p1Ord @a_a8UO $dOrd2_a8UP)
+
+-- RHS size: {terms: 20, types: 24, coercions: 97, joins: 0/0}
+Main.$fOrdArray [InlPrag=CONLIKE]
+  :: forall (s :: [Nat]) a. Ord a => Ord (Array s a)
+[GblId[DFunId], Arity=1, Unf=OtherCon []]
+Main.$fOrdArray
+  = \ (@(s_a8UN :: [Nat])) (@a_a8UO) ($dOrd2_a8UP :: Ord a_a8UO) ->
+      GHC.Classes.C:Ord
+        @(Array s_a8UN a_a8UO)
+        ($cp1Ord_r9nR @s_a8UN @a_a8UO $dOrd2_a8UP)
+        (($ccompare_r9nN @s_a8UN @a_a8UO $dOrd2_a8UP)
+         `cast` (Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 %<Many>_N ->_R <Ordering>_R
+                 :: (V.Vector a_a8UO -> V.Vector a_a8UO -> Ordering)
+                    ~R# (Array s_a8UN a_a8UO -> Array s_a8UN a_a8UO -> Ordering)))
+        (($c<_r9nM @s_a8UN @a_a8UO $dOrd2_a8UP)
+         `cast` (Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 %<Many>_N ->_R <Bool>_R
+                 :: (V.Vector a_a8UO -> V.Vector a_a8UO -> Bool)
+                    ~R# (Array s_a8UN a_a8UO -> Array s_a8UN a_a8UO -> Bool)))
+        (($c<=_r9nL @s_a8UN @a_a8UO $dOrd2_a8UP)
+         `cast` (Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 %<Many>_N ->_R <Bool>_R
+                 :: (V.Vector a_a8UO -> V.Vector a_a8UO -> Bool)
+                    ~R# (Array s_a8UN a_a8UO -> Array s_a8UN a_a8UO -> Bool)))
+        (($c>_r9nK @s_a8UN @a_a8UO $dOrd2_a8UP)
+         `cast` (Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 %<Many>_N ->_R <Bool>_R
+                 :: (V.Vector a_a8UO -> V.Vector a_a8UO -> Bool)
+                    ~R# (Array s_a8UN a_a8UO -> Array s_a8UN a_a8UO -> Bool)))
+        (($c>=_r9nJ @s_a8UN @a_a8UO $dOrd2_a8UP)
+         `cast` (Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 %<Many>_N ->_R <Bool>_R
+                 :: (V.Vector a_a8UO -> V.Vector a_a8UO -> Bool)
+                    ~R# (Array s_a8UN a_a8UO -> Array s_a8UN a_a8UO -> Bool)))
+        (($cmax_r9nI @s_a8UN @a_a8UO $dOrd2_a8UP)
+         `cast` (Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 :: (V.Vector a_a8UO -> V.Vector a_a8UO -> V.Vector a_a8UO)
+                    ~R# (Array s_a8UN a_a8UO
+                         -> Array s_a8UN a_a8UO -> Array s_a8UN a_a8UO)))
+        (($cmin_r9nH @s_a8UN @a_a8UO $dOrd2_a8UP)
+         `cast` (Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8UN>_N) <a_a8UO>_N
+                 :: (V.Vector a_a8UO -> V.Vector a_a8UO -> V.Vector a_a8UO)
+                    ~R# (Array s_a8UN a_a8UO
+                         -> Array s_a8UN a_a8UO -> Array s_a8UN a_a8UO)))
+
+-- RHS size: {terms: 5, types: 7, coercions: 22, joins: 0/0}
+Main.$fOrd1Array [InlPrag=CONLIKE]
+  :: forall (s :: [Nat]). Ord1 (Array s)
+[GblId[DFunId], Unf=OtherCon []]
+Main.$fOrd1Array
+  = \ (@(s_a8Wq :: [Nat])) ->
+      Data.Functor.Classes.C:Ord1
+        @(Array s_a8Wq)
+        (Main.$fEq1Array @s_a8Wq)
+        (Main.$fOrdArray @s_a8Wq)
+        (($cliftCompare_r9nG @s_a8Wq)
+         `cast` (forall (a :: <*>_N) (b :: <*>_N).
+                 <a -> b -> Ordering>_R
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8Wq>_N) <a>_N
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8Wq>_N) <b>_N
+                 %<Many>_N ->_R <Ordering>_R
+                 :: (forall a b.
+                     (a -> b -> Ordering) -> V.Vector a -> V.Vector b -> Ordering)
+                    ~R# (forall a b.
+                         (a -> b -> Ordering)
+                         -> Array s_a8Wq a -> Array s_a8Wq b -> Ordering)))
+
+-- RHS size: {terms: 17, types: 27, coercions: 11, joins: 0/0}
+$ctraverse_r9nS
+  :: forall (s :: [Nat]) (f :: * -> *) a b.
+     Applicative f =>
+     (a -> f b) -> Array s a -> f (Array s b)
+[GblId, Arity=3, Unf=OtherCon []]
+$ctraverse_r9nS
+  = \ (@(s_a8RM :: [Nat]))
+      (@(f_a8S6 :: * -> *))
+      (@a_a8S7)
+      (@b_a8S8)
+      ($dApplicative_a8S9 :: Applicative f_a8S6)
+      (eta_B0 :: a_a8S7 -> f_a8S6 b_a8S8)
+      (eta1_B1 :: Array s_a8RM a_a8S7) ->
+      fmap
+        @f_a8S6
+        (GHC.Internal.Base.$p1Applicative @f_a8S6 $dApplicative_a8S9)
+        @(V.Vector b_a8S8)
+        @(Array s_a8RM b_a8S8)
+        ((\ (b1_a8ol :: V.Vector b_a8S8) -> b1_a8ol)
+         `cast` (<V.Vector b_a8S8>_R
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8RM>_N) <b_a8S8>_N
+                 :: (V.Vector b_a8S8 -> V.Vector b_a8S8)
+                    ~R# (V.Vector b_a8S8 -> Array s_a8RM b_a8S8)))
+        (traverse
+           @V.Vector
+           Data.Vector.$fTraversableVector
+           @f_a8S6
+           @a_a8S7
+           @b_a8S8
+           $dApplicative_a8S9
+           eta_B0
+           (eta1_B1
+            `cast` (Main.N:Array <s_a8RM>_N <a_a8S7>_N
+                    :: Array s_a8RM a_a8S7 ~R# V.Vector a_a8S7)))
+
+-- RHS size: {terms: 5, types: 9, coercions: 0, joins: 0/0}
+$cto_r9nT
+  :: forall (s :: [Nat]) a x.
+     GHC.Generics.Rep (Array s a) x -> GHC.Generics.Rep (Array s a) x
+[GblId, Arity=1, Unf=OtherCon []]
+$cto_r9nT
+  = \ (@(s_a8Qo :: [Nat]))
+      (@a_a8Qp)
+      (@x_a8Rb)
+      (ds_d9ei :: GHC.Generics.Rep (Array s_a8Qo a_a8Qp) x_a8Rb) ->
+      ds_d9ei
+
+-- RHS size: {terms: 5, types: 7, coercions: 0, joins: 0/0}
+$cfrom_r9nU :: forall (s :: [Nat]) a x. Array s a -> Array s a
+[GblId, Arity=1, Unf=OtherCon []]
+$cfrom_r9nU
+  = \ (@(s_a8Qo :: [Nat]))
+      (@a_a8Qp)
+      (@x_a8Qw)
+      (x1_a8o2 :: Array s_a8Qo a_a8Qp) ->
+      x1_a8o2
+
+-- RHS size: {terms: 5, types: 10, coercions: 188, joins: 0/0}
+Main.$fGenericArray [InlPrag=CONLIKE]
+  :: forall (s :: [Nat]) a. Generic (Array s a)
+[GblId[DFunId], Unf=OtherCon []]
+Main.$fGenericArray
+  = \ (@(s_a8Qo :: [Nat])) (@a_a8Qp) ->
+      GHC.Internal.Generics.C:Generic
+        @(Array s_a8Qo a_a8Qp)
+        (($cfrom_r9nU @s_a8Qo @a_a8Qp)
+         `cast` (forall (x :: <*>_N).
+                 <Array s_a8Qo a_a8Qp>_R
+                 %<Many>_N ->_R Main.N:Array <s_a8Qo>_N <a_a8Qp>_N
+                                ; Sym (GHC.Internal.Generics.N:K1
+                                           <*>_N <R>_P <V.Vector a_a8Qp>_R <x>_P)
+                                ; (Sym (GHC.Internal.Generics.N:M1
+                                            <*>_N
+                                            <S>_P
+                                            <MetaSel
+                                               Nothing
+                                               NoSourceUnpackedness
+                                               NoSourceStrictness
+                                               DecidedLazy>_P
+                                            <K1 R (V.Vector a_a8Qp)>_R)
+                                   ; Sym (GHC.Internal.Generics.N:M1
+                                              <*>_N
+                                              <C>_P
+                                              <MetaCons "Array" PrefixI False>_P
+                                              <M1
+                                                 S
+                                                 (MetaSel
+                                                    Nothing
+                                                    NoSourceUnpackedness
+                                                    NoSourceStrictness
+                                                    DecidedLazy)
+                                                 (K1 R (V.Vector a_a8Qp))>_R)
+                                   ; Sym (GHC.Internal.Generics.N:M1
+                                              <*>_N
+                                              <D>_P
+                                              <MetaData "Array" "Main" "main" True>_P
+                                              <M1
+                                                 C
+                                                 (MetaCons "Array" PrefixI False)
+                                                 (M1
+                                                    S
+                                                    (MetaSel
+                                                       Nothing
+                                                       NoSourceUnpackedness
+                                                       NoSourceStrictness
+                                                       DecidedLazy)
+                                                    (K1 R (V.Vector a_a8Qp)))>_R)
+                                   ; Sub (Sym (Main.Rep_Array <s_a8Qo>_N <a_a8Qp>_N))) <x>_N
+                 :: (forall x. Array s_a8Qo a_a8Qp -> Array s_a8Qo a_a8Qp)
+                    ~R# (forall x.
+                         Array s_a8Qo a_a8Qp -> GHC.Generics.Rep (Array s_a8Qo a_a8Qp) x)))
+        (($cto_r9nT @s_a8Qo @a_a8Qp)
+         `cast` (forall (x :: <*>_N).
+                 <GHC.Generics.Rep (Array s_a8Qo a_a8Qp) x>_R
+                 %<Many>_N ->_R (Sub (Main.Rep_Array <s_a8Qo>_N <a_a8Qp>_N)
+                                 ; GHC.Internal.Generics.N:M1
+                                       <*>_N
+                                       <D>_P
+                                       <MetaData "Array" "Main" "main" True>_P
+                                       <M1
+                                          C
+                                          (MetaCons "Array" PrefixI False)
+                                          (M1
+                                             S
+                                             (MetaSel
+                                                Nothing
+                                                NoSourceUnpackedness
+                                                NoSourceStrictness
+                                                DecidedLazy)
+                                             (K1 R (V.Vector a_a8Qp)))>_R
+                                 ; GHC.Internal.Generics.N:M1
+                                       <*>_N
+                                       <C>_P
+                                       <MetaCons "Array" PrefixI False>_P
+                                       <M1
+                                          S
+                                          (MetaSel
+                                             Nothing
+                                             NoSourceUnpackedness
+                                             NoSourceStrictness
+                                             DecidedLazy)
+                                          (K1 R (V.Vector a_a8Qp))>_R
+                                 ; GHC.Internal.Generics.N:M1
+                                       <*>_N
+                                       <S>_P
+                                       <MetaSel
+                                          Nothing
+                                          NoSourceUnpackedness
+                                          NoSourceStrictness
+                                          DecidedLazy>_P
+                                       <K1 R (V.Vector a_a8Qp)>_R) <x>_N
+                                ; GHC.Internal.Generics.N:K1 <*>_N <R>_P <V.Vector a_a8Qp>_R <x>_P
+                                ; Sym (Main.N:Array <s_a8Qo>_N) <a_a8Qp>_N
+                 :: (forall x.
+                     GHC.Generics.Rep (Array s_a8Qo a_a8Qp) x
+                     -> GHC.Generics.Rep (Array s_a8Qo a_a8Qp) x)
+                    ~R# (forall x.
+                         GHC.Generics.Rep (Array s_a8Qo a_a8Qp) x -> Array s_a8Qo a_a8Qp)))
+
+-- RHS size: {terms: 6, types: 8, coercions: 3, joins: 0/0}
+$cnull_r9nV :: forall (s :: [Nat]) a. Array s a -> Bool
+[GblId, Arity=1, Unf=OtherCon []]
+$cnull_r9nV
+  = \ (@(s_a8Lb :: [Nat]))
+      (@a_a8Ox)
+      (ds_d9e0 :: Array s_a8Lb a_a8Ox) ->
+      null
+        @V.Vector
+        Data.Vector.$fFoldableVector
+        @a_a8Ox
+        (ds_d9e0
+         `cast` (Main.N:Array <s_a8Lb>_N <a_a8Ox>_N
+                 :: Array s_a8Lb a_a8Ox ~R# V.Vector a_a8Ox))
+
+-- RHS size: {terms: 11, types: 14, coercions: 3, joins: 0/0}
+$cfoldr_r9nW
+  :: forall (s :: [Nat]) a b. (a -> b -> b) -> b -> Array s a -> b
+[GblId, Arity=3, Unf=OtherCon []]
+$cfoldr_r9nW
+  = \ (@(s_a8Lb :: [Nat]))
+      (@a_a8Mh)
+      (@b_a8Mi)
+      (f_a8nU :: a_a8Mh -> b_a8Mi -> b_a8Mi)
+      (z_a8nV :: b_a8Mi)
+      (ds_d9dZ :: Array s_a8Lb a_a8Mh) ->
+      foldr
+        @V.Vector
+        Data.Vector.$fFoldableVector
+        @a_a8Mh
+        @b_a8Mi
+        f_a8nU
+        z_a8nV
+        (ds_d9dZ
+         `cast` (Main.N:Array <s_a8Lb>_N <a_a8Mh>_N
+                 :: Array s_a8Lb a_a8Mh ~R# V.Vector a_a8Mh))
+
+-- RHS size: {terms: 11, types: 14, coercions: 3, joins: 0/0}
+$cfoldMap_r9nX
+  :: forall (s :: [Nat]) m a. Monoid m => (a -> m) -> Array s a -> m
+[GblId, Arity=3, Unf=OtherCon []]
+$cfoldMap_r9nX
+  = \ (@(s_a8Lb :: [Nat]))
+      (@m_a8LB)
+      (@a_a8LC)
+      ($dMonoid_a8LD :: Monoid m_a8LB)
+      (f_a8nZ :: a_a8LC -> m_a8LB)
+      (ds_d9dS :: Array s_a8Lb a_a8LC) ->
+      foldMap
+        @V.Vector
+        Data.Vector.$fFoldableVector
+        @m_a8LB
+        @a_a8LC
+        $dMonoid_a8LD
+        f_a8nZ
+        (ds_d9dS
+         `cast` (Main.N:Array <s_a8Lb>_N <a_a8LC>_N
+                 :: Array s_a8Lb a_a8LC ~R# V.Vector a_a8LC))
+
+-- RHS size: {terms: 28, types: 29, coercions: 3, joins: 0/0}
+$cfoldr1_r9nY
+  :: forall (s :: [Nat]) a. (a -> a -> a) -> Array s a -> a
+[GblId, Arity=2, Unf=OtherCon []]
+$cfoldr1_r9nY
+  = \ (@(s_a8Lb :: [Nat]))
+      (@a_a8NN)
+      (f_a9j6 :: a_a8NN -> a_a8NN -> a_a8NN)
+      (xs_a9j7 :: Array s_a8Lb a_a8NN) ->
+      case foldr
+             @V.Vector
+             Data.Vector.$fFoldableVector
+             @a_a8NN
+             @(Maybe a_a8NN)
+             (\ (x_a9j8 :: a_a8NN) (m_a9j9 :: Maybe a_a8NN) ->
+                GHC.Internal.Maybe.Just
+                  @a_a8NN
+                  (case m_a9j9 of {
+                     Nothing -> x_a9j8;
+                     Just y_a9jc -> f_a9j6 x_a9j8 y_a9jc
+                   }))
+             (GHC.Internal.Maybe.Nothing @a_a8NN)
+             (xs_a9j7
+              `cast` (Main.N:Array <s_a8Lb>_N <a_a8NN>_N
+                      :: Array s_a8Lb a_a8NN ~R# V.Vector a_a8NN))
+      of {
+        Nothing ->
+          errorWithoutStackTrace
+            @LiftedRep
+            @a_a8NN
+            (build
+               @Char
+               (\ (@b_a9jf) ->
+                  unpackFoldrCString# @b_a9jf "foldr1: empty structure"#));
+        Just v_a9jg -> v_a9jg
+      }
+
+-- RHS size: {terms: 14, types: 15, coercions: 8, joins: 0/1}
+$celem_r9nZ
+  :: forall (s :: [Nat]) a.
+     Eq a =>
+     a -> Array s a -> GHC.Internal.Data.Semigroup.Internal.Any
+[GblId, Arity=2, Unf=OtherCon []]
+$celem_r9nZ
+  = \ (@(s_a8Lb :: [Nat]))
+      (@a_a8P3)
+      ($dEq1_a8P4 :: Eq a_a8P3)
+      (eta_a9it :: a_a8P3) ->
+      let {
+        f_s9mb :: a_a8P3 -> Bool
+        [LclId]
+        f_s9mb = == @a_a8P3 $dEq1_a8P4 eta_a9it } in
+      \ (ds_d9dS :: Array s_a8Lb a_a8P3) ->
+        foldMap
+          @V.Vector
+          Data.Vector.$fFoldableVector
+          @GHC.Internal.Data.Semigroup.Internal.Any
+          @a_a8P3
+          GHC.Internal.Data.Semigroup.Internal.$fMonoidAny
+          (f_s9mb
+           `cast` (<a_a8P3>_R
+                   %<Many>_N ->_R Sym GHC.Internal.Data.Semigroup.Internal.N:Any
+                   :: (a_a8P3 -> Bool)
+                      ~R# (a_a8P3 -> GHC.Internal.Data.Semigroup.Internal.Any)))
+          (ds_d9dS
+           `cast` (Main.N:Array <s_a8Lb>_N <a_a8P3>_N
+                   :: Array s_a8Lb a_a8P3 ~R# V.Vector a_a8P3))
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$clength_r9o0 :: Int
+[GblId, Unf=OtherCon []]
+$clength_r9o0 = GHC.Types.I# 0#
+
+-- RHS size: {terms: 11, types: 15, coercions: 0, joins: 0/0}
+$ctoList_r9o1 :: forall (s :: [Nat]) a. Array s a -> [a]
+[GblId, Arity=1, Unf=OtherCon []]
+$ctoList_r9o1
+  = \ (@(s_a8Lb :: [Nat]))
+      (@a_a8Oj)
+      (t1_a9iJ :: Array s_a8Lb a_a8Oj) ->
+      build
+        @a_a8Oj
+        (\ (@b_a9iK)
+           (c_a9iL [OS=OneShot] :: a_a8Oj -> b_a9iK -> b_a9iK)
+           (n_a9iM [OS=OneShot] :: b_a9iK) ->
+           $cfoldr_r9nW @s_a8Lb @a_a8Oj @b_a9iK c_a9iL n_a9iM t1_a9iJ)
+
+-- RHS size: {terms: 21, types: 21, coercions: 3, joins: 0/0}
+$cfoldl'_r9o2
+  :: forall (s :: [Nat]) b a. (b -> a -> b) -> b -> Array s a -> b
+[GblId, Arity=3, Unf=OtherCon []]
+$cfoldl'_r9o2
+  = \ (@(s_a8Lb :: [Nat]))
+      (@b_a8Nu)
+      (@a_a8Nv)
+      (f_a9jn :: b_a8Nu -> a_a8Nv -> b_a8Nu)
+      (z0_a9jo :: b_a8Nu)
+      (xs_a9jp :: Array s_a8Lb a_a8Nv) ->
+      foldr
+        @V.Vector
+        Data.Vector.$fFoldableVector
+        @a_a8Nv
+        @(b_a8Nu -> b_a8Nu)
+        (\ (ds_a9jq :: a_a8Nv)
+           (ds1_a9jr :: b_a8Nu -> b_a8Nu)
+           (v_a9js [OS=OneShot] :: b_a8Nu) ->
+           case v_a9js of z_a9jt { __DEFAULT ->
+           ds1_a9jr (f_a9jn z_a9jt ds_a9jq)
+           })
+        (id @b_a8Nu)
+        (xs_a9jp
+         `cast` (Main.N:Array <s_a8Lb>_N <a_a8Nv>_N
+                 :: Array s_a8Lb a_a8Nv ~R# V.Vector a_a8Nv))
+        z0_a9jo
+
+-- RHS size: {terms: 27, types: 26, coercions: 3, joins: 0/1}
+$cfoldMap'_r9o3
+  :: forall (s :: [Nat]) m a. Monoid m => (a -> m) -> Array s a -> m
+[GblId, Arity=3, Unf=OtherCon []]
+$cfoldMap'_r9o3
+  = \ (@(s_a8Lb :: [Nat]))
+      (@m_a8LZ)
+      (@a_a8M0)
+      ($dMonoid_a8M1 :: Monoid m_a8LZ)
+      (eta_a9k2 :: a_a8M0 -> m_a8LZ)
+      (eta1_B0 :: Array s_a8Lb a_a8M0) ->
+      let {
+        $dSemigroup_a9k3 :: Semigroup m_a8LZ
+        [LclId]
+        $dSemigroup_a9k3
+          = GHC.Internal.Base.$p1Monoid @m_a8LZ $dMonoid_a8M1 } in
+      foldr
+        @V.Vector
+        Data.Vector.$fFoldableVector
+        @a_a8M0
+        @(m_a8LZ -> m_a8LZ)
+        (\ (ds_a9jq :: a_a8M0)
+           (ds1_a9jr :: m_a8LZ -> m_a8LZ)
+           (v_a9js [OS=OneShot] :: m_a8LZ) ->
+           case v_a9js of z_a9jt { __DEFAULT ->
+           ds1_a9jr (<> @m_a8LZ $dSemigroup_a9k3 z_a9jt (eta_a9k2 ds_a9jq))
+           })
+        (id @m_a8LZ)
+        (eta1_B0
+         `cast` (Main.N:Array <s_a8Lb>_N <a_a8M0>_N
+                 :: Array s_a8Lb a_a8M0 ~R# V.Vector a_a8M0))
+        (mempty @m_a8LZ $dMonoid_a8M1)
+
+-- RHS size: {terms: 26, types: 30, coercions: 8, joins: 0/3}
+$cmaximum_r9o4 :: forall (s :: [Nat]) a. Ord a => Array s a -> a
+[GblId, Arity=1, Unf=OtherCon []]
+$cmaximum_r9o4
+  = \ (@(s_a8Lb :: [Nat])) (@a_a8Pl) ($dOrd2_a8Pm :: Ord a_a8Pl) ->
+      let {
+        d_a9ic :: a_a8Pl
+        [LclId, Str=b]
+        d_a9ic
+          = errorWithoutStackTrace
+              @LiftedRep
+              @a_a8Pl
+              (build
+                 @Char
+                 (\ (@b_a9id) ->
+                    unpackFoldrCString# @b_a9id "maximum: empty structure"#)) } in
+      let {
+        g_s9md :: Monoid (GHC.Internal.Data.Functor.Utils.Max a_a8Pl)
+        [LclId]
+        g_s9md
+          = GHC.Internal.Data.Functor.Utils.$fMonoidMax
+              @a_a8Pl $dOrd2_a8Pm } in
+      let {
+        g1_s9me :: a_a8Pl -> Maybe a_a8Pl
+        [LclId, Arity=1, Unf=OtherCon []]
+        g1_s9me
+          = \ (ds_a9ii :: a_a8Pl) ->
+              GHC.Internal.Maybe.Just @a_a8Pl ds_a9ii } in
+      \ (x_a9ij :: Array s_a8Lb a_a8Pl) ->
+        case ($cfoldMap'_r9o3
+                @s_a8Lb
+                @(GHC.Internal.Data.Functor.Utils.Max a_a8Pl)
+                @a_a8Pl
+                g_s9md
+                (g1_s9me
+                 `cast` (<a_a8Pl>_R
+                         %<Many>_N ->_R Sym GHC.Internal.Data.Functor.Utils.N:Max <a_a8Pl>_N
+                         :: (a_a8Pl -> Maybe a_a8Pl)
+                            ~R# (a_a8Pl -> GHC.Internal.Data.Functor.Utils.Max a_a8Pl)))
+                x_a9ij)
+             `cast` (GHC.Internal.Data.Functor.Utils.N:Max <a_a8Pl>_N
+                     :: GHC.Internal.Data.Functor.Utils.Max a_a8Pl ~R# Maybe a_a8Pl)
+        of {
+          Nothing -> d_a9ic;
+          Just v_a9in -> v_a9in
+        }
+
+-- RHS size: {terms: 8, types: 11, coercions: 6, joins: 0/0}
+$csum_r9o5
+  :: forall (s :: [Nat]) a.
+     Num a =>
+     Array s a -> GHC.Internal.Data.Semigroup.Internal.Sum a
+[GblId, Arity=1, Unf=OtherCon []]
+$csum_r9o5
+  = \ (@(s_a8Lb :: [Nat])) (@a_a8PU) ($dNum_a8PV :: Num a_a8PU) ->
+      $cfoldMap'_r9o3
+        @s_a8Lb
+        @(GHC.Internal.Data.Semigroup.Internal.Sum a_a8PU)
+        @a_a8PU
+        (GHC.Internal.Data.Semigroup.Internal.$fMonoidSum
+           @a_a8PU $dNum_a8PV)
+        ((\ (ds_a9g6 :: a_a8PU) -> ds_a9g6)
+         `cast` (<a_a8PU>_R
+                 %<Many>_N ->_R Sym (GHC.Internal.Data.Semigroup.Internal.N:Sum
+                                         <a_a8PU>_R)
+                 :: (a_a8PU -> a_a8PU)
+                    ~R# (a_a8PU -> GHC.Internal.Data.Semigroup.Internal.Sum a_a8PU)))
+
+-- RHS size: {terms: 26, types: 30, coercions: 8, joins: 0/3}
+$cminimum_r9o6 :: forall (s :: [Nat]) a. Ord a => Array s a -> a
+[GblId, Arity=1, Unf=OtherCon []]
+$cminimum_r9o6
+  = \ (@(s_a8Lb :: [Nat])) (@a_a8PD) ($dOrd2_a8PE :: Ord a_a8PD) ->
+      let {
+        d_a9ge :: a_a8PD
+        [LclId, Str=b]
+        d_a9ge
+          = errorWithoutStackTrace
+              @LiftedRep
+              @a_a8PD
+              (build
+                 @Char
+                 (\ (@b_a9gj) ->
+                    unpackFoldrCString# @b_a9gj "minimum: empty structure"#)) } in
+      let {
+        g_s9mg :: Monoid (GHC.Internal.Data.Functor.Utils.Min a_a8PD)
+        [LclId]
+        g_s9mg
+          = GHC.Internal.Data.Functor.Utils.$fMonoidMin
+              @a_a8PD $dOrd2_a8PE } in
+      let {
+        g1_s9mh :: a_a8PD -> Maybe a_a8PD
+        [LclId, Arity=1, Unf=OtherCon []]
+        g1_s9mh
+          = \ (ds_a9i1 :: a_a8PD) ->
+              GHC.Internal.Maybe.Just @a_a8PD ds_a9i1 } in
+      \ (x_a9i2 :: Array s_a8Lb a_a8PD) ->
+        case ($cfoldMap'_r9o3
+                @s_a8Lb
+                @(GHC.Internal.Data.Functor.Utils.Min a_a8PD)
+                @a_a8PD
+                g_s9mg
+                (g1_s9mh
+                 `cast` (<a_a8PD>_R
+                         %<Many>_N ->_R Sym GHC.Internal.Data.Functor.Utils.N:Min <a_a8PD>_N
+                         :: (a_a8PD -> Maybe a_a8PD)
+                            ~R# (a_a8PD -> GHC.Internal.Data.Functor.Utils.Min a_a8PD)))
+                x_a9i2)
+             `cast` (GHC.Internal.Data.Functor.Utils.N:Min <a_a8PD>_N
+                     :: GHC.Internal.Data.Functor.Utils.Min a_a8PD ~R# Maybe a_a8PD)
+        of {
+          Nothing -> d_a9ge;
+          Just v_a9i6 -> v_a9i6
+        }
+
+-- RHS size: {terms: 19, types: 17, coercions: 3, joins: 0/0}
+$clength1_r9o7 :: forall (s :: [Nat]) a. Array s a -> Int
+[GblId, Arity=1, Unf=OtherCon []]
+$clength1_r9o7
+  = \ (@(s_a8Lb :: [Nat]))
+      (@a_a8ON)
+      (xs_a9jp :: Array s_a8Lb a_a8ON) ->
+      foldr
+        @V.Vector
+        Data.Vector.$fFoldableVector
+        @a_a8ON
+        @(Int -> Int)
+        (\ _ [Occ=Dead]
+           (ds1_a9jr :: Int -> Int)
+           (v_a9js [OS=OneShot] :: Int) ->
+           case v_a9js of { I# ipv_s9nz ->
+           ds1_a9jr (GHC.Types.I# (+# ipv_s9nz 1#))
+           })
+        (id @Int)
+        (xs_a9jp
+         `cast` (Main.N:Array <s_a8Lb>_N <a_a8ON>_N
+                 :: Array s_a8Lb a_a8ON ~R# V.Vector a_a8ON))
+        $clength_r9o0
+
+-- RHS size: {terms: 17, types: 21, coercions: 13, joins: 0/0}
+$cfoldl_r9o8
+  :: forall (s :: [Nat]) b a. (b -> a -> b) -> b -> Array s a -> b
+[GblId, Arity=3, Unf=OtherCon []]
+$cfoldl_r9o8
+  = \ (@(s_a8Lb :: [Nat]))
+      (@b_a8Nb)
+      (@a_a8Nc)
+      (eta_a9jz :: b_a8Nb -> a_a8Nc -> b_a8Nb)
+      (eta1_a9jA :: b_a8Nb)
+      (eta2_a9jB :: Array s_a8Lb a_a8Nc) ->
+      ((foldMap
+          @V.Vector
+          Data.Vector.$fFoldableVector
+          @(GHC.Internal.Data.Semigroup.Internal.Dual
+              (GHC.Internal.Data.Semigroup.Internal.Endo b_a8Nb))
+          @a_a8Nc
+          (GHC.Internal.Data.Semigroup.Internal.$fMonoidDual
+             @(GHC.Internal.Data.Semigroup.Internal.Endo b_a8Nb)
+             (GHC.Internal.Data.Semigroup.Internal.$fMonoidEndo @b_a8Nb))
+          ((\ (x_a9jI :: a_a8Nc) (y_a9jJ :: b_a8Nb) ->
+              eta_a9jz y_a9jJ x_a9jI)
+           `cast` (<a_a8Nc>_R
+                   %<Many>_N ->_R Sym (GHC.Internal.Data.Semigroup.Internal.N:Dual
+                                           (GHC.Internal.Data.Semigroup.Internal.N:Endo <b_a8Nb>_R))
+                   :: (a_a8Nc -> b_a8Nb -> b_a8Nb)
+                      ~R# (a_a8Nc
+                           -> GHC.Internal.Data.Semigroup.Internal.Dual
+                                (GHC.Internal.Data.Semigroup.Internal.Endo b_a8Nb))))
+          (eta2_a9jB
+           `cast` (Main.N:Array <s_a8Lb>_N <a_a8Nc>_N
+                   :: Array s_a8Lb a_a8Nc ~R# V.Vector a_a8Nc)))
+       `cast` (GHC.Internal.Data.Semigroup.Internal.N:Dual
+                   (GHC.Internal.Data.Semigroup.Internal.N:Endo <b_a8Nb>_R)
+               :: GHC.Internal.Data.Semigroup.Internal.Dual
+                    (GHC.Internal.Data.Semigroup.Internal.Endo b_a8Nb)
+                  ~R# (b_a8Nb -> b_a8Nb)))
+        eta1_a9jA
+
+-- RHS size: {terms: 30, types: 36, coercions: 15, joins: 0/0}
+$cfoldl1_r9o9
+  :: forall (s :: [Nat]) a. (a -> a -> a) -> Array s a -> a
+[GblId, Arity=2, Unf=OtherCon []]
+$cfoldl1_r9o9
+  = \ (@(s_a8Lb :: [Nat]))
+      (@a_a8O3)
+      (f_a9iQ :: a_a8O3 -> a_a8O3 -> a_a8O3)
+      (xs_a9iR :: Array s_a8Lb a_a8O3) ->
+      case ((foldMap
+               @V.Vector
+               Data.Vector.$fFoldableVector
+               @(GHC.Internal.Data.Semigroup.Internal.Dual
+                   (GHC.Internal.Data.Semigroup.Internal.Endo (Maybe a_a8O3)))
+               @a_a8O3
+               (GHC.Internal.Data.Semigroup.Internal.$fMonoidDual
+                  @(GHC.Internal.Data.Semigroup.Internal.Endo (Maybe a_a8O3))
+                  (GHC.Internal.Data.Semigroup.Internal.$fMonoidEndo
+                     @(Maybe a_a8O3)))
+               ((\ (x_a9jI :: a_a8O3) (y_a9jJ :: Maybe a_a8O3) ->
+                   GHC.Internal.Maybe.Just
+                     @a_a8O3
+                     (case y_a9jJ of {
+                        Nothing -> x_a9jI;
+                        Just x1_a9iW -> f_a9iQ x1_a9iW x_a9jI
+                      }))
+                `cast` (<a_a8O3>_R
+                        %<Many>_N ->_R Sym (GHC.Internal.Data.Semigroup.Internal.N:Dual
+                                                (GHC.Internal.Data.Semigroup.Internal.N:Endo
+                                                     <Maybe a_a8O3>_R))
+                        :: (a_a8O3 -> Maybe a_a8O3 -> Maybe a_a8O3)
+                           ~R# (a_a8O3
+                                -> GHC.Internal.Data.Semigroup.Internal.Dual
+                                     (GHC.Internal.Data.Semigroup.Internal.Endo (Maybe a_a8O3)))))
+               (xs_a9iR
+                `cast` (Main.N:Array <s_a8Lb>_N <a_a8O3>_N
+                        :: Array s_a8Lb a_a8O3 ~R# V.Vector a_a8O3)))
+            `cast` (GHC.Internal.Data.Semigroup.Internal.N:Dual
+                        (GHC.Internal.Data.Semigroup.Internal.N:Endo <Maybe a_a8O3>_R)
+                    :: GHC.Internal.Data.Semigroup.Internal.Dual
+                         (GHC.Internal.Data.Semigroup.Internal.Endo (Maybe a_a8O3))
+                       ~R# (Maybe a_a8O3 -> Maybe a_a8O3)))
+             (GHC.Internal.Maybe.Nothing @a_a8O3)
+      of {
+        Nothing ->
+          errorWithoutStackTrace
+            @LiftedRep
+            @a_a8O3
+            (build
+               @Char
+               (\ (@b_a9iZ) ->
+                  unpackFoldrCString# @b_a9iZ "foldl1: empty structure"#));
+        Just v_a9j0 -> v_a9j0
+      }
+
+-- RHS size: {terms: 23, types: 28, coercions: 15, joins: 0/0}
+$cfoldr'_r9oa
+  :: forall (s :: [Nat]) a b. (a -> b -> b) -> b -> Array s a -> b
+[GblId, Arity=3, Unf=OtherCon []]
+$cfoldr'_r9oa
+  = \ (@(s_a8Lb :: [Nat]))
+      (@a_a8MQ)
+      (@b_a8MR)
+      (f_a9jQ :: a_a8MQ -> b_a8MR -> b_a8MR)
+      (z0_a9jR :: b_a8MR)
+      (xs_a9jS :: Array s_a8Lb a_a8MQ) ->
+      ((foldMap
+          @V.Vector
+          Data.Vector.$fFoldableVector
+          @(GHC.Internal.Data.Semigroup.Internal.Dual
+              (GHC.Internal.Data.Semigroup.Internal.Endo (b_a8MR -> b_a8MR)))
+          @a_a8MQ
+          (GHC.Internal.Data.Semigroup.Internal.$fMonoidDual
+             @(GHC.Internal.Data.Semigroup.Internal.Endo (b_a8MR -> b_a8MR))
+             (GHC.Internal.Data.Semigroup.Internal.$fMonoidEndo
+                @(b_a8MR -> b_a8MR)))
+          ((\ (x_a9jI :: a_a8MQ)
+              (y_a9jJ :: b_a8MR -> b_a8MR)
+              (v_a9jV [OS=OneShot] :: b_a8MR) ->
+              case v_a9jV of z_a9jW { __DEFAULT ->
+              y_a9jJ (f_a9jQ x_a9jI z_a9jW)
+              })
+           `cast` (<a_a8MQ>_R
+                   %<Many>_N ->_R Sym (GHC.Internal.Data.Semigroup.Internal.N:Dual
+                                           (GHC.Internal.Data.Semigroup.Internal.N:Endo
+                                                <b_a8MR -> b_a8MR>_R))
+                   :: (a_a8MQ -> (b_a8MR -> b_a8MR) -> b_a8MR -> b_a8MR)
+                      ~R# (a_a8MQ
+                           -> GHC.Internal.Data.Semigroup.Internal.Dual
+                                (GHC.Internal.Data.Semigroup.Internal.Endo (b_a8MR -> b_a8MR)))))
+          (xs_a9jS
+           `cast` (Main.N:Array <s_a8Lb>_N <a_a8MQ>_N
+                   :: Array s_a8Lb a_a8MQ ~R# V.Vector a_a8MQ)))
+       `cast` (GHC.Internal.Data.Semigroup.Internal.N:Dual
+                   (GHC.Internal.Data.Semigroup.Internal.N:Endo <b_a8MR -> b_a8MR>_R)
+               :: GHC.Internal.Data.Semigroup.Internal.Dual
+                    (GHC.Internal.Data.Semigroup.Internal.Endo (b_a8MR -> b_a8MR))
+                  ~R# ((b_a8MR -> b_a8MR) -> b_a8MR -> b_a8MR)))
+        (id @b_a8MR) z0_a9jR
+
+-- RHS size: {terms: 8, types: 11, coercions: 6, joins: 0/0}
+$cproduct_r9ob
+  :: forall (s :: [Nat]) a.
+     Num a =>
+     Array s a -> GHC.Internal.Data.Semigroup.Internal.Product a
+[GblId, Arity=1, Unf=OtherCon []]
+$cproduct_r9ob
+  = \ (@(s_a8Lb :: [Nat])) (@a_a8Qb) ($dNum_a8Qc :: Num a_a8Qb) ->
+      $cfoldMap'_r9o3
+        @s_a8Lb
+        @(GHC.Internal.Data.Semigroup.Internal.Product a_a8Qb)
+        @a_a8Qb
+        (GHC.Internal.Data.Semigroup.Internal.$fMonoidProduct
+           @a_a8Qb $dNum_a8Qc)
+        ((\ (ds_a9kd :: a_a8Qb) -> ds_a9kd)
+         `cast` (<a_a8Qb>_R
+                 %<Many>_N ->_R Sym (GHC.Internal.Data.Semigroup.Internal.N:Product
+                                         <a_a8Qb>_R)
+                 :: (a_a8Qb -> a_a8Qb)
+                    ~R# (a_a8Qb
+                         -> GHC.Internal.Data.Semigroup.Internal.Product a_a8Qb)))
+
+-- RHS size: {terms: 6, types: 9, coercions: 0, joins: 0/0}
+$cfold_r9oc :: forall (s :: [Nat]) m. Monoid m => Array s m -> m
+[GblId, Arity=2, Unf=OtherCon []]
+$cfold_r9oc
+  = \ (@(s_a8Lb :: [Nat]))
+      (@m_a8Lk)
+      ($dMonoid_a8Ll :: Monoid m_a8Lk) ->
+      $cfoldMap_r9nX @s_a8Lb @m_a8Lk @m_a8Lk $dMonoid_a8Ll (id @m_a8Lk)
+
+-- RHS size: {terms: 19, types: 21, coercions: 41, joins: 0/0}
+Main.$fFoldableArray [InlPrag=CONLIKE]
+  :: forall (s :: [Nat]). Foldable (Array s)
+[GblId[DFunId], Unf=OtherCon []]
+Main.$fFoldableArray
+  = \ (@(s_a8Lb :: [Nat])) ->
+      GHC.Internal.Data.Foldable.C:Foldable
+        @(Array s_a8Lb)
+        ($cfold_r9oc @s_a8Lb)
+        ($cfoldMap_r9nX @s_a8Lb)
+        ($cfoldMap'_r9o3 @s_a8Lb)
+        ($cfoldr_r9nW @s_a8Lb)
+        ($cfoldr'_r9oa @s_a8Lb)
+        ($cfoldl_r9o8 @s_a8Lb)
+        ($cfoldl'_r9o2 @s_a8Lb)
+        ($cfoldr1_r9nY @s_a8Lb)
+        ($cfoldl1_r9o9 @s_a8Lb)
+        ($ctoList_r9o1 @s_a8Lb)
+        ($cnull_r9nV @s_a8Lb)
+        ($clength1_r9o7 @s_a8Lb)
+        (($celem_r9nZ @s_a8Lb)
+         `cast` (forall (a :: <*>_N).
+                 <Eq a>_R
+                 %<Many>_N ->_R <a>_R
+                 %<Many>_N ->_R <Array s_a8Lb a>_R
+                 %<Many>_N ->_R GHC.Internal.Data.Semigroup.Internal.N:Any
+                 :: (forall a.
+                     Eq a =>
+                     a -> Array s_a8Lb a -> GHC.Internal.Data.Semigroup.Internal.Any)
+                    ~R# (forall a. Eq a => a -> Array s_a8Lb a -> Bool)))
+        ($cmaximum_r9o4 @s_a8Lb)
+        ($cminimum_r9o6 @s_a8Lb)
+        (($csum_r9o5 @s_a8Lb)
+         `cast` (forall (a :: <*>_N).
+                 <Num a>_R
+                 %<Many>_N ->_R <Array s_a8Lb a>_R
+                 %<Many>_N ->_R GHC.Internal.Data.Semigroup.Internal.N:Sum <a>_R
+                 :: (forall a.
+                     Num a =>
+                     Array s_a8Lb a -> GHC.Internal.Data.Semigroup.Internal.Sum a)
+                    ~R# (forall a. Num a => Array s_a8Lb a -> a)))
+        (($cproduct_r9ob @s_a8Lb)
+         `cast` (forall (a :: <*>_N).
+                 <Num a>_R
+                 %<Many>_N ->_R <Array s_a8Lb a>_R
+                 %<Many>_N ->_R GHC.Internal.Data.Semigroup.Internal.N:Product <a>_R
+                 :: (forall a.
+                     Num a =>
+                     Array s_a8Lb a -> GHC.Internal.Data.Semigroup.Internal.Product a)
+                    ~R# (forall a. Num a => Array s_a8Lb a -> a)))
+
+-- RHS size: {terms: 9, types: 11, coercions: 3, joins: 0/0}
+$c<$_r9od :: forall (s :: [Nat]) a b. a -> Array s b -> V.Vector a
+[GblId, Arity=2, Unf=OtherCon []]
+$c<$_r9od
+  = \ (@(s_a8Kr :: [Nat]))
+      (@a_a8KS)
+      (@b_a8KT)
+      (z_a8nS :: a_a8KS)
+      (ds_d9dN :: Array s_a8Kr b_a8KT) ->
+      <$
+        @V.Vector
+        Data.Vector.$fFunctorVector
+        @a_a8KS
+        @b_a8KT
+        z_a8nS
+        (ds_d9dN
+         `cast` (Main.N:Array <s_a8Kr>_N <b_a8KT>_N
+                 :: Array s_a8Kr b_a8KT ~R# V.Vector b_a8KT))
+
+-- RHS size: {terms: 9, types: 12, coercions: 3, joins: 0/0}
+$cfmap_r9oe
+  :: forall (s :: [Nat]) a b. (a -> b) -> Array s a -> V.Vector b
+[GblId, Arity=2, Unf=OtherCon []]
+$cfmap_r9oe
+  = \ (@(s_a8Kr :: [Nat]))
+      (@a_a8Kx)
+      (@b_a8Ky)
+      (f_a8nQ :: a_a8Kx -> b_a8Ky)
+      (ds_d9dL :: Array s_a8Kr a_a8Kx) ->
+      fmap
+        @V.Vector
+        Data.Vector.$fFunctorVector
+        @a_a8Kx
+        @b_a8Ky
+        f_a8nQ
+        (ds_d9dL
+         `cast` (Main.N:Array <s_a8Kr>_N <a_a8Kx>_N
+                 :: Array s_a8Kr a_a8Kx ~R# V.Vector a_a8Kx))
+
+-- RHS size: {terms: 4, types: 6, coercions: 33, joins: 0/0}
+Main.$fFunctorArray [InlPrag=CONLIKE]
+  :: forall (s :: [Nat]). Functor (Array s)
+[GblId[DFunId], Unf=OtherCon []]
+Main.$fFunctorArray
+  = \ (@(s_a8Kr :: [Nat])) ->
+      GHC.Internal.Base.C:Functor
+        @(Array s_a8Kr)
+        (($cfmap_r9oe @s_a8Kr)
+         `cast` (forall (a :: <*>_N) (b :: <*>_N).
+                 <a -> b>_R
+                 %<Many>_N ->_R <Array s_a8Kr a>_R
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8Kr>_N) <b>_N
+                 :: (forall a b. (a -> b) -> Array s_a8Kr a -> V.Vector b)
+                    ~R# (forall a b. (a -> b) -> Array s_a8Kr a -> Array s_a8Kr b)))
+        (($c<$_r9od @s_a8Kr)
+         `cast` (forall (a :: <*>_N) (b :: <*>_N).
+                 <a>_R
+                 %<Many>_N ->_R <Array s_a8Kr b>_R
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8Kr>_N) <a>_N
+                 :: (forall a b. a -> Array s_a8Kr b -> V.Vector a)
+                    ~R# (forall a b. a -> Array s_a8Kr b -> Array s_a8Kr a)))
+
+-- RHS size: {terms: 20, types: 30, coercions: 11, joins: 0/1}
+$cmapM_r9of
+  :: forall (s :: [Nat]) (m :: * -> *) a b.
+     Monad m =>
+     (a -> m b) -> Array s a -> m (Array s b)
+[GblId, Arity=3, Unf=OtherCon []]
+$cmapM_r9of
+  = \ (@(s_a8RM :: [Nat]))
+      (@(m_a8T8 :: * -> *))
+      (@a_a8T9)
+      (@b_a8Ta)
+      ($dMonad_a8Tb :: Monad m_a8T8)
+      (eta_B0 :: a_a8T9 -> m_a8T8 b_a8Ta)
+      (eta1_B1 :: Array s_a8RM a_a8T9) ->
+      let {
+        $dApplicative_a8S9 :: Applicative m_a8T8
+        [LclId]
+        $dApplicative_a8S9
+          = GHC.Internal.Base.$p1Monad @m_a8T8 $dMonad_a8Tb } in
+      fmap
+        @m_a8T8
+        (GHC.Internal.Base.$p1Applicative @m_a8T8 $dApplicative_a8S9)
+        @(V.Vector b_a8Ta)
+        @(Array s_a8RM b_a8Ta)
+        ((\ (b1_a8ol :: V.Vector b_a8Ta) -> b1_a8ol)
+         `cast` (<V.Vector b_a8Ta>_R
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8RM>_N) <b_a8Ta>_N
+                 :: (V.Vector b_a8Ta -> V.Vector b_a8Ta)
+                    ~R# (V.Vector b_a8Ta -> Array s_a8RM b_a8Ta)))
+        (traverse
+           @V.Vector
+           Data.Vector.$fTraversableVector
+           @m_a8T8
+           @a_a8T9
+           @b_a8Ta
+           $dApplicative_a8S9
+           eta_B0
+           (eta1_B1
+            `cast` (Main.N:Array <s_a8RM>_N <a_a8T9>_N
+                    :: Array s_a8RM a_a8T9 ~R# V.Vector a_a8T9)))
+
+-- RHS size: {terms: 7, types: 14, coercions: 0, joins: 0/0}
+$csequenceA_r9og
+  :: forall (s :: [Nat]) (f :: * -> *) a.
+     Applicative f =>
+     Array s (f a) -> f (Array s a)
+[GblId, Arity=2, Unf=OtherCon []]
+$csequenceA_r9og
+  = \ (@(s_a8RM :: [Nat]))
+      (@(f_a8SG :: * -> *))
+      (@a_a8SH)
+      ($dApplicative_a8SI :: Applicative f_a8SG) ->
+      $ctraverse_r9nS
+        @s_a8RM
+        @f_a8SG
+        @(f_a8SG a_a8SH)
+        @a_a8SH
+        $dApplicative_a8SI
+        (id @(f_a8SG a_a8SH))
+
+-- RHS size: {terms: 18, types: 30, coercions: 12, joins: 0/1}
+$csequence_r9oh
+  :: forall (s :: [Nat]) (m :: * -> *) a.
+     Monad m =>
+     Array s (m a) -> m (Array s a)
+[GblId, Arity=2, Unf=OtherCon []]
+$csequence_r9oh
+  = \ (@(s_a8RM :: [Nat]))
+      (@(m_a8Ty :: * -> *))
+      (@a_a8Tz)
+      ($dMonad_a8TA :: Monad m_a8Ty)
+      (eta_B0 :: Array s_a8RM (m_a8Ty a_a8Tz)) ->
+      let {
+        $dApplicative_a8S9 :: Applicative m_a8Ty
+        [LclId]
+        $dApplicative_a8S9
+          = GHC.Internal.Base.$p1Monad @m_a8Ty $dMonad_a8TA } in
+      fmap
+        @m_a8Ty
+        (GHC.Internal.Base.$p1Applicative @m_a8Ty $dApplicative_a8S9)
+        @(V.Vector a_a8Tz)
+        @(Array s_a8RM a_a8Tz)
+        ((\ (b1_a8ol :: V.Vector a_a8Tz) -> b1_a8ol)
+         `cast` (<V.Vector a_a8Tz>_R
+                 %<Many>_N ->_R Sym (Main.N:Array <s_a8RM>_N) <a_a8Tz>_N
+                 :: (V.Vector a_a8Tz -> V.Vector a_a8Tz)
+                    ~R# (V.Vector a_a8Tz -> Array s_a8RM a_a8Tz)))
+        (traverse
+           @V.Vector
+           Data.Vector.$fTraversableVector
+           @m_a8Ty
+           @(m_a8Ty a_a8Tz)
+           @a_a8Tz
+           $dApplicative_a8S9
+           (id @(m_a8Ty a_a8Tz))
+           (eta_B0
+            `cast` (Main.N:Array <s_a8RM>_N <m_a8Ty a_a8Tz>_N
+                    :: Array s_a8RM (m_a8Ty a_a8Tz) ~R# V.Vector (m_a8Ty a_a8Tz))))
+
+-- RHS size: {terms: 8, types: 10, coercions: 0, joins: 0/0}
+Main.$fTraversableArray [InlPrag=CONLIKE]
+  :: forall (s :: [Nat]). Traversable (Array s)
+[GblId[DFunId], Unf=OtherCon []]
+Main.$fTraversableArray
+  = \ (@(s_a8RM :: [Nat])) ->
+      GHC.Internal.Data.Traversable.C:Traversable
+        @(Array s_a8RM)
+        (Main.$fFunctorArray @s_a8RM)
+        (Main.$fFoldableArray @s_a8RM)
+        ($ctraverse_r9nS @s_a8RM)
+        ($csequenceA_r9og @s_a8RM)
+        ($cmapM_r9of @s_a8RM)
+        ($csequence_r9oh @s_a8RM)
+
+-- RHS size: {terms: 5, types: 6, coercions: 0, joins: 0/0}
+$c<$1_r9oi :: forall a b. a -> Fins b -> Fins b
+[GblId, Arity=2, Unf=OtherCon []]
+$c<$1_r9oi
+  = \ (@a_a8Kf) (@b_a8Kg) _ [Occ=Dead] (ds_d9dJ :: Fins b_a8Kg) ->
+      ds_d9dJ
+
+-- RHS size: {terms: 5, types: 7, coercions: 0, joins: 0/0}
+$cfmap1_r9oj :: forall a b. (a -> b) -> Fins a -> Fins a
+[GblId, Arity=2, Unf=OtherCon []]
+$cfmap1_r9oj
+  = \ (@a_a8JZ) (@b_a8K0) _ [Occ=Dead] (ds_d9dH :: Fins a_a8JZ) ->
+      ds_d9dH
+
+-- RHS size: {terms: 3, types: 2, coercions: 41, joins: 0/0}
+Main.$fFunctorFins [InlPrag=CONLIKE] :: Functor Fins
+[GblId[DFunId], Unf=OtherCon []]
+Main.$fFunctorFins
+  = GHC.Internal.Base.C:Functor
+      @Fins
+      ($cfmap1_r9oj
+       `cast` (forall (a :: <*>_N) (b :: <*>_N).
+               <a -> b>_R
+               %<Many>_N ->_R <Fins a>_R
+               %<Many>_N ->_R Main.N:Fins <*>_N <a>_N
+                              ; Sym (Main.N:Fins <*>_N <b>_N)
+               :: (forall a b. (a -> b) -> Fins a -> Fins a)
+                  ~R# (forall a b. (a -> b) -> Fins a -> Fins b)))
+      ($c<$1_r9oi
+       `cast` (forall (a :: <*>_N) (b :: <*>_N).
+               <a>_R
+               %<Many>_N ->_R <Fins b>_R
+               %<Many>_N ->_R Main.N:Fins <*>_N <b>_N
+                              ; Sym (Main.N:Fins <*>_N <a>_N)
+               :: (forall a b. a -> Fins b -> Fins b)
+                  ~R# (forall a b. a -> Fins b -> Fins a)))
+
+-- RHS size: {terms: 4, types: 5, coercions: 0, joins: 0/0}
+fromFins1_r9ok :: forall k (s :: k). Fins s -> Fins s
+[GblId, Arity=1, Unf=OtherCon []]
+fromFins1_r9ok
+  = \ (@k_a5lR) (@(s_a5lS :: k_a5lR)) (ds_d9dz :: Fins s_a5lS) ->
+      ds_d9dz
+
+-- RHS size: {terms: 1, types: 0, coercions: 12, joins: 0/0}
+fromFins :: forall {k} (s :: k). Fins s -> [Int]
+[GblId[[RecSel]], Arity=1, Unf=OtherCon []]
+fromFins
+  = fromFins1_r9ok
+    `cast` (forall (k :: <*>_N) (s :: <k>_N).
+            <Fins s>_R %<Many>_N ->_R Main.N:Fins <k>_N <s>_N
+            :: (forall k (s :: k). Fins s -> Fins s)
+               ~R# (forall k (s :: k). Fins s -> [Int]))
+
+-- RHS size: {terms: 1, types: 0, coercions: 0, joins: 0/0}
+Main.$bSNats :: forall (ns :: [Nat]). KnownNats ns => SNats ns
+[GblId, Arity=1, Unf=OtherCon []]
+Main.$bSNats = natsSing
+
+-- RHS size: {terms: 3, types: 4, coercions: 0, joins: 0/0}
+fromSNats1_r9ol :: forall (s :: [Nat]). SNats s -> SNats s
+[GblId, Arity=1, Unf=OtherCon []]
+fromSNats1_r9ol
+  = \ (@(s_a8Eb :: [Nat])) (ds_d9d6 :: SNats s_a8Eb) -> ds_d9d6
+
+-- RHS size: {terms: 1, types: 0, coercions: 9, joins: 0/0}
+fromSNats :: forall (s :: [Nat]). SNats s -> [Nat]
+[GblId, Arity=1, Unf=OtherCon []]
+fromSNats
+  = fromSNats1_r9ol
+    `cast` (forall (s :: <[Nat]>_N).
+            <SNats s>_R %<Many>_N ->_R Main.N:SNats <s>_N
+            :: (forall (s :: [Nat]). SNats s -> SNats s)
+               ~R# (forall (s :: [Nat]). SNats s -> [Nat]))
+
+-- RHS size: {terms: 9, types: 10, coercions: 5, joins: 0/0}
+$cnatsSing_r9om
+  :: forall (n :: Nat) (s :: [Nat]).
+     (KnownNat n, KnownNats s) =>
+     [Nat]
+[GblId, Arity=2, Unf=OtherCon []]
+$cnatsSing_r9om
+  = \ (@(n_a90c :: Nat))
+      (@(s_a90d :: [Nat]))
+      ($dKnownNat3_a90e :: KnownNat n_a90c)
+      ($dKnownNats4_a90f :: KnownNats s_a90d) ->
+      GHC.Types.:
+        @Nat
+        (fromSNat
+           @n_a90c (GHC.Internal.TypeNats.$bSNat @n_a90c $dKnownNat3_a90e))
+        ($dKnownNats4_a90f
+         `cast` (Main.N:KnownNats <s_a90d>_N
+                 ; Main.N:SNats <s_a90d>_N
+                 :: KnownNats s_a90d ~R# [Nat]))
+
+-- RHS size: {terms: 1, types: 0, coercions: 26, joins: 0/0}
+Main.$fKnownNats: [InlPrag=INLINE (sat-args=0)]
+  :: forall (n :: Nat) (s :: [Nat]).
+     (KnownNat n, KnownNats s) =>
+     KnownNats (n : s)
+[GblId[DFunId(nt)], Arity=2, Unf=OtherCon []]
+Main.$fKnownNats:
+  = $cnatsSing_r9om
+    `cast` (forall (n :: <Nat>_N) (s :: <[Nat]>_N).
+            <KnownNat n>_R
+            %<Many>_N ->_R <KnownNats s>_R
+            %<Many>_N ->_R Sym (Main.N:SNats <n : s>_N)
+                           ; Sym (Main.N:KnownNats <n : s>_N)
+            :: (forall (n :: Nat) (s :: [Nat]).
+                (KnownNat n, KnownNats s) =>
+                [Nat])
+               ~R# (forall (n :: Nat) (s :: [Nat]).
+                    (KnownNat n, KnownNats s) =>
+                    KnownNats (n : s)))
+
+-- RHS size: {terms: 11, types: 33, coercions: 9, joins: 0/0}
+withKnownNats
+  :: forall (ns :: [Nat]) (rep :: RuntimeRep) (r :: TYPE rep).
+     SNats ns -> (KnownNats ns => r) -> r
+[GblId]
+withKnownNats
+  = \ (@(ns_a8DF :: [Nat]))
+      (@(rep_a8DG :: RuntimeRep))
+      (@(r_a8DH :: TYPE rep_a8DG)) ->
+      GHC.Magic.nospec
+        @(forall {rr :: RuntimeRep} (r1 :: TYPE rr).
+          WithDict (KnownNats ns_a8DF) (SNats ns_a8DF) =>
+          SNats ns_a8DF -> (KnownNats ns_a8DF => r1) -> r1)
+        (withDict @(KnownNats ns_a8DF) @(SNats ns_a8DF))
+        ((\ (@(q_1h :: RuntimeRep))
+            (@(a_11 :: TYPE q_1h))
+            (withDict_s_a94n :: SNats ns_a8DF)
+            (withDict_k_a94o :: KnownNats ns_a8DF => a_11) ->
+            withDict_k_a94o
+              (withDict_s_a94n
+               `cast` (Sym (Main.N:KnownNats <ns_a8DF>_N)
+                       :: SNats ns_a8DF ~R# KnownNats ns_a8DF)))
+         `cast` (Sym (GHC.Magic.Dict.N:WithDict
+                          <KnownNats ns_a8DF>_N <SNats ns_a8DF>_N)
+                 :: (forall {rr :: RuntimeRep} (r :: TYPE rr).
+                     SNats ns_a8DF -> (KnownNats ns_a8DF => r) -> r)
+                    ~R# WithDict (KnownNats ns_a8DF) (SNats ns_a8DF)))
+        @rep_a8DG
+        @r_a8DH
+
+-- RHS size: {terms: 5, types: 9, coercions: 0, joins: 0/0}
+knownNatsInstance
+  :: forall (ns :: [Nat]). SNats ns -> KnownNatsInstance ns
+[GblId, Arity=1, Unf=OtherCon []]
+knownNatsInstance
+  = \ (@(ns_a8DV :: [Nat])) (dims_a5a1 :: SNats ns_a8DV) ->
+      withKnownNats
+        @ns_a8DV
+        @LiftedRep
+        @(KnownNatsInstance ns_a8DV)
+        dims_a5a1
+        (Main.KnownNatsInstance @ns_a8DV)
+
+-- RHS size: {terms: 13, types: 21, coercions: 0, joins: 0/0}
+Main.$mSNats
+  :: forall {rep :: RuntimeRep} {r :: TYPE rep} {ns :: [Nat]}.
+     SNats ns -> (KnownNats ns => r) -> ((# #) -> r) -> r
+[GblId, Arity=3, Unf=OtherCon []]
+Main.$mSNats
+  = \ (@(rep_a8Ep :: RuntimeRep))
+      (@(r_a8Eq :: TYPE rep_a8Ep))
+      (@(ns_a55W :: [Nat]))
+      (scrut_a8Es :: SNats ns_a55W)
+      (cont_a8Et :: KnownNats ns_a55W => r_a8Eq)
+      _ [Occ=Dead] ->
+      case withKnownNats
+             @ns_a55W
+             @LiftedRep
+             @(KnownNatsInstance ns_a55W)
+             scrut_a8Es
+             (Main.KnownNatsInstance @ns_a55W)
+      of
+      { KnownNatsInstance $dKnownNats4_a8Ej ->
+      cont_a8Et $dKnownNats4_a8Ej
+      }
+
+-- RHS size: {terms: 5, types: 9, coercions: 0, joins: 0/0}
+natVals1_r9on
+  :: forall (ns :: [Nat]) (proxy :: [Nat] -> *).
+     KnownNats ns =>
+     proxy ns -=> KnownNats ns
+[GblId, Arity=2, Unf=OtherCon []]
+natVals1_r9on
+  = \ (@(ns_a8Dm :: [Nat]))
+      (@(proxy_a8Dn :: [Nat] -> *))
+      ($dKnownNats4_a8Do :: KnownNats ns_a8Dm)
+      _ [Occ=Dead] ->
+      $dKnownNats4_a8Do
+
+-- RHS size: {terms: 1, types: 0, coercions: 20, joins: 0/0}
+natVals
+  :: forall (ns :: [Nat]) (proxy :: [Nat] -> *).
+     KnownNats ns =>
+     proxy ns -> [Nat]
+[GblId, Arity=2, Unf=OtherCon []]
+natVals
+  = natVals1_r9on
+    `cast` (forall (ns :: <[Nat]>_N) (proxy :: <[Nat] -> *>_N).
+            <KnownNats ns>_R
+            %<Many>_N ->_R <proxy ns>_R
+            %<Many>_N ->_R Main.N:KnownNats <ns>_N
+                           ; Main.N:SNats <ns>_N
+            :: (forall (ns :: [Nat]) (proxy :: [Nat] -> *).
+                KnownNats ns =>
+                proxy ns -=> KnownNats ns)
+               ~R# (forall (ns :: [Nat]) (proxy :: [Nat] -> *).
+                    KnownNats ns =>
+                    proxy ns -> [Nat]))
+
+-- RHS size: {terms: 12, types: 8, coercions: 0, joins: 0/0}
+insertDim :: Int -> Int -> [Int] -> [Int]
+[GblId, Arity=3, Unf=OtherCon []]
+insertDim
+  = \ (d_a5iK :: Int) (i_a5iL :: Int) (s_a5iM :: [Int]) ->
+      ++
+        @Int
+        (take @Int d_a5iK s_a5iM)
+        (GHC.Types.: @Int i_a5iL (drop @Int d_a5iK s_a5iM))
+
+-- RHS size: {terms: 1, types: 0, coercions: 0, joins: 0/0}
+$trModule1_r9oo :: Addr#
+[GblId, Unf=OtherCon []]
+$trModule1_r9oo = "main"#
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$trModule2_r9op :: GHC.Types.TrName
+[GblId, Unf=OtherCon []]
+$trModule2_r9op = GHC.Types.TrNameS $trModule1_r9oo
+
+-- RHS size: {terms: 1, types: 0, coercions: 0, joins: 0/0}
+$trModule3_r9oq :: Addr#
+[GblId, Unf=OtherCon []]
+$trModule3_r9oq = "Main"#
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$trModule4_r9or :: GHC.Types.TrName
+[GblId, Unf=OtherCon []]
+$trModule4_r9or = GHC.Types.TrNameS $trModule3_r9oq
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+Main.$trModule :: GHC.Types.Module
+[GblId, Unf=OtherCon []]
+Main.$trModule = GHC.Types.Module $trModule2_r9op $trModule4_r9or
+
+-- RHS size: {terms: 3, types: 1, coercions: 0, joins: 0/0}
+$krep_r9os :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep_r9os
+  = GHC.Types.KindRepTyConApp
+      GHC.Num.Natural.$tcNatural (GHC.Types.[] @GHC.Types.KindRep)
+
+-- RHS size: {terms: 3, types: 1, coercions: 0, joins: 0/0}
+$krep1_r9ot :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep1_r9ot
+  = GHC.Types.KindRepTyConApp
+      GHC.Types.$tcInt (GHC.Types.[] @GHC.Types.KindRep)
+
+-- RHS size: {terms: 3, types: 2, coercions: 0, joins: 0/0}
+$krep2_r9ou :: [GHC.Types.KindRep]
+[GblId, Unf=OtherCon []]
+$krep2_r9ou
+  = GHC.Types.:
+      @GHC.Types.KindRep $krep_r9os (GHC.Types.[] @GHC.Types.KindRep)
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep3_r9ov :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep3_r9ov
+  = GHC.Types.KindRepTyConApp GHC.Types.$tcList $krep2_r9ou
+
+-- RHS size: {terms: 3, types: 2, coercions: 0, joins: 0/0}
+$krep4_r9ow :: [GHC.Types.KindRep]
+[GblId, Unf=OtherCon []]
+$krep4_r9ow
+  = GHC.Types.:
+      @GHC.Types.KindRep $krep1_r9ot (GHC.Types.[] @GHC.Types.KindRep)
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep5_r9ox :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep5_r9ox
+  = GHC.Types.KindRepTyConApp GHC.Types.$tcList $krep4_r9ow
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep6_r9oy :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep6_r9oy
+  = GHC.Types.KindRepFun $krep3_r9ov GHC.Types.krep$Constraint
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep7_r9oz :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep7_r9oz = GHC.Types.KindRepFun $krep3_r9ov GHC.Types.krep$*
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep8_r9oA :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep8_r9oA = GHC.Types.KindRepFun $krep3_r9ov GHC.Types.krep$*Arr*
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$krep9_r9oB :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep9_r9oB = GHC.Types.KindRepVar 0#
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep10_r9oC :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep10_r9oC = GHC.Types.KindRepFun $krep9_r9oB GHC.Types.krep$*
+
+-- RHS size: {terms: 3, types: 2, coercions: 0, joins: 0/0}
+$krep11_r9oD :: [GHC.Types.KindRep]
+[GblId, Unf=OtherCon []]
+$krep11_r9oD
+  = GHC.Types.:
+      @GHC.Types.KindRep $krep9_r9oB (GHC.Types.[] @GHC.Types.KindRep)
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep12_r9oE :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep12_r9oE
+  = GHC.Types.KindRepTyConApp Data.Vector.$tcVector $krep11_r9oD
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$krep13_r9oF :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep13_r9oF = GHC.Types.KindRepVar 1#
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$krep14_r9oG :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep14_r9oG = GHC.Types.KindRepVar 0#
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$krep15_r9oH :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep15_r9oH = GHC.Types.KindRepVar 1#
+
+-- RHS size: {terms: 1, types: 0, coercions: 0, joins: 0/0}
+$tcArray1_r9oI :: Addr#
+[GblId, Unf=OtherCon []]
+$tcArray1_r9oI = "Array"#
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$tcArray2_r9oJ :: GHC.Types.TrName
+[GblId, Unf=OtherCon []]
+$tcArray2_r9oJ = GHC.Types.TrNameS $tcArray1_r9oI
+
+-- RHS size: {terms: 7, types: 0, coercions: 0, joins: 0/0}
+Main.$tcArray :: GHC.Types.TyCon
+[GblId, Unf=OtherCon []]
+Main.$tcArray
+  = GHC.Types.TyCon
+      5777294026206051299#Word64
+      3857655729228752444#Word64
+      Main.$trModule
+      $tcArray2_r9oJ
+      0#
+      $krep8_r9oA
+
+-- RHS size: {terms: 3, types: 2, coercions: 0, joins: 0/0}
+$krep16_r9oK :: [GHC.Types.KindRep]
+[GblId, Unf=OtherCon []]
+$krep16_r9oK
+  = GHC.Types.:
+      @GHC.Types.KindRep $krep9_r9oB (GHC.Types.[] @GHC.Types.KindRep)
+
+-- RHS size: {terms: 3, types: 1, coercions: 0, joins: 0/0}
+$krep17_r9oL :: [GHC.Types.KindRep]
+[GblId, Unf=OtherCon []]
+$krep17_r9oL
+  = GHC.Types.: @GHC.Types.KindRep $krep13_r9oF $krep16_r9oK
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep18_r9oM :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep18_r9oM = GHC.Types.KindRepTyConApp Main.$tcArray $krep17_r9oL
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep19_r9oN :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep19_r9oN = GHC.Types.KindRepFun $krep12_r9oE $krep18_r9oM
+
+-- RHS size: {terms: 1, types: 0, coercions: 0, joins: 0/0}
+$tc'Array1_r9oO :: Addr#
+[GblId, Unf=OtherCon []]
+$tc'Array1_r9oO = "'Array"#
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$tc'Array2_r9oP :: GHC.Types.TrName
+[GblId, Unf=OtherCon []]
+$tc'Array2_r9oP = GHC.Types.TrNameS $tc'Array1_r9oO
+
+-- RHS size: {terms: 7, types: 0, coercions: 0, joins: 0/0}
+Main.$tc'Array :: GHC.Types.TyCon
+[GblId, Unf=OtherCon []]
+Main.$tc'Array
+  = GHC.Types.TyCon
+      5048393331630209743#Word64
+      17904900303934886499#Word64
+      Main.$trModule
+      $tc'Array2_r9oP
+      2#
+      $krep19_r9oN
+
+-- RHS size: {terms: 1, types: 0, coercions: 0, joins: 0/0}
+$tcSNats1_r9oQ :: Addr#
+[GblId, Unf=OtherCon []]
+$tcSNats1_r9oQ = "SNats"#
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$tcSNats2_r9oR :: GHC.Types.TrName
+[GblId, Unf=OtherCon []]
+$tcSNats2_r9oR = GHC.Types.TrNameS $tcSNats1_r9oQ
+
+-- RHS size: {terms: 7, types: 0, coercions: 0, joins: 0/0}
+Main.$tcSNats :: GHC.Types.TyCon
+[GblId, Unf=OtherCon []]
+Main.$tcSNats
+  = GHC.Types.TyCon
+      17392289955708148144#Word64
+      4388991826548351345#Word64
+      Main.$trModule
+      $tcSNats2_r9oR
+      0#
+      $krep7_r9oz
+
+-- RHS size: {terms: 3, types: 2, coercions: 0, joins: 0/0}
+$krep20_r9oS :: [GHC.Types.KindRep]
+[GblId, Unf=OtherCon []]
+$krep20_r9oS
+  = GHC.Types.:
+      @GHC.Types.KindRep $krep14_r9oG (GHC.Types.[] @GHC.Types.KindRep)
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep21_r9oT :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep21_r9oT = GHC.Types.KindRepTyConApp Main.$tcSNats $krep20_r9oS
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep22_r9oU :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep22_r9oU = GHC.Types.KindRepFun $krep3_r9ov $krep21_r9oT
+
+-- RHS size: {terms: 1, types: 0, coercions: 0, joins: 0/0}
+$tc'UnsafeSNats1_r9oV :: Addr#
+[GblId, Unf=OtherCon []]
+$tc'UnsafeSNats1_r9oV = "'UnsafeSNats"#
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$tc'UnsafeSNats2_r9oW :: GHC.Types.TrName
+[GblId, Unf=OtherCon []]
+$tc'UnsafeSNats2_r9oW = GHC.Types.TrNameS $tc'UnsafeSNats1_r9oV
+
+-- RHS size: {terms: 7, types: 0, coercions: 0, joins: 0/0}
+Main.$tc'UnsafeSNats :: GHC.Types.TyCon
+[GblId, Unf=OtherCon []]
+Main.$tc'UnsafeSNats
+  = GHC.Types.TyCon
+      12117240811593421192#Word64
+      4222631377431123174#Word64
+      Main.$trModule
+      $tc'UnsafeSNats2_r9oW
+      1#
+      $krep22_r9oU
+
+-- RHS size: {terms: 1, types: 0, coercions: 0, joins: 0/0}
+$tcKnownNats1_r9oX :: Addr#
+[GblId, Unf=OtherCon []]
+$tcKnownNats1_r9oX = "KnownNats"#
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$tcKnownNats2_r9oY :: GHC.Types.TrName
+[GblId, Unf=OtherCon []]
+$tcKnownNats2_r9oY = GHC.Types.TrNameS $tcKnownNats1_r9oX
+
+-- RHS size: {terms: 7, types: 0, coercions: 0, joins: 0/0}
+Main.$tcKnownNats :: GHC.Types.TyCon
+[GblId, Unf=OtherCon []]
+Main.$tcKnownNats
+  = GHC.Types.TyCon
+      2612814185364282671#Word64
+      6605221863154678721#Word64
+      Main.$trModule
+      $tcKnownNats2_r9oY
+      0#
+      $krep6_r9oy
+
+-- RHS size: {terms: 3, types: 2, coercions: 0, joins: 0/0}
+$krep23_r9oZ :: [GHC.Types.KindRep]
+[GblId, Unf=OtherCon []]
+$krep23_r9oZ
+  = GHC.Types.:
+      @GHC.Types.KindRep $krep14_r9oG (GHC.Types.[] @GHC.Types.KindRep)
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep24_r9p0 :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep24_r9p0
+  = GHC.Types.KindRepTyConApp Main.$tcKnownNats $krep23_r9oZ
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep25_r9p1 :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep25_r9p1 = GHC.Types.KindRepFun $krep21_r9oT $krep24_r9p0
+
+-- RHS size: {terms: 1, types: 0, coercions: 0, joins: 0/0}
+$tc'C:KnownNats1_r9p2 :: Addr#
+[GblId, Unf=OtherCon []]
+$tc'C:KnownNats1_r9p2 = "'C:KnownNats"#
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$tc'C:KnownNats2_r9p3 :: GHC.Types.TrName
+[GblId, Unf=OtherCon []]
+$tc'C:KnownNats2_r9p3 = GHC.Types.TrNameS $tc'C:KnownNats1_r9p2
+
+-- RHS size: {terms: 7, types: 0, coercions: 0, joins: 0/0}
+Main.$tc'C:KnownNats :: GHC.Types.TyCon
+[GblId, Unf=OtherCon []]
+Main.$tc'C:KnownNats
+  = GHC.Types.TyCon
+      299973789363395646#Word64
+      14219551705131311885#Word64
+      Main.$trModule
+      $tc'C:KnownNats2_r9p3
+      1#
+      $krep25_r9p1
+
+-- RHS size: {terms: 1, types: 0, coercions: 0, joins: 0/0}
+$tcKnownNatsInstance1_r9p4 :: Addr#
+[GblId, Unf=OtherCon []]
+$tcKnownNatsInstance1_r9p4 = "KnownNatsInstance"#
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$tcKnownNatsInstance2_r9p5 :: GHC.Types.TrName
+[GblId, Unf=OtherCon []]
+$tcKnownNatsInstance2_r9p5
+  = GHC.Types.TrNameS $tcKnownNatsInstance1_r9p4
+
+-- RHS size: {terms: 7, types: 0, coercions: 0, joins: 0/0}
+Main.$tcKnownNatsInstance :: GHC.Types.TyCon
+[GblId, Unf=OtherCon []]
+Main.$tcKnownNatsInstance
+  = GHC.Types.TyCon
+      17216743810271194322#Word64
+      114697579641797952#Word64
+      Main.$trModule
+      $tcKnownNatsInstance2_r9p5
+      0#
+      $krep7_r9oz
+
+-- RHS size: {terms: 3, types: 2, coercions: 0, joins: 0/0}
+$krep26_r9p6 :: [GHC.Types.KindRep]
+[GblId, Unf=OtherCon []]
+$krep26_r9p6
+  = GHC.Types.:
+      @GHC.Types.KindRep $krep14_r9oG (GHC.Types.[] @GHC.Types.KindRep)
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep27_r9p7 :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep27_r9p7
+  = GHC.Types.KindRepTyConApp Main.$tcKnownNatsInstance $krep26_r9p6
+
+-- RHS size: {terms: 1, types: 0, coercions: 0, joins: 0/0}
+$tc'KnownNatsInstance1_r9p8 :: Addr#
+[GblId, Unf=OtherCon []]
+$tc'KnownNatsInstance1_r9p8 = "'KnownNatsInstance"#
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$tc'KnownNatsInstance2_r9p9 :: GHC.Types.TrName
+[GblId, Unf=OtherCon []]
+$tc'KnownNatsInstance2_r9p9
+  = GHC.Types.TrNameS $tc'KnownNatsInstance1_r9p8
+
+-- RHS size: {terms: 7, types: 0, coercions: 0, joins: 0/0}
+Main.$tc'KnownNatsInstance :: GHC.Types.TyCon
+[GblId, Unf=OtherCon []]
+Main.$tc'KnownNatsInstance
+  = GHC.Types.TyCon
+      7492720705021260715#Word64
+      10133493026148593214#Word64
+      Main.$trModule
+      $tc'KnownNatsInstance2_r9p9
+      1#
+      $krep27_r9p7
+
+-- RHS size: {terms: 1, types: 0, coercions: 0, joins: 0/0}
+$tcFins1_r9pa :: Addr#
+[GblId, Unf=OtherCon []]
+$tcFins1_r9pa = "Fins"#
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$tcFins2_r9pb :: GHC.Types.TrName
+[GblId, Unf=OtherCon []]
+$tcFins2_r9pb = GHC.Types.TrNameS $tcFins1_r9pa
+
+-- RHS size: {terms: 7, types: 0, coercions: 0, joins: 0/0}
+Main.$tcFins :: GHC.Types.TyCon
+[GblId, Unf=OtherCon []]
+Main.$tcFins
+  = GHC.Types.TyCon
+      3376210850135730153#Word64
+      14526713707347067492#Word64
+      Main.$trModule
+      $tcFins2_r9pb
+      1#
+      $krep10_r9oC
+
+-- RHS size: {terms: 3, types: 2, coercions: 0, joins: 0/0}
+$krep28_r9pc :: [GHC.Types.KindRep]
+[GblId, Unf=OtherCon []]
+$krep28_r9pc
+  = GHC.Types.:
+      @GHC.Types.KindRep $krep15_r9oH (GHC.Types.[] @GHC.Types.KindRep)
+
+-- RHS size: {terms: 3, types: 1, coercions: 0, joins: 0/0}
+$krep29_r9pd :: [GHC.Types.KindRep]
+[GblId, Unf=OtherCon []]
+$krep29_r9pd
+  = GHC.Types.: @GHC.Types.KindRep $krep9_r9oB $krep28_r9pc
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep30_r9pe :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep30_r9pe = GHC.Types.KindRepTyConApp Main.$tcFins $krep29_r9pd
+
+-- RHS size: {terms: 3, types: 0, coercions: 0, joins: 0/0}
+$krep31_r9pf :: GHC.Types.KindRep
+[GblId, Unf=OtherCon []]
+$krep31_r9pf = GHC.Types.KindRepFun $krep5_r9ox $krep30_r9pe
+
+-- RHS size: {terms: 1, types: 0, coercions: 0, joins: 0/0}
+$tc'UnsafeFins1_r9pg :: Addr#
+[GblId, Unf=OtherCon []]
+$tc'UnsafeFins1_r9pg = "'UnsafeFins"#
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$tc'UnsafeFins2_r9ph :: GHC.Types.TrName
+[GblId, Unf=OtherCon []]
+$tc'UnsafeFins2_r9ph = GHC.Types.TrNameS $tc'UnsafeFins1_r9pg
+
+-- RHS size: {terms: 7, types: 0, coercions: 0, joins: 0/0}
+Main.$tc'UnsafeFins :: GHC.Types.TyCon
+[GblId, Unf=OtherCon []]
+Main.$tc'UnsafeFins
+  = GHC.Types.TyCon
+      12164055036166707587#Word64
+      12735159865514107207#Word64
+      Main.$trModule
+      $tc'UnsafeFins2_r9ph
+      2#
+      $krep31_r9pf
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$dKnownNat_r9pi :: Natural
+[GblId, Unf=OtherCon []]
+$dKnownNat_r9pi = GHC.Num.Natural.NS 1##
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$dKnownNat1_r9pj :: Natural
+[GblId, Unf=OtherCon []]
+$dKnownNat1_r9pj = GHC.Num.Natural.NS 3##
+
+-- RHS size: {terms: 3, types: 2, coercions: 7, joins: 0/0}
+$dKnownNats_r9pk :: Natural
+[GblId]
+$dKnownNats_r9pk
+  = fromSNat
+      @3
+      (GHC.Internal.TypeNats.$bSNat
+         @3
+         ($dKnownNat1_r9pj
+          `cast` (Sym (GHC.Internal.TypeNats.N:SNat <3>_N)
+                  ; Sym (GHC.Internal.TypeNats.N:KnownNat <3>_N)
+                  :: Natural ~R# KnownNat 3)))
+
+-- RHS size: {terms: 3, types: 2, coercions: 0, joins: 0/0}
+$dKnownNats1_r9pl :: [Nat]
+[GblId, Unf=OtherCon []]
+$dKnownNats1_r9pl
+  = GHC.Types.: @Nat $dKnownNats_r9pk (GHC.Types.[] @Nat)
+
+-- RHS size: {terms: 2, types: 0, coercions: 0, joins: 0/0}
+$dKnownNat2_r9pm :: Natural
+[GblId, Unf=OtherCon []]
+$dKnownNat2_r9pm = GHC.Num.Natural.NS 2##
+
+-- RHS size: {terms: 3, types: 2, coercions: 7, joins: 0/0}
+$dKnownNats2_r9pn :: Natural
+[GblId]
+$dKnownNats2_r9pn
+  = fromSNat
+      @2
+      (GHC.Internal.TypeNats.$bSNat
+         @2
+         ($dKnownNat2_r9pm
+          `cast` (Sym (GHC.Internal.TypeNats.N:SNat <2>_N)
+                  ; Sym (GHC.Internal.TypeNats.N:KnownNat <2>_N)
+                  :: Natural ~R# KnownNat 2)))
+
+-- RHS size: {terms: 3, types: 1, coercions: 0, joins: 0/0}
+$dKnownNats3_r9po :: [Nat]
+[GblId, Unf=OtherCon []]
+$dKnownNats3_r9po
+  = GHC.Types.: @Nat $dKnownNats2_r9pn $dKnownNats1_r9pl
+
+-- RHS size: {terms: 2, types: 1, coercions: 0, joins: 0/0}
+$dShow_r9pp :: Show [Int]
+[GblId]
+$dShow_r9pp
+  = GHC.Internal.Show.$fShowList @Int GHC.Internal.Show.$fShowInt
+
+-- RHS size: {terms: 6, types: 7, coercions: 3, joins: 0/0}
+$cshow1_r9pq :: forall k (n :: k). Fins n -> String
+[GblId, Arity=1, Unf=OtherCon []]
+$cshow1_r9pq
+  = \ (@k_a8Yo) (@(n_a8Yp :: k_a8Yo)) (ds_X1E :: Fins n_a8Yp) ->
+      show
+        @[Int]
+        $dShow_r9pp
+        (ds_X1E
+         `cast` (Main.N:Fins <k_a8Yo>_N <n_a8Yp>_N
+                 :: Fins n_a8Yp ~R# [Int]))
+
+-- RHS size: {terms: 15, types: 17, coercions: 0, joins: 0/0}
+$cshowsPrec1_r9pr :: forall k (n :: k). Int -> Fins n -> ShowS
+[GblId, Arity=3, Unf=OtherCon []]
+$cshowsPrec1_r9pr
+  = \ (@k_a8Yo)
+      (@(n_a8Yp :: k_a8Yo))
+      _ [Occ=Dead]
+      (x_a9kJ :: Fins n_a8Yp)
+      (s_a9kK :: String) ->
+      augment
+        @Char
+        (\ (@b_a9kN)
+           (c_a9kO [OS=OneShot] :: Char -> b_a9kN -> b_a9kN)
+           (n1_a9kP [OS=OneShot] :: b_a9kN) ->
+           GHC.Internal.Base.foldr
+             @Char @b_a9kN c_a9kO n1_a9kP ($cshow1_r9pq @k_a8Yo @n_a8Yp x_a9kJ))
+        s_a9kK
+
+-- RHS size: {terms: 19, types: 24, coercions: 0, joins: 0/0}
+$cshowList1_r9ps :: forall k (n :: k). [Fins n] -> ShowS
+[GblId, Arity=2, Unf=OtherCon []]
+$cshowList1_r9ps
+  = \ (@k_a8Yo)
+      (@(n_a8Yp :: k_a8Yo))
+      (ls_a9kD :: [Fins n_a8Yp])
+      (s_a9kE :: String) ->
+      GHC.Internal.Show.showList__
+        @(Fins n_a8Yp)
+        (\ (x_a9kJ :: Fins n_a8Yp) (s1_a9kK :: String) ->
+           augment
+             @Char
+             (\ (@b_a9kN)
+                (c_a9kO [OS=OneShot] :: Char -> b_a9kN -> b_a9kN)
+                (n1_a9kP [OS=OneShot] :: b_a9kN) ->
+                GHC.Internal.Base.foldr
+                  @Char @b_a9kN c_a9kO n1_a9kP ($cshow1_r9pq @k_a8Yo @n_a8Yp x_a9kJ))
+             s1_a9kK)
+        ls_a9kD
+        s_a9kE
+
+-- RHS size: {terms: 6, types: 11, coercions: 0, joins: 0/0}
+Main.$fShowFins [InlPrag=CONLIKE]
+  :: forall k (n :: k). Show (Fins n)
+[GblId[DFunId], Unf=OtherCon []]
+Main.$fShowFins
+  = \ (@k_a8Yo) (@(n_a8Yp :: k_a8Yo)) ->
+      GHC.Internal.Show.C:Show
+        @(Fins n_a8Yp)
+        ($cshowsPrec1_r9pr @k_a8Yo @n_a8Yp)
+        ($cshow1_r9pq @k_a8Yo @n_a8Yp)
+        ($cshowList1_r9ps @k_a8Yo @n_a8Yp)
+
+-- RHS size: {terms: 2, types: 1, coercions: 0, joins: 0/0}
+$dEq_r9pt :: Eq [Int]
+[GblId]
+$dEq_r9pt = GHC.Classes.$fEqList @Int GHC.Classes.$fEqInt
+
+-- RHS size: {terms: 8, types: 10, coercions: 6, joins: 0/0}
+$c==1_r9pu :: forall k (s :: k). Fins s -> Fins s -> Bool
+[GblId, Arity=2, Unf=OtherCon []]
+$c==1_r9pu
+  = \ (@k_a8I1)
+      (@(s_a8I2 :: k_a8I1))
+      (ds_X1E :: Fins s_a8I2)
+      (ds1_X1F :: Fins s_a8I2) ->
+      ==
+        @[Int]
+        $dEq_r9pt
+        (ds_X1E
+         `cast` (Main.N:Fins <k_a8I1>_N <s_a8I2>_N
+                 :: Fins s_a8I2 ~R# [Int]))
+        (ds1_X1F
+         `cast` (Main.N:Fins <k_a8I1>_N <s_a8I2>_N
+                 :: Fins s_a8I2 ~R# [Int]))
+
+-- RHS size: {terms: 13, types: 11, coercions: 6, joins: 0/0}
+$c/=1_r9pv :: forall k (s :: k). Fins s -> Fins s -> Bool
+[GblId, Arity=2, Unf=OtherCon []]
+$c/=1_r9pv
+  = \ (@k_a8I1)
+      (@(s_a8I2 :: k_a8I1))
+      (x_a9kU :: Fins s_a8I2)
+      (y_a9kV :: Fins s_a8I2) ->
+      case ==
+             @[Int]
+             $dEq_r9pt
+             (x_a9kU
+              `cast` (Main.N:Fins <k_a8I1>_N <s_a8I2>_N
+                      :: Fins s_a8I2 ~R# [Int]))
+             (y_a9kV
+              `cast` (Main.N:Fins <k_a8I1>_N <s_a8I2>_N
+                      :: Fins s_a8I2 ~R# [Int]))
+      of {
+        False -> GHC.Types.True;
+        True -> GHC.Types.False
+      }
+
+-- RHS size: {terms: 5, types: 9, coercions: 0, joins: 0/0}
+Main.$fEqFins [InlPrag=CONLIKE] :: forall k (s :: k). Eq (Fins s)
+[GblId[DFunId], Unf=OtherCon []]
+Main.$fEqFins
+  = \ (@k_a8I1) (@(s_a8I2 :: k_a8I1)) ->
+      GHC.Classes.C:Eq
+        @(Fins s_a8I2)
+        ($c==1_r9pu @k_a8I1 @s_a8I2)
+        ($c/=1_r9pv @k_a8I1 @s_a8I2)
+
+-- RHS size: {terms: 2, types: 1, coercions: 0, joins: 0/0}
+$dOrd_r9pw :: Ord [Int]
+[GblId]
+$dOrd_r9pw = GHC.Classes.$fOrdList @Int GHC.Classes.$fOrdInt
+
+-- RHS size: {terms: 8, types: 10, coercions: 6, joins: 0/0}
+$ccompare1_r9px :: forall k (s :: k). Fins s -> Fins s -> Ordering
+[GblId, Arity=2, Unf=OtherCon []]
+$ccompare1_r9px
+  = \ (@k_a8Ir)
+      (@(s_a8Is :: k_a8Ir))
+      (a_X1E :: Fins s_a8Is)
+      (b_X1F :: Fins s_a8Is) ->
+      compare
+        @[Int]
+        $dOrd_r9pw
+        (a_X1E
+         `cast` (Main.N:Fins <k_a8Ir>_N <s_a8Is>_N
+                 :: Fins s_a8Is ~R# [Int]))
+        (b_X1F
+         `cast` (Main.N:Fins <k_a8Ir>_N <s_a8Is>_N
+                 :: Fins s_a8Is ~R# [Int]))
+
+-- RHS size: {terms: 2, types: 1, coercions: 0, joins: 0/0}
+$dOrd1_r9py :: Ord [Int]
+[GblId]
+$dOrd1_r9py = GHC.Classes.$fOrdList @Int GHC.Classes.$fOrdInt
+
+-- RHS size: {terms: 8, types: 10, coercions: 6, joins: 0/0}
+$c<1_r9pz :: forall k (s :: k). Fins s -> Fins s -> Bool
+[GblId, Arity=2, Unf=OtherCon []]
+$c<1_r9pz
+  = \ (@k_a8Ir)
+      (@(s_a8Is :: k_a8Ir))
+      (a_X1E :: Fins s_a8Is)
+      (b_X1F :: Fins s_a8Is) ->
+      < @[Int]
+        $dOrd1_r9py
+        (a_X1E
+         `cast` (Main.N:Fins <k_a8Ir>_N <s_a8Is>_N
+                 :: Fins s_a8Is ~R# [Int]))
+        (b_X1F
+         `cast` (Main.N:Fins <k_a8Ir>_N <s_a8Is>_N
+                 :: Fins s_a8Is ~R# [Int]))
+
+-- RHS size: {terms: 8, types: 10, coercions: 0, joins: 0/0}
+$c<=1_r9pA :: forall k (s :: k). Fins s -> Fins s -> Bool
+[GblId, Arity=2, Unf=OtherCon []]
+$c<=1_r9pA
+  = \ (@k_a8Ir)
+      (@(s_a8Is :: k_a8Ir))
+      (a_a8nG :: Fins s_a8Is)
+      (b_a8nH :: Fins s_a8Is) ->
+      not ($c<1_r9pz @k_a8Ir @s_a8Is b_a8nH a_a8nG)
+
+-- RHS size: {terms: 13, types: 11, coercions: 0, joins: 0/0}
+$cmax1_r9pB :: forall k (s :: k). Fins s -> Fins s -> Fins s
+[GblId, Arity=2, Unf=OtherCon []]
+$cmax1_r9pB
+  = \ (@k_a8Ir)
+      (@(s_a8Is :: k_a8Ir))
+      (x_a9l1 :: Fins s_a8Is)
+      (y_a9l2 :: Fins s_a8Is) ->
+      case not ($c<1_r9pz @k_a8Ir @s_a8Is y_a9l2 x_a9l1) of {
+        False -> x_a9l1;
+        True -> y_a9l2
+      }
+
+-- RHS size: {terms: 8, types: 10, coercions: 0, joins: 0/0}
+$c>=1_r9pC :: forall k (s :: k). Fins s -> Fins s -> Bool
+[GblId, Arity=2, Unf=OtherCon []]
+$c>=1_r9pC
+  = \ (@k_a8Ir)
+      (@(s_a8Is :: k_a8Ir))
+      (a_a8nK :: Fins s_a8Is)
+      (b_a8nL :: Fins s_a8Is) ->
+      not ($c<1_r9pz @k_a8Ir @s_a8Is a_a8nK b_a8nL)
+
+-- RHS size: {terms: 7, types: 10, coercions: 0, joins: 0/0}
+$c>1_r9pD :: forall k (s :: k). Fins s -> Fins s -> Bool
+[GblId, Arity=2, Unf=OtherCon []]
+$c>1_r9pD
+  = \ (@k_a8Ir)
+      (@(s_a8Is :: k_a8Ir))
+      (a_a8nI :: Fins s_a8Is)
+      (b_a8nJ :: Fins s_a8Is) ->
+      $c<1_r9pz @k_a8Ir @s_a8Is b_a8nJ a_a8nI
+
+-- RHS size: {terms: 13, types: 11, coercions: 0, joins: 0/0}
+$cmin1_r9pE :: forall k (s :: k). Fins s -> Fins s -> Fins s
+[GblId, Arity=2, Unf=OtherCon []]
+$cmin1_r9pE
+  = \ (@k_a8Ir)
+      (@(s_a8Is :: k_a8Ir))
+      (x_a9l8 :: Fins s_a8Is)
+      (y_a9l9 :: Fins s_a8Is) ->
+      case not ($c<1_r9pz @k_a8Ir @s_a8Is y_a9l9 x_a9l8) of {
+        False -> y_a9l9;
+        True -> x_a9l8
+      }
+
+-- RHS size: {terms: 11, types: 21, coercions: 0, joins: 0/0}
+Main.$fOrdFins [InlPrag=CONLIKE] :: forall k (s :: k). Ord (Fins s)
+[GblId[DFunId], Unf=OtherCon []]
+Main.$fOrdFins
+  = \ (@k_a8Ir) (@(s_a8Is :: k_a8Ir)) ->
+      GHC.Classes.C:Ord
+        @(Fins s_a8Is)
+        (Main.$fEqFins @k_a8Ir @s_a8Is)
+        ($ccompare1_r9px @k_a8Ir @s_a8Is)
+        ($c<1_r9pz @k_a8Ir @s_a8Is)
+        ($c<=1_r9pA @k_a8Ir @s_a8Is)
+        ($c>1_r9pD @k_a8Ir @s_a8Is)
+        ($c>=1_r9pC @k_a8Ir @s_a8Is)
+        ($cmax1_r9pB @k_a8Ir @s_a8Is)
+        ($cmin1_r9pE @k_a8Ir @s_a8Is)
+
+-- RHS size: {terms: 8, types: 9, coercions: 5, joins: 0/0}
+valuesOf :: forall (s :: [Nat]). KnownNats s => [Int]
+[GblId, Arity=1, Unf=OtherCon []]
+valuesOf
+  = \ (@(s_a8Ey :: [Nat])) ($dKnownNats4_a8Ez :: KnownNats s_a8Ey) ->
+      fmap
+        @[]
+        GHC.Internal.Base.$fFunctorList
+        @Nat
+        @Int
+        (fromIntegral
+           @Nat
+           @Int
+           GHC.Internal.Real.$fIntegralNatural
+           GHC.Internal.Num.$fNumInt)
+        ($dKnownNats4_a8Ez
+         `cast` (Main.N:KnownNats <s_a8Ey>_N
+                 ; Main.N:SNats <s_a8Ey>_N
+                 :: KnownNats s_a8Ey ~R# [Nat]))
+
+-- RHS size: {terms: 16, types: 5, coercions: 0, joins: 0/0}
+isFin :: Int -> Int -> Bool
+[GblId, Arity=2, Unf=OtherCon []]
+isFin
+  = \ (i_a5jT :: Int) (d_a5jU :: Int) ->
+      &&
+        (<= @Int GHC.Classes.$fOrdInt (GHC.Types.I# 0#) i_a5jT)
+        (<=
+           @Int
+           GHC.Classes.$fOrdInt
+           (+ @Int GHC.Internal.Num.$fNumInt i_a5jT (GHC.Types.I# 1#))
+           d_a5jU)
+
+-- RHS size: {terms: 34, types: 28, coercions: 0, joins: 1/1}
+preDeletePositions :: [Int] -> [Int]
+[GblId, Arity=1, Unf=OtherCon []]
+preDeletePositions
+  = \ (as_a5iA :: [Int]) ->
+      reverse
+        @Int
+        (joinrec {
+           go_a8Aj [Occ=LoopBreaker] :: [Int] -> [Int] -> [Int]
+           [LclId[JoinId(2)(Nothing)], Arity=2, Str=<L><L>, Unf=OtherCon []]
+           go_a8Aj (ds_d9cd :: [Int]) (r_a5iD :: [Int])
+             = case ds_d9cd of {
+                 [] -> r_a5iD;
+                 : x_a5iE xs_a5iF ->
+                   jump go_a8Aj
+                     (<$>
+                        @[]
+                        @Int
+                        @Int
+                        GHC.Internal.Base.$fFunctorList
+                        (\ (y_a5iI :: Int) ->
+                           bool
+                             @Int
+                             (- @Int
+                                GHC.Internal.Num.$fNumInt
+                                y_a5iI
+                                (fromInteger
+                                   @Int GHC.Internal.Num.$fNumInt (GHC.Num.Integer.IS 1#)))
+                             y_a5iI
+                             (< @Int GHC.Classes.$fOrdInt y_a5iI x_a5iE))
+                        xs_a5iF)
+                     (GHC.Types.: @Int x_a5iE r_a5iD)
+               }; } in
+         jump go_a8Aj as_a5iA (GHC.Types.[] @Int))
+
+-- RHS size: {terms: 5, types: 14, coercions: 0, joins: 0/0}
+preInsertPositions :: [Int] -> [Int]
+[GblId]
+preInsertPositions
+  = . @[Int]
+      @[Int]
+      @[Int]
+      (reverse @Int)
+      (. @[Int] @[Int] @[Int] preDeletePositions (reverse @Int))
+
+-- RHS size: {terms: 16, types: 14, coercions: 0, joins: 0/0}
+size :: [Int] -> Int
+[GblId, Arity=1, Unf=OtherCon []]
+size
+  = \ (ds_d98T :: [Int]) ->
+      case ds_d98T of wild_X1E {
+        [] -> GHC.Types.I# 1#;
+        : x_a5jV ds1_d9c2 ->
+          case ds1_d9c2 of {
+            [] -> x_a5jV;
+            : ipv_s9n9 ipv1_s9na ->
+              product
+                @[]
+                GHC.Internal.Data.Foldable.$fFoldableList
+                @Int
+                GHC.Internal.Num.$fNumInt
+                wild_X1E
+          }
+      }
+
+-- RHS size: {terms: 37, types: 24, coercions: 4, joins: 0/0}
+$cshow2_r9pF :: forall (ns :: [Nat]). SNats ns -> String
+[GblId, Arity=1, Unf=OtherCon []]
+$cshow2_r9pF
+  = \ (@(ns_a939 :: [Nat])) (ds_d9fY :: SNats ns_a939) ->
+      <>
+        @String
+        (GHC.Internal.Base.$fSemigroupList @Char)
+        (unpackCString# "SNats @"#)
+        (<>
+           @String
+           (GHC.Internal.Base.$fSemigroupList @Char)
+           (bool
+              @String
+              (GHC.Types.[] @Char)
+              (unpackCString# "'"#)
+              (< @Int
+                 GHC.Classes.$fOrdInt
+                 (length
+                    @[]
+                    GHC.Internal.Data.Foldable.$fFoldableList
+                    @Nat
+                    (ds_d9fY
+                     `cast` (Main.N:SNats <ns_a939>_N :: SNats ns_a939 ~R# [Nat])))
+                 (GHC.Types.I# 2#)))
+           (<>
+              @String
+              (GHC.Internal.Base.$fSemigroupList @Char)
+              (unpackCString# "["#)
+              (<>
+                 @String
+                 (GHC.Internal.Base.$fSemigroupList @Char)
+                 (mconcat
+                    @String
+                    (GHC.Internal.Base.$fMonoidList @Char)
+                    (List.intersperse
+                       @String
+                       (unpackCString# ", "#)
+                       (<$>
+                          @[]
+                          @Nat
+                          @String
+                          GHC.Internal.Base.$fFunctorList
+                          (show @Nat GHC.Internal.Show.$fShowNatural)
+                          (ds_d9fY
+                           `cast` (Main.N:SNats <ns_a939>_N :: SNats ns_a939 ~R# [Nat])))))
+                 (unpackCString# "]"#))))
+
+-- RHS size: {terms: 14, types: 15, coercions: 0, joins: 0/0}
+$cshowsPrec2_r9pG :: forall (ns :: [Nat]). Int -> SNats ns -> ShowS
+[GblId, Arity=3, Unf=OtherCon []]
+$cshowsPrec2_r9pG
+  = \ (@(ns_a939 :: [Nat]))
+      _ [Occ=Dead]
+      (x_a9kJ :: SNats ns_a939)
+      (s_a9kK :: String) ->
+      augment
+        @Char
+        (\ (@b_a9kN)
+           (c_a9kO [OS=OneShot] :: Char -> b_a9kN -> b_a9kN)
+           (n_a9kP [OS=OneShot] :: b_a9kN) ->
+           GHC.Internal.Base.foldr
+             @Char @b_a9kN c_a9kO n_a9kP ($cshow2_r9pF @ns_a939 x_a9kJ))
+        s_a9kK
+
+-- RHS size: {terms: 18, types: 20, coercions: 0, joins: 0/0}
+$cshowList2_r9pH :: forall (ns :: [Nat]). [SNats ns] -> ShowS
+[GblId, Arity=2, Unf=OtherCon []]
+$cshowList2_r9pH
+  = \ (@(ns_a939 :: [Nat]))
+      (ls_a9kD :: [SNats ns_a939])
+      (s_a9kE :: String) ->
+      GHC.Internal.Show.showList__
+        @(SNats ns_a939)
+        (\ (x_a9kJ :: SNats ns_a939) (s1_a9kK :: String) ->
+           augment
+             @Char
+             (\ (@b_a9kN)
+                (c_a9kO [OS=OneShot] :: Char -> b_a9kN -> b_a9kN)
+                (n_a9kP [OS=OneShot] :: b_a9kN) ->
+                GHC.Internal.Base.foldr
+                  @Char @b_a9kN c_a9kO n_a9kP ($cshow2_r9pF @ns_a939 x_a9kJ))
+             s1_a9kK)
+        ls_a9kD
+        s_a9kE
+
+-- RHS size: {terms: 5, types: 7, coercions: 0, joins: 0/0}
+Main.$fShowSNats [InlPrag=CONLIKE]
+  :: forall (ns :: [Nat]). Show (SNats ns)
+[GblId[DFunId], Unf=OtherCon []]
+Main.$fShowSNats
+  = \ (@(ns_a939 :: [Nat])) ->
+      GHC.Internal.Show.C:Show
+        @(SNats ns_a939)
+        ($cshowsPrec2_r9pG @ns_a939)
+        ($cshow2_r9pF @ns_a939)
+        ($cshowList2_r9pH @ns_a939)
+
+-- RHS size: {terms: 17, types: 13, coercions: 0, joins: 0/0}
+isFins :: [Int] -> [Int] -> Bool
+[GblId, Arity=2, Unf=OtherCon []]
+isFins
+  = \ (xs_a5jN :: [Int]) (ds_a5jO :: [Int]) ->
+      &&
+        (==
+           @Int
+           GHC.Classes.$fEqInt
+           (length @[] GHC.Internal.Data.Foldable.$fFoldableList @Int xs_a5jN)
+           (length
+              @[] GHC.Internal.Data.Foldable.$fFoldableList @Int ds_a5jO))
+        (and
+           @[]
+           GHC.Internal.Data.Foldable.$fFoldableList
+           (zipWith @Int @Int @Bool isFin xs_a5jN ds_a5jO))
+
+-- RHS size: {terms: 11, types: 20, coercions: 5, joins: 0/0}
+safeFins
+  :: forall (s :: [Nat]). KnownNats s => [Int] -> Maybe (Fins s)
+[GblId, Arity=2, Unf=OtherCon []]
+safeFins
+  = \ (@(s_a8F1 :: [Nat]))
+      ($dKnownNats4_a8F2 :: KnownNats s_a8F1)
+      (xs_a5jM :: [Int]) ->
+      bool
+        @(Maybe (Fins s_a8F1))
+        (GHC.Internal.Maybe.Nothing @(Fins s_a8F1))
+        (GHC.Internal.Maybe.Just
+           @(Fins s_a8F1)
+           (xs_a5jM
+            `cast` (Sym (Main.N:Fins <[Nat]>_N <s_a8F1>_N)
+                    :: [Int] ~R# Fins s_a8F1)))
+        (isFins xs_a5jM (valuesOf @s_a8F1 $dKnownNats4_a8F2))
+
+-- RHS size: {terms: 30, types: 19, coercions: 4, joins: 0/0}
+fins :: forall (s :: [Nat]). KnownNats s => [Int] -> Fins s
+[GblId, Arity=2, Unf=OtherCon []]
+fins
+  = \ (@(s_a8Fo :: [Nat]))
+      ($dKnownNats4_a8Fp :: KnownNats s_a8Fo)
+      (eta_B0 :: [Int]) ->
+      fromMaybe
+        @(Fins s_a8Fo)
+        (error
+           @LiftedRep
+           @(Fins s_a8Fo)
+           ((GHC.Internal.Stack.Types.pushCallStack
+               (unpackCString# "error"#,
+                GHC.Internal.Stack.Types.SrcLoc
+                  (unpackCString# "main"#)
+                  (unpackCString# "Main"#)
+                  (unpackCString# "test/harpie-bug-issue1-dev-indexes.hs"#)
+                  (GHC.Types.I# 234#)
+                  (GHC.Types.I# 21#)
+                  (GHC.Types.I# 234#)
+                  (GHC.Types.I# 26#))
+               GHC.Internal.Stack.Types.emptyCallStack)
+            `cast` (Sym (GHC.Classes.N:IP
+                             <"callStack">_N <GHC.Internal.Stack.Types.CallStack>_N)
+                    :: GHC.Internal.Stack.Types.CallStack
+                       ~R# (?callStack::GHC.Internal.Stack.Types.CallStack)))
+           (unpackCString# "value outside bounds"#))
+        (safeFins @s_a8Fo $dKnownNats4_a8Fp eta_B0)
+
+-- RHS size: {terms: 13, types: 28, coercions: 0, joins: 0/0}
+insertDims :: [Int] -> [Int] -> [Int] -> [Int]
+[GblId, Arity=3, Unf=OtherCon []]
+insertDims
+  = \ (ds_a5in :: [Int]) (xs_a5io :: [Int]) (s_a5ip :: [Int]) ->
+      foldl'
+        @[]
+        GHC.Internal.Data.Foldable.$fFoldableList
+        @[Int]
+        @(Int, Int)
+        (flip
+           @LiftedRep
+           @(Int, Int)
+           @[Int]
+           @[Int]
+           (uncurry @Int @Int @([Int] -> [Int]) insertDim))
+        s_a5ip
+        (zip @Int @Int (preInsertPositions ds_a5in) xs_a5io)
+
+-- RHS size: {terms: 63, types: 89, coercions: 0, joins: 0/2}
+shapen [InlPrag=INLINE (sat-args=2)] :: [Int] -> Int -> [Int]
+[GblId, Arity=2, Unf=OtherCon []]
+shapen
+  = \ (ds_d9cn :: [Int]) (ds1_d9co :: Int) ->
+      case ds_d9cn of wild_X1E {
+        [] -> GHC.Types.[] @Int;
+        : ds2_d9cF ds3_d9cG ->
+          case ds3_d9cG of {
+            [] -> GHC.Types.: @Int ds1_d9co (GHC.Types.[] @Int);
+            : y_a5d7 ds4_d9cH ->
+              case ds4_d9cH of {
+                [] ->
+                  let {
+                    ds5_d9cA :: (Int, Int)
+                    [LclId]
+                    ds5_d9cA
+                      = divMod @Int GHC.Internal.Real.$fIntegralInt ds1_d9co y_a5d7 } in
+                  GHC.Types.:
+                    @Int
+                    (case ds5_d9cA of { (i_a5d9, j_a5da) -> i_a5d9 })
+                    (GHC.Types.:
+                       @Int
+                       (case ds5_d9cA of { (i_a5d9, j_a5da) -> j_a5da })
+                       (GHC.Types.[] @Int));
+                : ipv_s9nd ipv1_s9ne ->
+                  $ @LiftedRep
+                    @LiftedRep
+                    @([Int], Int)
+                    @[Int]
+                    (fst @[Int] @Int)
+                    (foldr
+                       @[]
+                       GHC.Internal.Data.Foldable.$fFoldableList
+                       @Int
+                       @([Int], Int)
+                       (\ (a_a5ii :: Int) (ds5_d9cB :: ([Int], Int)) ->
+                          case ds5_d9cB of { (acc_a5ij, r_a5ik) ->
+                          let {
+                            ds6_d9cE :: (Int, Int)
+                            [LclId]
+                            ds6_d9cE
+                              = divMod @Int GHC.Internal.Real.$fIntegralInt r_a5ik a_a5ii } in
+                          (GHC.Types.:
+                             @Int (case ds6_d9cE of { (d_a5il, m_a5im) -> m_a5im }) acc_a5ij,
+                           case ds6_d9cE of { (d_a5il, m_a5im) -> d_a5il })
+                          })
+                       (GHC.Types.[] @Int, ds1_d9co)
+                       wild_X1E)
+              }
+          }
+      }
+
+-- RHS size: {terms: 21, types: 44, coercions: 23, joins: 0/1}
+$ctabulate_r9pI
+  :: forall (s :: [Nat]) a.
+     KnownNats s =>
+     (Data.Functor.Rep.Rep (Array s) -> a) -> Array s a
+[GblId, Arity=2, Unf=OtherCon []]
+$ctabulate_r9pI
+  = \ (@(s_a8YV :: [Nat]))
+      ($dKnownNats4_a8YW :: KnownNats s_a8YV)
+      (@a_a8Z6)
+      (eta_B0 :: Data.Functor.Rep.Rep (Array s_a8YV) -> a_a8Z6) ->
+      let {
+        s1_a553 :: [Int]
+        [LclId]
+        s1_a553 = valuesOf @s_a8YV $dKnownNats4_a8YW } in
+      $ @LiftedRep
+        @LiftedRep
+        @(Int -> a_a8Z6)
+        @(Array s_a8YV a_a8Z6)
+        (. @(V.Vector a_a8Z6)
+           @(Array s_a8YV a_a8Z6)
+           @(Int -> a_a8Z6)
+           ((\ (ds_d9fm :: V.Vector a_a8Z6) -> ds_d9fm)
+            `cast` (<V.Vector a_a8Z6>_R
+                    %<Many>_N ->_R Sym (Main.N:Array <s_a8YV>_N) <a_a8Z6>_N
+                    :: (V.Vector a_a8Z6 -> V.Vector a_a8Z6)
+                       ~R# (V.Vector a_a8Z6 -> Array s_a8YV a_a8Z6)))
+           (V.generate @a_a8Z6 (size s1_a553)))
+        (. @(Fins s_a8YV)
+           @a_a8Z6
+           @Int
+           (eta_B0
+            `cast` (Sub (Main.D:R:RepArray <s_a8YV>_N)
+                    %<Many>_N ->_R <a_a8Z6>_R
+                    :: (Data.Functor.Rep.Rep (Array s_a8YV) -> a_a8Z6)
+                       ~R# (Fins s_a8YV -> a_a8Z6)))
+           (. @[Int]
+              @(Fins s_a8YV)
+              @Int
+              ((\ (ds_d9fn :: [Int]) -> ds_d9fn)
+               `cast` (<[Int]>_R
+                       %<Many>_N ->_R Sym (Main.N:Fins <[Nat]>_N <s_a8YV>_N)
+                       :: ([Int] -> [Int]) ~R# ([Int] -> Fins s_a8YV)))
+              (shapen s1_a553)))
+
+-- RHS size: {terms: 41, types: 43, coercions: 0, joins: 1/1}
+flatten [InlPrag=INLINE (sat-args=2)] :: [Int] -> [Int] -> Int
+[GblId, Arity=2, Unf=OtherCon []]
+flatten
+  = \ (ds_d9cM :: [Int]) (ds1_d9cN :: [Int]) ->
+      case ds_d9cM of wild_X1E {
+        [] -> GHC.Types.I# 0#;
+        : ipv_s9nj ipv1_s9nk ->
+          join {
+            fail_d9cW :: (# #) -> Int
+            [LclId[JoinId(1)(Nothing)], Arity=1, Str=<L>, Unf=OtherCon []]
+            fail_d9cW _ [Occ=Dead, OS=OneShot]
+              = $ @LiftedRep
+                  @LiftedRep
+                  @[Int]
+                  @Int
+                  (sum
+                     @[]
+                     GHC.Internal.Data.Foldable.$fFoldableList
+                     @Int
+                     GHC.Internal.Num.$fNumInt)
+                  (zipWith
+                     @Int
+                     @Int
+                     @Int
+                     (* @Int GHC.Internal.Num.$fNumInt)
+                     ds1_d9cN
+                     ($ @LiftedRep
+                        @LiftedRep
+                        @[Int]
+                        @[Int]
+                        (drop @Int (GHC.Types.I# 1#))
+                        (scanr
+                           @Int
+                           @Int
+                           (* @Int GHC.Internal.Num.$fNumInt)
+                           (GHC.Types.I# 1#)
+                           wild_X1E))) } in
+          case ds1_d9cN of {
+            [] -> jump fail_d9cW GHC.Types.(##);
+            : x'_a5aj ds2_d9cT ->
+              case ds2_d9cT of {
+                [] -> x'_a5aj;
+                : ipv2_s9nn ipv3_s9no -> jump fail_d9cW GHC.Types.(##)
+              }
+          }
+      }
+
+-- RHS size: {terms: 51, types: 56, coercions: 24, joins: 1/1}
+$cindex_r9pJ
+  :: forall (s :: [Nat]) a.
+     KnownNats s =>
+     Array s a -> Data.Functor.Rep.Rep (Array s) -> a
+[GblId, Arity=3, Unf=OtherCon []]
+$cindex_r9pJ
+  = \ (@(s_a8YV :: [Nat]))
+      ($dKnownNats4_a8YW :: KnownNats s_a8YV)
+      (@a_a8ZQ)
+      (eta_B0 :: Array s_a8YV a_a8ZQ)
+      (eta1_B1 :: Data.Functor.Rep.Rep (Array s_a8YV)) ->
+      V.unsafeIndex
+        @a_a8ZQ
+        (eta_B0
+         `cast` (Main.N:Array <s_a8YV>_N <a_a8ZQ>_N
+                 :: Array s_a8YV a_a8ZQ ~R# V.Vector a_a8ZQ))
+        (case fmap
+                @[]
+                GHC.Internal.Base.$fFunctorList
+                @Nat
+                @Int
+                (fromIntegral
+                   @Nat
+                   @Int
+                   GHC.Internal.Real.$fIntegralNatural
+                   GHC.Internal.Num.$fNumInt)
+                ($dKnownNats4_a8YW
+                 `cast` (Main.N:KnownNats <s_a8YV>_N
+                         ; Main.N:SNats <s_a8YV>_N
+                         :: KnownNats s_a8YV ~R# [Nat]))
+         of wild_X1E {
+           [] -> GHC.Types.I# 0#;
+           : ipv_s9nq ipv1_s9nr ->
+             join {
+               fail_d9cW :: (# #) -> Int
+               [LclId[JoinId(1)(Nothing)], Arity=1, Str=<L>, Unf=OtherCon []]
+               fail_d9cW _ [Occ=Dead, OS=OneShot]
+                 = $ @LiftedRep
+                     @LiftedRep
+                     @[Int]
+                     @Int
+                     (sum
+                        @[]
+                        GHC.Internal.Data.Foldable.$fFoldableList
+                        @Int
+                        GHC.Internal.Num.$fNumInt)
+                     (zipWith
+                        @Int
+                        @Int
+                        @Int
+                        (* @Int GHC.Internal.Num.$fNumInt)
+                        (eta1_B1
+                         `cast` (Sub (Main.D:R:RepArray <s_a8YV>_N)
+                                 ; Main.N:Fins <[Nat]>_N <s_a8YV>_N
+                                 :: Data.Functor.Rep.Rep (Array s_a8YV) ~R# [Int]))
+                        ($ @LiftedRep
+                           @LiftedRep
+                           @[Int]
+                           @[Int]
+                           (drop @Int (GHC.Types.I# 1#))
+                           (scanr
+                              @Int
+                              @Int
+                              (* @Int GHC.Internal.Num.$fNumInt)
+                              (GHC.Types.I# 1#)
+                              wild_X1E))) } in
+             case eta1_B1
+                  `cast` (Sub (Main.D:R:RepArray <s_a8YV>_N)
+                          ; Main.N:Fins <[Nat]>_N <s_a8YV>_N
+                          :: Data.Functor.Rep.Rep (Array s_a8YV) ~R# [Int])
+             of {
+               [] -> jump fail_d9cW GHC.Types.(##);
+               : x'_a5aj ds_d9cT ->
+                 case ds_d9cT of {
+                   [] -> x'_a5aj;
+                   : ipv2_s9nu ipv3_s9nv -> jump fail_d9cW GHC.Types.(##)
+                 }
+             }
+         })
+
+Rec {
+-- RHS size: {terms: 17, types: 32, coercions: 0, joins: 0/1}
+$ccollectM_r9pK
+  :: forall (s :: [Nat]) (m :: * -> *) a b.
+     (KnownNats s, Monad m) =>
+     (a -> Array s b) -> m a -> Array s (m b)
+[GblId, Arity=3, Unf=OtherCon []]
+$ccollectM_r9pK
+  = \ (@(s_a915 :: [Nat]))
+      ($dKnownNats4_a916 :: KnownNats s_a915)
+      (@(m_a92Q :: * -> *))
+      (@a_a92R)
+      (@b_a92S)
+      ($dMonad_a92T :: Monad m_a92Q)
+      (f_a9lI :: a_a92R -> Array s_a915 b_a92S) ->
+      let {
+        f1_a9lJ
+          :: m_a92Q (Array s_a915 b_a92S) -> Array s_a915 (m_a92Q b_a92S)
+        [LclId]
+        f1_a9lJ
+          = $cdistributeM_r9pN
+              @s_a915 $dKnownNats4_a916 @m_a92Q @b_a92S $dMonad_a92T } in
+      \ (x_a9lK :: m_a92Q a_a92R) ->
+        f1_a9lJ
+          (GHC.Internal.Base.liftM
+             @m_a92Q @a_a92R @(Array s_a915 b_a92S) $dMonad_a92T f_a9lI x_a9lK)
+
+-- RHS size: {terms: 12, types: 11, coercions: 0, joins: 0/0}
+Main.$fDistributiveArray [InlPrag=CONLIKE]
+  :: forall (s :: [Nat]). KnownNats s => Distributive (Array s)
+[GblId[DFunId], Arity=1, Unf=OtherCon []]
+Main.$fDistributiveArray
+  = \ (@(s_a915 :: [Nat])) ($dKnownNats4_a916 :: KnownNats s_a915) ->
+      Data.Distributive.C:Distributive
+        @(Array s_a915)
+        (Main.$fFunctorArray @s_a915)
+        ($cdistribute_r9pL @s_a915 $dKnownNats4_a916)
+        ($ccollect_r9pM @s_a915 $dKnownNats4_a916)
+        ($cdistributeM_r9pN @s_a915 $dKnownNats4_a916)
+        ($ccollectM_r9pK @s_a915 $dKnownNats4_a916)
+
+-- RHS size: {terms: 9, types: 9, coercions: 0, joins: 0/0}
+Main.$fRepresentableArray [InlPrag=CONLIKE]
+  :: forall (s :: [Nat]). KnownNats s => Representable (Array s)
+[GblId[DFunId], Arity=1, Unf=OtherCon []]
+Main.$fRepresentableArray
+  = \ (@(s_a8YV :: [Nat])) ($dKnownNats4_a8YW :: KnownNats s_a8YV) ->
+      Data.Functor.Rep.C:Representable
+        @(Array s_a8YV)
+        (Main.$fDistributiveArray @s_a8YV $dKnownNats4_a8YW)
+        ($ctabulate_r9pI @s_a8YV $dKnownNats4_a8YW)
+        ($cindex_r9pJ @s_a8YV $dKnownNats4_a8YW)
+
+-- RHS size: {terms: 9, types: 14, coercions: 0, joins: 0/0}
+$cdistribute_r9pL
+  :: forall (s :: [Nat]) (f :: * -> *) a.
+     (KnownNats s, Functor f) =>
+     f (Array s a) -> Array s (f a)
+[GblId, Arity=2, Unf=OtherCon []]
+$cdistribute_r9pL
+  = \ (@(s_a915 :: [Nat]))
+      ($dKnownNats4_a916 :: KnownNats s_a915)
+      (@(f_a91t :: * -> *))
+      (@a_a91u)
+      ($dFunctor_a91v :: Functor f_a91t) ->
+      distributeRep
+        @(Array s_a915)
+        @f_a91t
+        @a_a91u
+        (Main.$fRepresentableArray @s_a915 $dKnownNats4_a916)
+        $dFunctor_a91v
+
+-- RHS size: {terms: 19, types: 38, coercions: 0, joins: 0/2}
+$ccollect_r9pM
+  :: forall (s :: [Nat]) (f :: * -> *) a b.
+     (KnownNats s, Functor f) =>
+     (a -> Array s b) -> f a -> Array s (f b)
+[GblId, Arity=3, Unf=OtherCon []]
+$ccollect_r9pM
+  = \ (@(s_a915 :: [Nat]))
+      ($dKnownNats4_a916 :: KnownNats s_a915)
+      (@(f_a921 :: * -> *))
+      (@a_a922)
+      (@b_a923)
+      ($dFunctor_a924 :: Functor f_a921)
+      (f1_a9ly :: a_a922 -> Array s_a915 b_a923) ->
+      let {
+        f2_a9lz
+          :: f_a921 (Array s_a915 b_a923) -> Array s_a915 (f_a921 b_a923)
+        [LclId]
+        f2_a9lz
+          = $cdistribute_r9pL
+              @s_a915 $dKnownNats4_a916 @f_a921 @b_a923 $dFunctor_a924 } in
+      let {
+        g1_a9lA :: f_a921 a_a922 -> f_a921 (Array s_a915 b_a923)
+        [LclId]
+        g1_a9lA
+          = fmap
+              @f_a921 $dFunctor_a924 @a_a922 @(Array s_a915 b_a923) f1_a9ly } in
+      \ (x_a9lB :: f_a921 a_a922) -> f2_a9lz (g1_a9lA x_a9lB)
+
+-- RHS size: {terms: 18, types: 39, coercions: 30, joins: 0/2}
+$cdistributeM_r9pN
+  :: forall (s :: [Nat]) (m :: * -> *) a.
+     (KnownNats s, Monad m) =>
+     m (Array s a) -> Array s (m a)
+[GblId, Arity=2, Unf=OtherCon []]
+$cdistributeM_r9pN
+  = \ (@(s_a915 :: [Nat]))
+      ($dKnownNats4_a916 :: KnownNats s_a915)
+      (@(m_a92r :: * -> *))
+      (@a_a92s)
+      ($dMonad_a92t :: Monad m_a92r) ->
+      let {
+        f1_s9nx :: Functor (Control.Applicative.WrappedMonad m_a92r)
+        [LclId]
+        f1_s9nx
+          = Control.Applicative.$fFunctorWrappedMonad
+              @m_a92r $dMonad_a92t } in
+      let {
+        f2_a9lo
+          :: Control.Applicative.WrappedMonad m_a92r (Array s_a915 a_a92s)
+             -> Array s_a915 (Control.Applicative.WrappedMonad m_a92r a_a92s)
+        [LclId]
+        f2_a9lo
+          = $cdistribute_r9pL
+              @s_a915
+              $dKnownNats4_a916
+              @(Control.Applicative.WrappedMonad m_a92r)
+              @a_a92s
+              f1_s9nx } in
+      (\ (x_a9lq :: m_a92r (Array s_a915 a_a92s)) ->
+         fmap
+           @V.Vector
+           Data.Vector.$fFunctorVector
+           @(Control.Applicative.WrappedMonad m_a92r a_a92s)
+           @(m_a92r a_a92s)
+           ((Control.Applicative.unwrapMonad1 @m_a92r @a_a92s)
+            `cast` (<Control.Applicative.WrappedMonad m_a92r a_a92s>_R
+                    %<Many>_N ->_R Control.Applicative.N:WrappedMonad
+                                       <m_a92r>_R <a_a92s>_N
+                    :: (Control.Applicative.WrappedMonad m_a92r a_a92s
+                        -> Control.Applicative.WrappedMonad m_a92r a_a92s)
+                       ~R# (Control.Applicative.WrappedMonad m_a92r a_a92s
+                            -> m_a92r a_a92s)))
+           ((f2_a9lo
+               (x_a9lq
+                `cast` (Sym (Control.Applicative.N:WrappedMonad <m_a92r>_R) <Array
+                                                                               s_a915 a_a92s>_N
+                        :: m_a92r (Array s_a915 a_a92s)
+                           ~R# Control.Applicative.WrappedMonad
+                                 m_a92r (Array s_a915 a_a92s))))
+            `cast` (Main.N:Array <s_a915>_N <Control.Applicative.WrappedMonad
+                                               m_a92r a_a92s>_N
+                    :: Array s_a915 (Control.Applicative.WrappedMonad m_a92r a_a92s)
+                       ~R# V.Vector (Control.Applicative.WrappedMonad m_a92r a_a92s))))
+      `cast` (<m_a92r (Array s_a915 a_a92s)>_R
+              %<Many>_N ->_R Sym (Main.N:Array <s_a915>_N) <m_a92r a_a92s>_N
+              :: (m_a92r (Array s_a915 a_a92s) -> V.Vector (m_a92r a_a92s))
+                 ~R# (m_a92r (Array s_a915 a_a92s) -> Array s_a915 (m_a92r a_a92s)))
+end Rec }
+
+-- RHS size: {terms: 33, types: 85, coercions: 42, joins: 0/1}
+unsafeBackpermute
+  :: forall (s' :: [Nat]) (s :: [Nat]) a.
+     (KnownNats s, KnownNats s') =>
+     ([Int] -> [Int]) -> Array s a -> Array s' a
+[GblId, Arity=4, Unf=OtherCon []]
+unsafeBackpermute
+  = \ (@(s'_a8FK :: [Nat]))
+      (@(s_a8FL :: [Nat]))
+      (@a_a8FM)
+      ($dKnownNats4_a8FN :: KnownNats s_a8FL)
+      ($dKnownNats5_a8FO :: KnownNats s'_a8FK)
+      (f_a59Y :: [Int] -> [Int])
+      (a1_a59Z :: Array s_a8FL a_a8FM) ->
+      let {
+        s1_a553 :: [Int]
+        [LclId]
+        s1_a553 = valuesOf @s'_a8FK $dKnownNats5_a8FO } in
+      $ @LiftedRep
+        @LiftedRep
+        @(Int -> a_a8FM)
+        @(Array s'_a8FK a_a8FM)
+        (. @(V.Vector a_a8FM)
+           @(Array s'_a8FK a_a8FM)
+           @(Int -> a_a8FM)
+           ((\ (ds_d9fm :: V.Vector a_a8FM) -> ds_d9fm)
+            `cast` (<V.Vector a_a8FM>_R
+                    %<Many>_N ->_R Sym (Main.N:Array <s'_a8FK>_N) <a_a8FM>_N
+                    :: (V.Vector a_a8FM -> V.Vector a_a8FM)
+                       ~R# (V.Vector a_a8FM -> Array s'_a8FK a_a8FM)))
+           (V.generate @a_a8FM (size s1_a553)))
+        (. @(Fins s'_a8FK)
+           @a_a8FM
+           @Int
+           (. @(Fins s_a8FL)
+              @a_a8FM
+              @(Fins s'_a8FK)
+              (($cindex_r9pJ @s_a8FL $dKnownNats4_a8FN @a_a8FM a1_a59Z)
+               `cast` (Sub (Main.D:R:RepArray <s_a8FL>_N)
+                       %<Many>_N ->_R <a_a8FM>_R
+                       :: (Data.Functor.Rep.Rep (Array s_a8FL) -> a_a8FM)
+                          ~R# (Fins s_a8FL -> a_a8FM)))
+              (. @[Int]
+                 @(Fins s_a8FL)
+                 @(Fins s'_a8FK)
+                 ((\ (ds_d9dk :: [Int]) -> ds_d9dk)
+                  `cast` (<[Int]>_R
+                          %<Many>_N ->_R Sym (Main.N:Fins <[Nat]>_N <s_a8FL>_N)
+                          :: ([Int] -> [Int]) ~R# ([Int] -> Fins s_a8FL)))
+                 (. @[Int]
+                    @[Int]
+                    @(Fins s'_a8FK)
+                    f_a59Y
+                    ((fromFins1_r9ok @[Nat] @s'_a8FK)
+                     `cast` (<Fins s'_a8FK>_R
+                             %<Many>_N ->_R Main.N:Fins <[Nat]>_N <s'_a8FK>_N
+                             :: (Fins s'_a8FK -> Fins s'_a8FK) ~R# (Fins s'_a8FK -> [Int]))))))
+           (. @[Int]
+              @(Fins s'_a8FK)
+              @Int
+              ((\ (ds_d9fn :: [Int]) -> ds_d9fn)
+               `cast` (<[Int]>_R
+                       %<Many>_N ->_R Sym (Main.N:Fins <[Nat]>_N <s'_a8FK>_N)
+                       :: ([Int] -> [Int]) ~R# ([Int] -> Fins s'_a8FK)))
+              (shapen s1_a553)))
+
+-- RHS size: {terms: 34, types: 60, coercions: 3, joins: 0/1}
+indexes
+  :: forall {k} (s' :: [Nat]) (s :: [Nat]) (ds :: [Nat]) (xs :: k) a.
+     (KnownNats s, KnownNats s') =>
+     SNats ds -> Fins xs -> Array s a -> Array s' a
+[GblId, Arity=5, Unf=OtherCon []]
+indexes
+  = \ (@k_a8Gq)
+      (@(s'_a8Gr :: [Nat]))
+      (@(s_a8Gs :: [Nat]))
+      (@(ds_a8Gt :: [Nat]))
+      (@(xs_a8Gu :: k_a8Gq))
+      (@a_a8Gv)
+      ($dKnownNats4_a8Gw :: KnownNats s_a8Gs)
+      ($dKnownNats5_a8Gx :: KnownNats s'_a8Gr)
+      (ds1_d9dl :: SNats ds_a8Gt)
+      (xs1_a59W :: Fins xs_a8Gu)
+      (a1_a59X :: Array s_a8Gs a_a8Gv) ->
+      case withKnownNats
+             @ds_a8Gt
+             @LiftedRep
+             @(KnownNatsInstance ds_a8Gt)
+             ds1_d9dl
+             (Main.KnownNatsInstance @ds_a8Gt)
+      of
+      { KnownNatsInstance $dKnownNats6_a8Ej ->
+      unsafeBackpermute
+        @s'_a8Gr
+        @s_a8Gs
+        @a_a8Gv
+        $dKnownNats4_a8Gw
+        $dKnownNats5_a8Gx
+        (let {
+           ds2_a5in :: [Int]
+           [LclId]
+           ds2_a5in = valuesOf @ds_a8Gt $dKnownNats6_a8Ej } in
+         \ (s1_a5ip :: [Int]) ->
+           foldl'
+             @[]
+             GHC.Internal.Data.Foldable.$fFoldableList
+             @[Int]
+             @(Int, Int)
+             (flip
+                @LiftedRep
+                @(Int, Int)
+                @[Int]
+                @[Int]
+                (uncurry @Int @Int @([Int] -> [Int]) insertDim))
+             s1_a5ip
+             (zip
+                @Int
+                @Int
+                (preInsertPositions ds2_a5in)
+                (xs1_a59W
+                 `cast` (Main.N:Fins <k_a8Gq>_N <xs_a8Gu>_N
+                         :: Fins xs_a8Gu ~R# [Int]))))
+        a1_a59X
+      }
+
+-- RHS size: {terms: 23, types: 50, coercions: 27, joins: 0/1}
+range :: forall (s :: [Nat]). KnownNats s => Array s Int
+[GblId, Arity=1, Unf=OtherCon []]
+range
+  = \ (@(s_a8GV :: [Nat])) ($dKnownNats4_a8GW :: KnownNats s_a8GV) ->
+      let {
+        s1_a553 :: [Int]
+        [LclId]
+        s1_a553 = valuesOf @s_a8GV $dKnownNats4_a8GW } in
+      $ @LiftedRep
+        @LiftedRep
+        @(Int -> Int)
+        @(Array s_a8GV Int)
+        (. @(V.Vector Int)
+           @(Array s_a8GV Int)
+           @(Int -> Int)
+           ((\ (ds_d9fm :: V.Vector Int) -> ds_d9fm)
+            `cast` (<V.Vector Int>_R
+                    %<Many>_N ->_R Sym (Main.N:Array <s_a8GV>_N) <Int>_N
+                    :: (V.Vector Int -> V.Vector Int)
+                       ~R# (V.Vector Int -> Array s_a8GV Int)))
+           (V.generate @Int (size s1_a553)))
+        (. @(Fins s_a8GV)
+           @Int
+           @Int
+           (. @[Int]
+              @Int
+              @(Fins s_a8GV)
+              (flatten (valuesOf @s_a8GV $dKnownNats4_a8GW))
+              ((fromFins1_r9ok @[Nat] @s_a8GV)
+               `cast` (<Fins s_a8GV>_R
+                       %<Many>_N ->_R Main.N:Fins <[Nat]>_N <s_a8GV>_N
+                       :: (Fins s_a8GV -> Fins s_a8GV) ~R# (Fins s_a8GV -> [Int]))))
+           (. @[Int]
+              @(Fins s_a8GV)
+              @Int
+              ((\ (ds_d9fn :: [Int]) -> ds_d9fn)
+               `cast` (<[Int]>_R
+                       %<Many>_N ->_R Sym (Main.N:Fins <[Nat]>_N <s_a8GV>_N)
+                       :: ([Int] -> [Int]) ~R# ([Int] -> Fins s_a8GV)))
+              (shapen s1_a553)))
+
+-- RHS size: {terms: 22, types: 69, coercions: 88, joins: 0/0}
+main :: IO ()
+[GblId]
+main
+  = $ @LiftedRep
+      @LiftedRep
+      @(Array '[2] Int)
+      @(IO ())
+      (print
+         @(Array '[2] Int)
+         (Main.$fShowArray @'[2] @Int GHC.Internal.Show.$fShowInt))
+      (indexes
+         @(GHC.Types.ZonkAny 0)
+         @'[2]
+         @[2, 3]
+         @'[1]
+         @(GHC.Types.ZonkAny 1)
+         @Int
+         ($dKnownNats3_r9po
+          `cast` (Sym (Main.N:SNats <[2, 3]>_N)
+                  ; Sym (Main.N:KnownNats <[2, 3]>_N)
+                  :: [Nat] ~R# KnownNats [2, 3]))
+         ((GHC.Types.:
+             @Nat
+             (fromSNat
+                @2
+                (GHC.Internal.TypeNats.$bSNat
+                   @2
+                   ($dKnownNat2_r9pm
+                    `cast` (Sym (GHC.Internal.TypeNats.N:SNat <2>_N)
+                            ; Sym (GHC.Internal.TypeNats.N:KnownNat <2>_N)
+                            :: Natural ~R# KnownNat 2))))
+             (GHC.Types.[] @Nat))
+          `cast` (Sym (Main.N:SNats <'[2]>_N)
+                  ; Sym (Main.N:KnownNats <'[2]>_N)
+                  :: [Nat] ~R# KnownNats '[2]))
+         ((GHC.Types.:
+             @Nat
+             (fromSNat
+                @1
+                (GHC.Internal.TypeNats.$bSNat
+                   @1
+                   ($dKnownNat_r9pi
+                    `cast` (Sym (GHC.Internal.TypeNats.N:SNat <1>_N)
+                            ; Sym (GHC.Internal.TypeNats.N:KnownNat <1>_N)
+                            :: Natural ~R# KnownNat 1))))
+             (GHC.Types.[] @Nat))
+          `cast` (Sym (Main.N:SNats <'[1]>_N) :: [Nat] ~R# SNats '[1]))
+         ((GHC.Types.: @Int (GHC.Types.I# 1#) (GHC.Types.[] @Int))
+          `cast` (Sym (Main.N:Fins
+                           <GHC.Types.ZonkAny 0>_N <GHC.Types.ZonkAny 1>_N)
+                  :: [Int] ~R# Fins (GHC.Types.ZonkAny 1)))
+         (range
+            @[2, 3]
+            ($dKnownNats3_r9po
+             `cast` (Sym (Main.N:SNats <[2, 3]>_N)
+                     ; Sym (Main.N:KnownNats <[2, 3]>_N)
+                     :: [Nat] ~R# KnownNats [2, 3]))))
+
+-- RHS size: {terms: 2, types: 1, coercions: 0, joins: 0/0}
+:Main.main :: IO ()
+[GblId]
+:Main.main = GHC.Internal.TopHandler.runMainIO @() main
+
+
+
+[2 of 2] Linking test/harpie-bug-issue1-dev-indexes

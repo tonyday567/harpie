@@ -416,7 +416,6 @@ ghci> F.indexes (S.SNats @'[1]) (S.fins @'[3] [1]) (range @[2,3])
 
 With write-ghc-environment-files switch on (a requirement of doctest-parallel), there are many other ways of running the same code.
 
-
 `ghci` and `ghc --interactive` works as expected.
 
 but
@@ -454,6 +453,28 @@ using module functions: [1,4]
 using inplace functions:[1,4]
 #+end_src
 
+* bug #1b development
+
+encapsulation
+
+#+begin_src sh :results output
+➜  harpie git:(bug1) runghc --ghc-arg='-isrc' test/harpie-bug-issue1.hs
+using module functions: [[1]    61974 segmentation fault  runghc --ghc-arg='-isrc' test/harpie-bug-issue1.hs
+➜  harpie git:(bug1) runghc test/harpie-bug-issue1.hs
+using module functions: [1,4]
+using inplace functions:[1,4]
+#+end_src
+
+Refactored to test/harpie-bug-issue1-dirty.hs gives:
+
+#+begin_src sh :results output
+➜  harpie git:(bug1) ✗ runghc test/harpie-bug-issue1.hs
+[1,4]
+➜  harpie git:(bug1) ✗ runghc --ghc-arg='-isrc' test/harpie-bug-issue1.hs
+[harpie-bug-issue1.hs: internal error: MUT_VAR_DIRTY object (0x16de6ae40) entered!
+    (GHC version 9.12.2 for aarch64_apple_darwin)
+    Please report this as a GHC bug:  https://www.haskell.org/ghc/reportabug
+#+end_src
 
 * issue #5
 

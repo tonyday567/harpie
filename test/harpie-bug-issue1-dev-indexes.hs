@@ -10,23 +10,44 @@
 
 module Main where
 
-import Harpie.Shape qualified as S
 import Data.Functor.Classes
 import Data.Functor.Rep
--- import Fcf qualified
 import Data.Bool
+import Data.List qualified as List
 import Data.Vector qualified as V
 import GHC.TypeNats
 import GHC.Generics
 import Data.Distributive
 import GHC.Exts
 import Data.Maybe
+import Prelude as P
 
--- | bug-issue1
+-- | bug-issue1 intermediate results
 --
--- >>> indexes (S.SNats @'[1]) (S.fins @'[3] [1]) (range @[2,3])
+-- >>> index (range @[2,3]) (UnsafeFins [0,1])
+-- 1
+--
+-- >>> index (range @[2,3]) (UnsafeFins [1,1])
+-- 4
+--
+-- >>> UnsafeFins [1]
+-- [1]
+--
+-- >>> SNats @'[1]
+-- SNats @'[1]
+--
+-- >>> index (indexes @'[2] (SNats @'[1]) (UnsafeFins [1]) (range @[2,3])) (UnsafeFins [0])
+-- 1
+--
+-- >>> unsafeBackpermute @'[2] (insertDims (valuesOf @'[1]) (fromFins (UnsafeFins [1]))) (range @[2,3])
+-- [1,4]
+--
+-- unsafeBackpermute @'[2] (insertDims [1] [1]) (range @[2,3])
+-- [1,4]
+--
 main :: IO ()
-main = print $ indexes @'[2] (S.SNats @'[1]) (fins @'[3] [1]) (range @[2,3])
+main =
+  print $ indexes @'[2] (SNats @'[1]) (UnsafeFins [1]) (range @[2,3])
 
 range :: forall s. (KnownNats s) => Array s Int
 range = tabulate (flatten (valuesOf @s) . fromFins)
@@ -35,15 +56,14 @@ indexes ::
   forall s' s ds xs a.
   ( KnownNats s,
     KnownNats s'
-    -- Without these constraints you need a type annotation to specify the array size.
     -- s' ~ Fcf.Eval (S.DeleteDims ds s),
     -- xs ~ Fcf.Eval (S.GetDims ds s)
   ) =>
-  S.SNats ds ->
+  SNats ds ->
   Fins xs ->
   Array s a ->
   Array s' a
-indexes S.SNats xs a = unsafeBackpermute (insertDims (S.valuesOf @ds) (fromFins xs)) a
+indexes SNats xs a = unsafeBackpermute (insertDims (valuesOf @ds) (fromFins xs)) a
 
 unsafeBackpermute :: forall s' s a. (KnownNats s, KnownNats s') => ([Int] -> [Int]) -> Array s a -> Array s' a
 unsafeBackpermute f a = tabulate (index a . UnsafeFins . f . fromFins)
@@ -71,17 +91,17 @@ instance
   type Rep (Array s) = Fins s
 
   tabulate f =
-    Array . V.generate (S.size s) $ (f . UnsafeFins . S.shapen s)
+    Array . V.generate (size s) $ (f . UnsafeFins . shapen s)
     where
       s = valuesOf @s
   {-# INLINE tabulate #-}
 
-  index (Array v) i = V.unsafeIndex v (S.flatten s (fromFins i))
+  index (Array v) i = V.unsafeIndex v (flatten s (fromFins i))
     where
       s = valuesOf @s
   {-# INLINE index #-}
 
-type Dims = S.SNats
+type Dims = SNats
 
 type role SNats nominal
 
@@ -221,3 +241,15 @@ isFins xs ds = length xs == length ds && and (zipWith isFin xs ds)
 
 isFin :: Int -> Int -> Bool
 isFin i d = 0 <= i && i + 1 <= d
+
+size :: [Int] -> Int
+size [] = 1
+size [x] = x
+size xs = P.product xs
+
+instance Show (Fins n) where
+  show (UnsafeFins x) = show x
+
+-- | Matches GHC printing quirks.
+instance Show (SNats ns) where
+  show (UnsafeSNats s) = "SNats @" <> bool "" "'" (length s < 2) <> "[" <> mconcat (List.intersperse ", " (show <$> s)) <> "]"
