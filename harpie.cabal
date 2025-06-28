@@ -230,3 +230,15 @@ executable harpie-bug-issue1-dev-backpermute
       base >=4.14 && <5,
       distributive >=0.4 && <0.7,
       vector >=0.12.3 && <0.14,
+
+executable harpie-issue1-simp
+    import: ghc-options-exe-stanza
+    import: ghc-options-stanza
+    import: ghc2024-stanza
+    main-is: harpie-issue1-simp.hs
+    hs-source-dirs: test
+    build-depends:
+      adjunctions >=4.0 && <5,
+      base >=4.14 && <5,
+      distributive >=0.4 && <0.7,
+      vector >=0.12.3 && <0.14,

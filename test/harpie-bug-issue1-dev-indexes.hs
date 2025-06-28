@@ -46,8 +46,12 @@ import Prelude as P
 -- [1,4]
 --
 main :: IO ()
-main =
-  print $ indexes @'[2] (SNats @'[1]) (UnsafeFins [1]) (range @[2,3])
+main = do
+  print $ indexes_ @'[2] [1] (UnsafeFins [1]) (range @[2,3])
+  print $ indexesV4 @'[2] (SNats @'[2])
+  -- print $ indexesV3 @'[2] (SNats @'[2]) (range @[2,3])
+  -- print $ indexesV2 @'[2] (SNats @'[1]) (UnsafeFins [1]) (range @[2,3])
+  -- print $ indexes @'[2] (SNats @'[1]) (UnsafeFins [1]) (range @[2,3])
 
 range :: forall s. (KnownNats s) => Array s Int
 range = tabulate (flatten (valuesOf @s) . fromFins)
@@ -63,7 +67,57 @@ indexes ::
   Fins xs ->
   Array s a ->
   Array s' a
-indexes SNats xs a = unsafeBackpermute (insertDims (valuesOf @ds) (fromFins xs)) a
+indexes (SNats :: SNats ds) xs a = unsafeBackpermute (insertDims (valuesOf @ds) (fromFins xs)) a
+{-# inline indexes #-}
+
+indexes_ ::
+  forall s' s xs a.
+  ( KnownNats s,
+    KnownNats s'
+    -- s' ~ Fcf.Eval (S.DeleteDims ds s),
+    -- xs ~ Fcf.Eval (S.GetDims ds s)
+  ) =>
+  [Int] ->
+  -- SNats ds ->
+  Fins xs ->
+  Array s a ->
+  Array s' a
+indexes_ ds xs a = unsafeBackpermute (insertDims ds (fromFins xs)) a
+
+indexesV2 ::
+  forall s' s ds xs a.
+  ( KnownNats s,
+    KnownNats s'
+    -- s' ~ Fcf.Eval (S.DeleteDims ds s),
+    -- xs ~ Fcf.Eval (S.GetDims ds s)
+  ) =>
+  SNats ds ->
+  Fins xs ->
+  Array s a ->
+  [Int]
+indexesV2 (SNats :: SNats ds) xs a = valuesOf @ds
+
+indexesV3 ::
+  forall s' s ds a.
+  ( KnownNats s,
+    KnownNats s'
+    -- s' ~ Fcf.Eval (S.DeleteDims ds s),
+    -- xs ~ Fcf.Eval (S.GetDims ds s)
+  ) =>
+  SNats ds ->
+  Array s a ->
+  [Int]
+indexesV3 (SNats :: SNats ds) a = valuesOf @ds
+
+indexesV4 ::
+  forall ds.
+  ( -- KnownNats s
+    -- s' ~ Fcf.Eval (S.DeleteDims ds s),
+    -- xs ~ Fcf.Eval (S.GetDims ds s)
+  ) =>
+  SNats ds ->
+  [Int]
+indexesV4 (SNats :: SNats ds) = valuesOf @ds
 
 unsafeBackpermute :: forall s' s a. (KnownNats s, KnownNats s') => ([Int] -> [Int]) -> Array s a -> Array s' a
 unsafeBackpermute f a = tabulate (index a . UnsafeFins . f . fromFins)
