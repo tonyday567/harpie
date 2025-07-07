@@ -190,8 +190,8 @@ module Harpie.Fixed
     invtri,
     inverse,
     chol,
-    cross_,
-    norm_,
+    -- cross_,
+    -- norm_,
   )
 where
 
@@ -284,9 +284,10 @@ import Prelude qualified
 -- >>> import Data.Functor.Rep
 --
 -- An important base accounting of 'Array' shape is the singleton types 'SNat' (a type-level 'Natural' or 'Nat') from [GHC.TypeNats](https://hackage.haskell.org/package/base/docs/GHC-TypeNats.html) in base.
+--
 -- >>> import GHC.TypeNats
 --
--- The (first-class-families)[https://hackage.haskell.org/package/first-class-families] library was used to code most of function constraints.
+-- The [first-class-families](https://hackage.haskell.org/package/first-class-families) library was used to code most of type-level constraint logic.
 --
 -- >>> import Fcf qualified
 --
@@ -357,6 +358,7 @@ import Prelude qualified
 -- [1,2,3,4,5,6]
 --
 -- The main computational entry and exit points are often via 'index' and 'tabulate' with arrays indexed by 'Fins':
+--
 -- >>> index a (S.UnsafeFins [1,2,3])
 -- 23
 --
@@ -415,7 +417,7 @@ instance
 -- Note that conversion of an 'Array' to a vector drops shape information, so that:
 --
 -- > vectorAs . asVector == id
--- > asVector . vectorAs == flat
+-- > asVector . vectorAs == 'flat'
 --
 -- >>> asVector (range @[2,3])
 -- [0,1,2,3,4,5]
@@ -463,7 +465,7 @@ safeArray v =
   where
     a = unsafeArray v
 
--- | Construct an Array, checking shape.
+-- | Construct an Array, throwing an exception on a bad shape.
 --
 -- >>> array [0..22] :: Array [2,3,4] Int
 -- *** Exception: Shape Mismatch
@@ -490,7 +492,7 @@ unsafeModifyShape a = unsafeArray (asVector a)
 unsafeModifyVector :: (KnownNats s) => (FromVector u a) => (FromVector v b) => (u -> v) -> Array s a -> Array s b
 unsafeModifyVector f a = unsafeArray (asVector (f (vectorAs (asVector a))))
 
--- | Representation of an index into a shape (a type-level [Nat]). The index is a dimension of the shape.
+-- | Representation of an index into a shape (a type-level [Nat]). 'Dim @0' is commonly thought of as the row of an array.
 type Dim = SNat
 
 -- | Pattern synonym for a 'Dim'
@@ -541,8 +543,8 @@ with d f =
 --
 -- The library design encourages the use of value-level shape arrays (in @Harpie.Array@) via 'toDynamic' in preference to dependent-type styles of coding. In particular, no attempt has been made to prove to the compiler that a particular Shape (resulting from any of the supplied functions) exists. Life is short.
 --
--- > P.take 4 <$> sample' arbitrary :: IO [SomeArray Int]
--- [SomeArray SNats @'[] [0],SomeArray SNats @'[0] [],SomeArray SNats @[1, 1] [1],SomeArray SNats @[5, 1, 4] [2,1,0,2,-6,0,5,6,-1,-4,0,5,-1,6,4,-6,1,0,3,-1]]
+-- >> P.take 4 <$> sample' arbitrary :: IO [SomeArray Int]
+-- >> [SomeArray SNats @'[] [0],SomeArray SNats @'[0] [],SomeArray SNats @[1, 1] [1],SomeArray SNats @[5, 1, 4] [2,1,0,2,-6,0,5,6,-1,-4,0,5,-1,6,4,-6,1,0,3,-1]]
 data SomeArray a = forall s. SomeArray (SNats s) (Array s a)
 
 deriving instance (Show a) => Show (SomeArray a)
@@ -553,7 +555,7 @@ instance Functor SomeArray where
 instance Foldable SomeArray where
   foldMap f (SomeArray _ a) = foldMap f a
 
--- | Contruct a SomeArray
+-- | Construct a SomeArray
 someArray :: forall s t a. (FromVector t a) => SNats s -> t -> SomeArray a
 someArray s t = SomeArray s (Array (asVector t))
 
@@ -1219,7 +1221,7 @@ takes ::
   Array s' a
 takes _ _ a = unsafeBackpermute id a
 
--- | Across the specified dimesnions, takes the bottom-most elements.
+-- | Across the specified dimensions, takes the bottom-most elements.
 --
 -- >>> pretty (takeBs (Dims @[0,1]) (S.SNats @[1,2]) a)
 -- [[[16,17,18,19],

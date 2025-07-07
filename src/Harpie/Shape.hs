@@ -178,6 +178,8 @@ import GHC.TypeLits qualified as L
 import GHC.TypeNats
 import Prelude as P hiding (minimum)
 
+{-# ANN module ("doctest-parallel: --no-implicit-module-import" :: String) #-}
+
 -- $setup
 -- >>> :set -XDataKinds
 -- >>> :set -XTypeFamilies
