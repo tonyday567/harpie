@@ -1,11 +1,12 @@
 {-# LANGUAGE DataKinds #-}
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 module Main where
 
+import Data.Functor.Rep (index, tabulate)
+import Fcf qualified
 import Harpie.Fixed qualified as F
 import Harpie.Shape qualified as S
-import Data.Functor.Rep (tabulate, index)
-import Fcf qualified
 
 -- | bug-issue1
 --
@@ -17,7 +18,7 @@ main = do
   where
     a = F.range @[2, 3]
     x = F.indexes (S.SNats @'[1]) (S.fins @'[3] [1]) a
-    x' = F.indexes (S.SNats @'[1]) (S.fins @'[3] [1]) (range @[2,3])
+    x' = F.indexes (S.SNats @'[1]) (S.fins @'[3] [1]) (range @[2, 3])
 
 range :: forall s. (S.KnownNats s) => F.Array s Int
 range = tabulate (S.flatten (S.valuesOf @s) . S.fromFins)

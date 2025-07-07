@@ -553,7 +553,7 @@ instance Functor SomeArray where
 instance Foldable SomeArray where
   foldMap f (SomeArray _ a) = foldMap f a
 
--- | Contruct a SomeArray
+-- | Construct a SomeArray
 someArray :: forall s t a. (FromVector t a) => SNats s -> t -> SomeArray a
 someArray s t = SomeArray s (Array (asVector t))
 

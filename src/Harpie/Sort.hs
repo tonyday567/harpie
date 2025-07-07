@@ -16,6 +16,7 @@ import Prelude
 
 -- $setup
 -- >>> :m -Prelude
+-- >>> import Harpie.Sort
 -- >>> import Data.Vector qualified as V
 -- >>> import Data.Ord (Down (..))
 -- >>> import Prelude (Int)
