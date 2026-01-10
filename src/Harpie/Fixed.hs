@@ -33,8 +33,6 @@ module Harpie.Fixed
     FromVector (..),
     toDynamic,
     with,
-    SomeArray (..),
-    someArray,
 
     -- * Shape Access
     shape,
@@ -213,11 +211,8 @@ import Harpie.Sort
 import Prettyprinter hiding (dot, fill)
 import System.Random hiding (uniform)
 import System.Random.Stateful hiding (uniform)
-import Test.QuickCheck hiding (tabulate, vector)
-import Test.QuickCheck.Instances.Natural ()
 import Unsafe.Coerce
 import Prelude as P hiding (cycle, drop, length, repeat, sequence, take, zipWith)
-import Prelude qualified
 
 -- $setup
 --
@@ -534,35 +529,6 @@ with ::
   r
 with d f =
   withSomeSNats (fromIntegral <$> A.shape d) $ \(SNats :: SNats s) -> withKnownNats (SNats @s) (f (array @s (A.asVector d)))
-
--- | Sigma type for an 'Array'
---
--- A fixed Array where shape was unknown at runtime.
---
--- The library design encourages the use of value-level shape arrays (in @Harpie.Array@) via 'toDynamic' in preference to dependent-type styles of coding. In particular, no attempt has been made to prove to the compiler that a particular Shape (resulting from any of the supplied functions) exists. Life is short.
---
--- >> P.take 4 <$> sample' arbitrary :: IO [SomeArray Int]
--- >> [SomeArray SNats @'[] [0],SomeArray SNats @'[0] [],SomeArray SNats @[1, 1] [1],SomeArray SNats @[5, 1, 4] [2,1,0,2,-6,0,5,6,-1,-4,0,5,-1,6,4,-6,1,0,3,-1]]
-data SomeArray a = forall s. SomeArray (SNats s) (Array s a)
-
-deriving instance (Show a) => Show (SomeArray a)
-
-instance Functor SomeArray where
-  fmap f (SomeArray sn a) = SomeArray sn (fmap f a)
-
-instance Foldable SomeArray where
-  foldMap f (SomeArray _ a) = foldMap f a
-
--- | Construct a SomeArray
-someArray :: forall s t a. (FromVector t a) => SNats s -> t -> SomeArray a
-someArray s t = SomeArray s (Array (asVector t))
-
-instance (Arbitrary a) => Arbitrary (SomeArray a) where
-  arbitrary = do
-    s <- arbitrary :: Gen [Small Nat]
-    let s' = Prelude.take 3 (getSmall <$> s)
-    v <- V.replicateM (product (Prelude.fromIntegral <$> s')) arbitrary
-    withSomeSNats s' $ \sn -> pure (someArray sn v)
 
 -- | Get shape of an Array as a value.
 --
