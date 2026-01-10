@@ -7,8 +7,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 -- | Arrays with shape information and computations at a type-level.
@@ -2791,7 +2789,7 @@ inverse a = mult (invtri (transpose (chol a))) (invtri (chol a))
 --
 -- >>> ident == mult t (invtri t)
 -- True
-invtri :: forall a n. (KnownNat n, Floating a, Eq a) => Matrix n n a -> Matrix n n a
+invtri :: forall a n. (KnownNat n, Floating a) => Matrix n n a -> Matrix n n a
 invtri a = i
   where
     ti = undiag (fmap recip (diag a))
@@ -2823,4 +2821,7 @@ norm_ d l (UnsafeFins s) = bool (1 / diag l ! [S.getDim d s] *) sqrt (S.isDiag s
 cross_ :: (Num a, KnownNat m) => Matrix m m a -> Fins '[m, m] -> a
 cross_ l s = sum (fmap (\k -> l ! [i, k] * l ! [j, k]) (A.range [j]))
   where
-    [i, j] = fromFins s
+    ij = fromFins s
+    (i, j) = case ij of
+      [x, y] -> (x, y)
+      _ -> error "cross_: invalid Fins dimension (expected 2D index)"
