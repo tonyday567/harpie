@@ -25,9 +25,9 @@ module Harpie.Fixed
 
     -- * Dimensions
     Dim,
-    data Dim,
+    pattern Dim,
     Dims,
-    data Dims,
+    pattern Dims,
 
     -- * Conversion
     FromVector (..),
@@ -169,10 +169,10 @@ module Harpie.Fixed
     transmit,
 
     -- * Row specializations
-    data (:<),
+    pattern (:<),
     cons,
     uncons,
-    data (:>),
+    pattern (:>),
     snoc,
     unsnoc,
 

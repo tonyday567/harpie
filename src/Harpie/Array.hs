@@ -160,10 +160,10 @@ module Harpie.Array
     telecastsSafe,
 
     -- * Row specializations
-    data (:<),
+    pattern (:<),
     cons,
     uncons,
-    data (:>),
+    pattern (:>),
     snoc,
     unsnoc,
 
