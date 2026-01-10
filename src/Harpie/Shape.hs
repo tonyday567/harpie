@@ -11,12 +11,12 @@
 module Harpie.Shape
   ( -- * Type-level Nat
     SNat,
-    pattern SNat,
+    data SNat,
     valueOf,
 
     -- * Type-level [Nat]
     SNats,
-    pattern SNats,
+    data SNats,
     fromSNats,
     KnownNats (..),
     natVals,
