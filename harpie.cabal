@@ -1,6 +1,6 @@
 cabal-version: 3.0
 name: harpie
-version: 0.1.4.0
+version: 0.2.0.0
 license: BSD-3-Clause
 license-file: LICENSE
 copyright: Tony Day (c) 2016-2024
@@ -146,13 +146,11 @@ library
   import: ghc2024-stanza
   hs-source-dirs: src
   build-depends:
-    QuickCheck >=2.14 && <2.18,
     adjunctions >=4.0 && <5,
     base >=4.18 && <5,
     distributive >=0.4 && <0.7,
     first-class-families >=0.8.1 && <0.9,
     prettyprinter >=1.7 && <1.8,
-    quickcheck-instances >=0.3.31 && <0.4,
     random >=1.2 && <1.4,
     vector >=0.12.3 && <0.14,
     vector-algorithms >=0.9.0 && <0.10,
