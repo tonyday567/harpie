@@ -14,7 +14,7 @@
 :set -XDataKinds
 import qualified Harpie.Shape as S
 import qualified Harpie.Fixed as F
-impot qualified Harpie.Array as A
+import qualified Harpie.Array as A
 import Prettyprinter
 import GHC.TypeNats
 import Data.Vector qualified as V
