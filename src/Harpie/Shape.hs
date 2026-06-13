@@ -1111,6 +1111,32 @@ type instance
   Eval (SetDimUncurried xs ds) =
     Eval (SetDim (Eval (Fst xs)) (Eval (Snd xs)) ds)
 
+-- | Halve a dimension size (integer division by 2).
+--
+-- >>> halfDim 5
+-- 2
+halfDim :: Int -> Int
+halfDim n = n `P.div` 2
+
+-- | Halve a type-level natural.
+--
+-- >>> :k! Eval (Half 5)
+-- 2
+data Half :: Nat -> Exp Nat
+
+type instance
+  Eval (Half n) = Div n 2
+
+-- | Halve a dimension of a shape.
+--
+-- >>> :k! Eval (HalveDim 0 [5, 7])
+-- [2, 7]
+data HalveDim :: Nat -> [Nat] -> Exp [Nat]
+
+type instance
+  Eval (HalveDim d s) =
+    Eval (ModifyDim d Half s)
+
 -- | Take along a dimension.
 --
 -- >>> takeDim 0 1 [2,3,4]
