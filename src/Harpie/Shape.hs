@@ -1125,7 +1125,8 @@ halfDim n = n `P.div` 2
 data Half :: Nat -> Exp Nat
 
 type instance
-  Eval (Half n) = Div n 2
+  Eval (Half n) =
+    Div n 2
 
 -- | Halve a dimension of a shape.
 --

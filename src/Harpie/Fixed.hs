@@ -961,15 +961,15 @@ dropB _ _ a = unsafeBackpermute id a
 -- [2,2]
 splitMatrix ::
   forall n a.
-  ( KnownNat n
-  , KnownNat (Div n 2)
-  , KnownNat (n - Div n 2)
+  ( KnownNat n,
+    KnownNat (Div n 2),
+    KnownNat (n - Div n 2)
   ) =>
   Matrix n n a ->
-  ( Matrix (Div n 2) (Div n 2) a
-  , Matrix (Div n 2) (n - Div n 2) a
-  , Matrix (n - Div n 2) (Div n 2) a
-  , Matrix (n - Div n 2) (n - Div n 2) a
+  ( Matrix (Div n 2) (Div n 2) a,
+    Matrix (Div n 2) (n - Div n 2) a,
+    Matrix (n - Div n 2) (Div n 2) a,
+    Matrix (n - Div n 2) (n - Div n 2) a
   )
 splitMatrix arr =
   let k = fromIntegral (valueOf @(Div n 2)) :: Int
@@ -982,9 +982,9 @@ splitMatrix arr =
 -- | Combine four quadrant matrices into a single square matrix.
 combineMatrix ::
   forall n a.
-  ( KnownNat n
-  , KnownNat (Div n 2)
-  , KnownNat (n - Div n 2)
+  ( KnownNat n,
+    KnownNat (Div n 2),
+    KnownNat (n - Div n 2)
   ) =>
   Matrix (Div n 2) (Div n 2) a ->
   Matrix (Div n 2) (n - Div n 2) a ->
