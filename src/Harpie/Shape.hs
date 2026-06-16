@@ -1124,7 +1124,8 @@ halfDim n = n `P.div` 2
 -- | Halve a type-level natural.
 --
 -- >>> :k! Eval (Half 5)
--- 2
+-- Eval (Half 5) :: ghc-internal:GHC.Internal.Bignum.Natural.Natural
+-- = 2
 data Half :: Nat -> Exp Nat
 
 type instance
@@ -1134,7 +1135,8 @@ type instance
 -- | Halve a dimension of a shape.
 --
 -- >>> :k! Eval (HalveDim 0 [5, 7])
--- [2, 7]
+-- Eval (HalveDim 0 [5, 7]) :: [ghc-internal:GHC.Internal.Bignum.Natural.Natural]
+-- = [2, 7]
 data HalveDim :: Nat -> [Nat] -> Exp [Nat]
 
 type instance
