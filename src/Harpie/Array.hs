@@ -291,11 +291,21 @@ import Prelude as P hiding (cycle, drop, length, repeat, take, zip, zipWith)
 --  [[13,14,15,16],
 --   [17,18,19,20],
 --   [21,22,23,24]]]
-data Array a = UnsafeArray [Int] (V.Vector a)
+data Array a = UnsafeArray [Int] [Int] (V.Vector a)
   deriving stock (Generic)
-  deriving stock (Eq, Ord, Show)
+  deriving stock (Eq, Ord)
+
+instance (Show a) => Show (Array a) where
+  showsPrec p (UnsafeArray s _ v) =
+    showParen (p > 10) $
+      showString "UnsafeArray " . shows s . showString " " . shows v
 
 type role Array representational
+
+-- | Internal smart constructor: precomputes strides for O(1) zero-allocation indexing.
+unsafeArray :: [Int] -> V.Vector a -> Array a
+unsafeArray s v = UnsafeArray s (List.drop 1 (scanr (*) 1 s)) v
+{-# INLINE unsafeArray #-}
 
 instance Functor Array where
   fmap f = unsafeModifyVector (V.map f)
@@ -304,11 +314,11 @@ instance Foldable Array where
   foldr f x0 a = V.foldr f x0 (asVector a)
 
 instance Traversable Array where
-  traverse f (UnsafeArray s v) =
+  traverse f (UnsafeArray s _ v) =
     array s <$> traverse f v
 
 instance (Show a) => Pretty (Array a) where
-  pretty a@(UnsafeArray _ v) = case rank a of
+  pretty a@(UnsafeArray _ _ v) = case rank a of
     0 -> viaShow (V.head v)
     1 -> viaShow v
     _ ->
@@ -358,8 +368,8 @@ instance FromVector [a] a where
   vectorAs = V.toList
 
 instance FromVector (Array a) a where
-  asVector (UnsafeArray _ v) = v
-  vectorAs v = UnsafeArray [V.length v] v
+  asVector (UnsafeArray _ _ v) = v
+  vectorAs v = unsafeArray [V.length v] v
 
 -- | Conversion to and from an `Array`
 --
@@ -382,19 +392,19 @@ instance FromArray (Array a) a where
   arrayAs = id
 
 instance FromArray [a] a where
-  asArray l = UnsafeArray [S.rank l] (V.fromList l)
-  arrayAs (UnsafeArray _ v) = V.toList v
+  asArray l = unsafeArray [S.rank l] (V.fromList l)
+  arrayAs (UnsafeArray _ _ v) = V.toList v
 
 instance FromArray (V.Vector a) a where
-  asArray v = UnsafeArray [V.length v] v
-  arrayAs (UnsafeArray _ v) = v
+  asArray v = unsafeArray [V.length v] v
+  arrayAs (UnsafeArray _ _ v) = v
 
 -- | Construct an array from a shape and a value without any shape validation.
 --
 -- >>> array [2,3] [0..5]
 -- UnsafeArray [2,3] [0,1,2,3,4,5]
 array :: (FromVector t a) => [Int] -> t -> Array a
-array s (asVector -> v) = UnsafeArray s v
+array s (asVector -> v) = unsafeArray s v
 
 infixl 4 ><
 
@@ -421,21 +431,21 @@ safeArray :: (FromVector t a) => [Int] -> t -> Maybe (Array a)
 safeArray s v =
   bool Nothing (Just a) (validate a)
   where
-    a = UnsafeArray s (asVector v)
+    a = unsafeArray s (asVector v)
 
 -- | Unsafely modify an array shape.
 --
 -- >>> unsafeModifyShape (fmap (+1) :: [Int] -> [Int]) (array [2,3] [0..5])
 -- UnsafeArray [3,4] [0,1,2,3,4,5]
 unsafeModifyShape :: ([Int] -> [Int]) -> Array a -> Array a
-unsafeModifyShape f (UnsafeArray s v) = UnsafeArray (f s) v
+unsafeModifyShape f (UnsafeArray s _ v) = unsafeArray (f s) v
 
 -- | Unsafely modify an array vector.
 --
 -- >>> unsafeModifyVector (V.map (+1)) (array [2,3] [0..5])
 -- UnsafeArray [2,3] [1,2,3,4,5,6]
 unsafeModifyVector :: (FromVector u a) => (FromVector v b) => (u -> v) -> Array a -> Array b
-unsafeModifyVector f (UnsafeArray s v) = UnsafeArray s (asVector (f (vectorAs v)))
+unsafeModifyVector f (UnsafeArray s _ v) = unsafeArray s (asVector (f (vectorAs v)))
 
 -- | Representation of an index into a shape (an [Int]). The index is a dimension of the shape.
 type Dim = Int
@@ -448,7 +458,7 @@ type Dims = [Int]
 -- >>> shape a
 -- [2,3,4]
 shape :: Array a -> [Int]
-shape (UnsafeArray s _) = s
+shape (UnsafeArray s _ _) = s
 
 -- | rank of an Array
 --
@@ -489,7 +499,11 @@ isNull = (0 ==) . size
 -- >>> index a [1,2,3]
 -- 23
 index :: Array a -> [Int] -> a
-index (UnsafeArray s v) i = V.unsafeIndex v (flatten s i)
+index (UnsafeArray _ strides v) i = V.unsafeIndex v (flat strides i)
+ where
+  flat (s : ss) (x : xs) = x * s + flat ss xs
+  flat _ _ = 0
+{-# INLINE index #-}
 
 infixl 9 !
 
@@ -515,7 +529,8 @@ infixl 9 !
 -- True
 tabulate :: [Int] -> ([Int] -> a) -> Array a
 tabulate ds f =
-  UnsafeArray ds (V.generate (V.product (asVector ds)) (f . shapen ds))
+  let strs = S.stridesOf ds
+   in unsafeArray ds (V.generate (V.product (asVector ds)) (f . S.shapenStrides strs))
 
 -- | @backpermute@ is a tabulation where the contents of an array do not need to be accessed, and is thus a fulcrum for leveraging laziness and fusion via the rule:
 --
@@ -647,7 +662,7 @@ konst ds a = tabulate ds (const a)
 -- >>> asVector (singleton 3) == asVector (toScalar 3)
 -- True
 singleton :: a -> Array a
-singleton a = UnsafeArray [1] (V.singleton a)
+singleton a = unsafeArray [1] (V.singleton a)
 
 -- | Extract the diagonal of an array.
 --
@@ -675,14 +690,14 @@ undiag a = tabulate (shape a <> shape a) (\xs -> bool 0 (index a xs) (isDiag xs)
 -- >>> zipWith (-) v v
 -- UnsafeArray [3] [0,0,0]
 zipWith :: (a -> b -> c) -> Array a -> Array b -> Array c
-zipWith f (UnsafeArray s v) (UnsafeArray _ v') = UnsafeArray s (V.zipWith f v v')
+zipWith f (UnsafeArray s _ v) (UnsafeArray _ _ v') = unsafeArray s (V.zipWith f v v')
 
 -- | Zip two arrays at an element level, checking for shape consistency.
 --
 -- >>> zipWithSafe (-) (range [3]) (range [4])
 -- Nothing
 zipWithSafe :: (a -> b -> c) -> Array a -> Array b -> Maybe (Array c)
-zipWithSafe f (UnsafeArray s v) (UnsafeArray s' v') = bool Nothing (Just $ UnsafeArray s (V.zipWith f v v')) (s == s')
+zipWithSafe f (UnsafeArray s _ v) (UnsafeArray s' _ v') = bool Nothing (Just $ unsafeArray s (V.zipWith f v v')) (s == s')
 
 -- | Modify a single value at an index.
 --
@@ -1382,7 +1397,7 @@ mult ::
   Array a ->
   Array a ->
   Array a
-mult = dot sum (*)
+mult a b = prod [rank a - 1] [0] sum (*) a b
 
 -- | @windows xs@ are xs-sized windows of an array
 --
@@ -1469,7 +1484,7 @@ isInfixOf p a = or $ find p a
 -- >>> pretty $ fill 0 (array [3] [1..4])
 -- [1,2,3]
 fill :: a -> Array a -> Array a
-fill x (UnsafeArray s v) = UnsafeArray s (V.take (S.size s) (v <> V.replicate (S.size s - V.length v) x))
+fill x (UnsafeArray s _ v) = unsafeArray s (V.take (S.size s) (v <> V.replicate (S.size s - V.length v) x))
 
 -- | Cut an array to form a new (smaller) shape. Errors if the new shape is larger. The old array is reranked to the rank of the new shape first.
 --
@@ -1929,7 +1944,7 @@ infix 5 :>
 uniform :: (StatefulGen g m, UniformRange a) => g -> [Int] -> (a, a) -> m (Array a)
 uniform g ds r = do
   v <- V.replicateM (S.size ds) (uniformRM r g)
-  pure $ UnsafeArray ds v
+  pure $ unsafeArray ds v
 
 -- | Inverse of a square matrix.
 --

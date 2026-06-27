@@ -51,6 +51,8 @@ module Harpie.Shape
     Size,
     flatten,
     shapen,
+    stridesOf,
+    shapenStrides,
     asSingleton,
     AsSingleton,
     asScalar,
@@ -558,19 +560,19 @@ flatten ns xs = sum $ zipWith (*) xs (drop 1 $ scanr (*) 1 ns)
 -- >>> shapen [2,3,4] 17
 -- [1,1,1]
 shapen :: [Int] -> Int -> [Int]
-shapen [] _ = []
-shapen [_] x' = [x']
-shapen [_, y] x' = let (i, j) = divMod x' y in [i, j]
-shapen ns x =
-  fst $
-    foldr
-      ( \a (acc, r) ->
-          let (d, m) = divMod r a
-           in (m : acc, d)
-      )
-      ([], x)
-      ns
+shapen ss x = shapenStrides (stridesOf ss) x
 {-# INLINE shapen #-}
+
+-- | Precompute strides from shape.
+stridesOf :: [Int] -> [Int]
+stridesOf = drop 1 . scanr (*) 1
+
+-- | Internal: shapen with precomputed strides, avoiding repeated scanr.
+shapenStrides :: [Int] -> Int -> [Int]
+shapenStrides [] _ = []
+shapenStrides [_] x' = [x']
+shapenStrides (s : ss') r = let (i, j) = divMod r s in i : shapenStrides ss' j
+{-# INLINE shapenStrides #-}
 
 -- | Convert a scalar to a dimensioned shape
 --
