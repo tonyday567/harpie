@@ -503,7 +503,7 @@ index (UnsafeArray _ strides v) i = V.unsafeIndex v (flat strides i)
  where
   flat (s : ss) (x : xs) = x * s + flat ss xs
   flat _ _ = 0
-{-# INLINE index #-}
+{-# NOINLINE index #-}
 
 infixl 9 !
 
