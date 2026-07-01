@@ -182,3 +182,4 @@ executable harpie-bug-issue1
     base >=4.14 && <5,
     first-class-families >=0.8.1 && <0.9,
     harpie,
+    vector >=0.12.3 && <0.14,
