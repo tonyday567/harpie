@@ -1,5 +1,5 @@
-0.3
-===
+0.2.0.0
+=======
 
 - Vectorised `Harpie.Shape` value-level API: canonical functions now use
   `Data.Vector.Unboxed (VU.Vector Int)` instead of `[Int]`.

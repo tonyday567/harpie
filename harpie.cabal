@@ -1,6 +1,6 @@
 cabal-version: 3.0
 name: harpie
-version: 0.3.0.0
+version: 0.2.0.0
 license: BSD-3-Clause
 license-file: LICENSE
 copyright: Tony Day (c) 2016-2024
@@ -73,6 +73,9 @@ common ghc-options-stanza
     -Wincomplete-uni-patterns
     -Wpartial-fields
     -Wredundant-constraints
+
+  if impl(ghc >= 9.14)
+    ghc-options: -Wno-pattern-namespace-specifier
 
 common ghc2021-stanza
   default-language: GHC2021

@@ -973,7 +973,7 @@ splitMatrix ::
     Matrix (n - Div n 2) (n - Div n 2) a
   )
 splitMatrix arr =
-  let k = fromIntegral (valueOf @(Div n 2)) :: Int
+  let k = valueOf @(Div n 2) :: Int
       idx ij = case fromFins ij of (i : j : _) -> index arr (UnsafeFins [i, j]); _ -> P.error "splitMatrix: impossible"
       idxR ij = case fromFins ij of (i : j : _) -> index arr (UnsafeFins [i, j + k]); _ -> P.error "splitMatrix: impossible"
       idxB ij = case fromFins ij of (i : j : _) -> index arr (UnsafeFins [i + k, j]); _ -> P.error "splitMatrix: impossible"
@@ -993,7 +993,7 @@ combineMatrix ::
   Matrix (n - Div n 2) (n - Div n 2) a ->
   Matrix n n a
 combineMatrix a b c d =
-  let k = fromIntegral (valueOf @(Div n 2)) :: Int
+  let k = valueOf @(Div n 2) :: Int
    in tabulate $ \ij ->
         case fromFins ij of
           (i : j : _) ->

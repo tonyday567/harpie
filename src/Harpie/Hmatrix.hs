@@ -14,34 +14,37 @@ module Harpie.Hmatrix
 where
 
 import Data.Vector qualified as V
+import Data.Vector.Storable qualified as VS
 import Data.Vector.Unboxed qualified as VU
 import Harpie.Array (Array (..), mult)
 import Numeric.LinearAlgebra
   ( Matrix,
     cols,
     flatten,
-    fromList,
     reshape,
     rows,
-    toList,
   )
 import Numeric.LinearAlgebra qualified as LA
-import Prelude hiding ((<>))
 
 -- | Convert a rank-2 'Array Double' to an 'hmatrix' 'Matrix Double'.
 --   Returns 'Nothing' if the array is not rank 2.
 toMatrix :: Array Double -> Maybe (Matrix Double)
-toMatrix (UnsafeArray s _ v) =
-  case VU.toList s of
-    [_, c] -> Just (reshape c (fromList (V.toList v)))
-    _ -> Nothing
+toMatrix (UnsafeArray s _ v)
+  | VU.length s == 2 =
+      let c = VU.unsafeIndex s 1
+       in Just (reshape c (VS.convert v))
+  | otherwise = Nothing
 
 -- | Convert an 'hmatrix' 'Matrix Double' to a rank-2 'Array Double'.
 fromMatrix :: Matrix Double -> Array Double
 fromMatrix m =
-  UnsafeArray (VU.fromList [rows m, cols m]) (VU.fromList (strides [rows m, cols m])) (V.fromList (toList (flatten m)))
+  UnsafeArray
+    (VU.fromListN 2 [r, c])
+    (VU.fromListN 2 [c, 1])
+    (V.convert (flatten m))
   where
-    strides sh = drop 1 (scanr (*) 1 sh)
+    r = rows m
+    c = cols m
 
 -- | Matrix multiplication with a BLAS fast path for rank-2 operands.
 --
