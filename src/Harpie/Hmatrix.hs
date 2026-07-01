@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 -- | Bridge between 'Harpie.Array' and 'hmatrix' for rank-2 arrays.
 --
 -- This module provides a fast path for matrix multiplication (and future
@@ -9,18 +7,25 @@
 -- The goal is to keep harpie's N-dimensional API while making rank-2
 -- operations competitive with hand-written 'hmatrix' code.
 module Harpie.Hmatrix
-  ( toMatrix
-  , fromMatrix
-  , multM
-  ) where
+  ( toMatrix,
+    fromMatrix,
+    multM,
+  )
+where
 
 import Data.Vector qualified as V
 import Data.Vector.Unboxed qualified as VU
 import Harpie.Array (Array (..), mult)
 import Numeric.LinearAlgebra
-  ( Matrix, cols, flatten, fromList, reshape, rows, toList
+  ( Matrix,
+    cols,
+    flatten,
+    fromList,
+    reshape,
+    rows,
+    toList,
   )
-import qualified Numeric.LinearAlgebra as LA
+import Numeric.LinearAlgebra qualified as LA
 import Prelude hiding ((<>))
 
 -- | Convert a rank-2 'Array Double' to an 'hmatrix' 'Matrix Double'.
@@ -29,7 +34,7 @@ toMatrix :: Array Double -> Maybe (Matrix Double)
 toMatrix (UnsafeArray s _ v) =
   case VU.toList s of
     [_, c] -> Just (reshape c (fromList (V.toList v)))
-    _      -> Nothing
+    _ -> Nothing
 
 -- | Convert an 'hmatrix' 'Matrix Double' to a rank-2 'Array Double'.
 fromMatrix :: Matrix Double -> Array Double

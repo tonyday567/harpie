@@ -674,7 +674,6 @@ data Size :: [Nat] -> Exp Nat
 
 type instance Eval (Size xs) = Eval (Foldr (Fcf.*) 1 xs)
 
-
 -- | Convert from a n-dimensional shape list index to a flat index, which, technically is the lexicographic position of the position in a row-major array.
 --
 -- >>> flatten (VU.fromList [2,3,4]) (VU.fromList [1,1,1])
@@ -711,7 +710,7 @@ flattenStrides strides idx = go 0 0
     n = min (VU.length idx) (VU.length strides)
     go acc k
       | k == n = acc
-      | otherwise = go (acc + VU.unsafeIndex idx k * VU.unsafeIndex strides k) (k+1)
+      | otherwise = go (acc + VU.unsafeIndex idx k * VU.unsafeIndex strides k) (k + 1)
 {-# INLINE flattenStrides #-}
 
 -- | Convert from an n-dimensional index to a flat index using precomputed strides.
@@ -945,7 +944,7 @@ type instance
 -- >>> reorder (VU.fromList [2,3,4]) (VU.fromList [2,0,1])
 -- [4,2,3]
 reorder :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int
-reorder s ds = VU.map (\d -> getDim d s) ds
+reorder s ds = VU.map (`getDim` s) ds
 
 -- | Reorder the dimensions of shape according to a list of positions.
 --
@@ -980,7 +979,6 @@ type instance
   Eval (ReorderOk ds xs) =
     Eval (TyEq (Eval (Rank ds)) (Eval (Rank xs)))
       && Eval (And =<< Map (Flip IsFin (Eval (Rank ds))) xs)
-
 
 -- | remove 1's from a list
 --
@@ -1157,7 +1155,7 @@ type instance
 -- >>> isDims (VU.fromList [0]) (VU.fromList [])
 -- True
 isDims :: VU.Vector Int -> VU.Vector Int -> Bool
-isDims ds s = VU.all (\d -> isDim d s) ds
+isDims ds s = VU.all (`isDim` s) ds
 
 -- | Are values valid dimensions of a shape.
 --
@@ -1166,7 +1164,7 @@ isDims ds s = VU.all (\d -> isDim d s) ds
 -- >>> isDimsL [0] []
 -- True
 isDimsL :: [Int] -> [Int] -> Bool
-isDimsL ds s = all (\d -> isDimL d s) ds
+isDimsL ds s = all (`isDimL` s) ds
 
 -- | Are values valid dimensions of a shape.
 --
@@ -1772,7 +1770,6 @@ type instance
       && Eval (LiftM2 TyEq (DeleteDim i s0) (DeleteDim i s1))
       && Eval (LiftM2 TyEq (Rank =<< AsSingleton s0) (Rank =<< AsSingleton s1))
 
-
 -- * multiple dimension manipulations
 
 -- | Get dimensions of a shape.
@@ -1783,7 +1780,7 @@ type instance
 -- []
 getDims :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int
 getDims _ v | VU.null v = VU.empty
-getDims i s = VU.map (\d -> getDim d s) i
+getDims i s = VU.map (`getDim` s) i
 
 -- | Get dimensions of a shape.
 --
