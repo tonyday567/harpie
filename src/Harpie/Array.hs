@@ -538,6 +538,7 @@ tabulateV :: VU.Vector Int -> (VU.Vector Int -> a) -> Array a
 tabulateV ds f =
   let strs = S.stridesOf ds
    in UnsafeArray ds strs (V.generate (S.size ds) (f . S.shapenStrides strs))
+{-# INLINE tabulateV #-}
 
 -- | Tabulate an array supplying a shape and a tabulation function.
 --
@@ -1348,6 +1349,7 @@ contract ds f a = f . diag <$> extracts (VU.toList (S.exceptDims (VU.fromList ds
 -- With full laziness, this computation would be equivalent to:
 --
 -- > f . diag <$> extracts ds' (expand g a b)
+{-# INLINE prod #-}
 prod ::
   Dims ->
   Dims ->
@@ -1425,6 +1427,7 @@ dot f g a b = contract [r - 1, r] f (expand g a b)
 --
 -- >>> pretty $ mult m v
 -- [5,14]
+{-# INLINE mult #-}
 mult ::
   (Num a) =>
   Array a ->
