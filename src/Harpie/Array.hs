@@ -1356,9 +1356,23 @@ prod ::
   Array a ->
   Array b ->
   Array d
-prod ds0 ds1 g f a b = tabulate (VU.toList (S.deleteDims (VU.fromList ds0) (shape a) <> S.deleteDims (VU.fromList ds1) (shape b))) (\so -> g $ tabulate (VU.toList (S.getDims (VU.fromList ds0) (shape a))) (\si -> f (index a (VU.toList (S.insertDims (VU.fromList ds0) (VU.fromList si) (VU.fromList (List.take sp so))))) (index b (VU.toList (S.insertDims (VU.fromList ds1) (VU.fromList si) (VU.fromList (List.drop sp so)))))))
+prod ds0 ds1 g f a b =
+  tabulateV
+    (S.deleteDims ds0V (shape a) <> S.deleteDims ds1V (shape b))
+    ( \so ->
+        g $
+          tabulateV
+            (S.getDims ds0V (shape a))
+            ( \si ->
+                f
+                  (indexV a (S.insertDims ds0V si (VU.take sp so)))
+                  (indexV b (S.insertDims ds1V si (VU.drop sp so)))
+            )
+    )
   where
-    sp = rank a - List.length ds0
+    ds0V = VU.fromList ds0
+    ds1V = VU.fromList ds1
+    sp = rank a - VU.length ds0V
 
 -- | A generalisation of a dot operation, which is a multiplicative expansion of two arrays and sum contraction along the middle two dimensions.
 --
