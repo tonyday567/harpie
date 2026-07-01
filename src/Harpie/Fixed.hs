@@ -93,10 +93,6 @@ module Harpie.Fixed
     slice,
     rotate,
 
-    -- * Matrix block functions
-    splitMatrix,
-    combineMatrix,
-
     -- * Multi-dimension functions
     takes,
     takeBs,
@@ -950,58 +946,6 @@ dropB _ _ a = unsafeBackpermute id a
 -- ---------------------------------------------------------------------------
 -- Matrix block functions
 -- ---------------------------------------------------------------------------
-
--- | Split a square matrix into four quadrants at the halfway point of
--- each dimension.
---
--- >>> let m = range @'[4,4] :: Array '[4,4] Int
--- >>> let (a,b,c,d) = splitMatrix m
--- >>> shape a
--- [2,2]
--- >>> shape d
--- [2,2]
-splitMatrix ::
-  forall n a.
-  ( KnownNat n,
-    KnownNat (Div n 2),
-    KnownNat (n - Div n 2)
-  ) =>
-  Matrix n n a ->
-  ( Matrix (Div n 2) (Div n 2) a,
-    Matrix (Div n 2) (n - Div n 2) a,
-    Matrix (n - Div n 2) (Div n 2) a,
-    Matrix (n - Div n 2) (n - Div n 2) a
-  )
-splitMatrix arr =
-  let k = valueOf @(Div n 2) :: Int
-      idx ij = case fromFins ij of (i : j : _) -> index arr (UnsafeFins [i, j]); _ -> P.error "splitMatrix: impossible"
-      idxR ij = case fromFins ij of (i : j : _) -> index arr (UnsafeFins [i, j + k]); _ -> P.error "splitMatrix: impossible"
-      idxB ij = case fromFins ij of (i : j : _) -> index arr (UnsafeFins [i + k, j]); _ -> P.error "splitMatrix: impossible"
-      idxBR ij = case fromFins ij of (i : j : _) -> index arr (UnsafeFins [i + k, j + k]); _ -> P.error "splitMatrix: impossible"
-   in (tabulate idx, tabulate idxR, tabulate idxB, tabulate idxBR)
-
--- | Combine four quadrant matrices into a single square matrix.
-combineMatrix ::
-  forall n a.
-  ( KnownNat n,
-    KnownNat (Div n 2),
-    KnownNat (n - Div n 2)
-  ) =>
-  Matrix (Div n 2) (Div n 2) a ->
-  Matrix (Div n 2) (n - Div n 2) a ->
-  Matrix (n - Div n 2) (Div n 2) a ->
-  Matrix (n - Div n 2) (n - Div n 2) a ->
-  Matrix n n a
-combineMatrix a b c d =
-  let k = valueOf @(Div n 2) :: Int
-   in tabulate $ \ij ->
-        case fromFins ij of
-          (i : j : _) ->
-            bool
-              (bool (index d (UnsafeFins [i - k, j - k])) (index c (UnsafeFins [i - k, j])) (j < k))
-              (bool (index b (UnsafeFins [i, j - k])) (index a (UnsafeFins [i, j])) (j < k))
-              (i < k)
-          _ -> P.error "combineMatrix: impossible"
 
 -- | Select an index along a dimension.
 --
