@@ -150,6 +150,7 @@ library
     base >=4.18 && <5,
     distributive >=0.4 && <0.7,
     first-class-families >=0.8.1 && <0.9,
+    hmatrix >=0.20 && <0.22,
     prettyprinter >=1.7 && <1.8,
     random >=1.2 && <1.4,
     vector >=0.12.3 && <0.14,
@@ -158,6 +159,7 @@ library
   exposed-modules:
     Harpie.Array
     Harpie.Fixed
+    Harpie.Hmatrix
     Harpie.Shape
     Harpie.Sort
 
