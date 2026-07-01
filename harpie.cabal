@@ -53,6 +53,13 @@ extra-doc-files:
   ChangeLog.md
   readme.md
 
+flag hmatrix
+  description:
+    Enable the Harpie.Hmatrix BLAS bridge. This requires LAPACK/BLAS
+    system libraries.
+  manual: True
+  default: False
+
 source-repository head
   type: git
   location: https://github.com/tonyday567/harpie
@@ -150,16 +157,21 @@ library
     base >=4.18 && <5,
     distributive >=0.4 && <0.7,
     first-class-families >=0.8.1 && <0.9,
-    hmatrix >=0.20 && <0.22,
     prettyprinter >=1.7 && <1.8,
     random >=1.2 && <1.4,
     vector >=0.12.3 && <0.14,
     vector-algorithms >=0.9.0 && <0.10,
 
+  if flag(hmatrix)
+    build-depends:
+      hmatrix >=0.20 && <0.22
+
+    exposed-modules:
+      Harpie.Hmatrix
+
   exposed-modules:
     Harpie.Array
     Harpie.Fixed
-    Harpie.Hmatrix
     Harpie.Shape
     Harpie.Sort
 
