@@ -503,9 +503,17 @@ isNull = (0 ==) . size
 --
 -- >>> index a [1,2,3]
 -- 23
+indexV :: Array a -> VU.Vector Int -> a
+indexV (UnsafeArray _ strides v) i = V.unsafeIndex v (S.flattenStrides strides i)
+{-# NOINLINE indexV #-}
+
+-- | Extract an element at an index, unsafely.
+--
+-- >>> index a [1,2,3]
+-- 23
 index :: Array a -> [Int] -> a
-index (UnsafeArray s _ v) i = V.unsafeIndex v (S.flatten s (VU.fromList i))
-{-# NOINLINE index #-}
+index a = indexV a . VU.fromList
+{-# INLINE index #-}
 
 infixl 9 !
 
@@ -525,15 +533,18 @@ infixl 9 !
 (!?) :: Array a -> [Int] -> Maybe a
 (!?) a xs = bool Nothing (Just (a ! xs)) (VU.fromList xs `S.isFins` shape a)
 
+-- | Tabulate an array supplying a shape and a vector tabulation function.
+tabulateV :: VU.Vector Int -> (VU.Vector Int -> a) -> Array a
+tabulateV ds f =
+  let strs = S.stridesOf ds
+   in UnsafeArray ds strs (V.generate (S.size ds) (f . S.shapenStrides strs))
+
 -- | Tabulate an array supplying a shape and a tabulation function.
 --
 -- >>> tabulate [2,3,4] (S.flatten (VU.fromList [2,3,4]) . VU.fromList) == a
 -- True
 tabulate :: [Int] -> ([Int] -> a) -> Array a
-tabulate ds f =
-  let ds' = VU.fromList ds
-      strs = S.stridesOf ds'
-   in unsafeArray ds' (V.generate (S.size ds') (f . VU.toList . S.shapenStrides strs))
+tabulate ds f = tabulateV (VU.fromList ds) (f . VU.toList)
 
 -- | @backpermute@ is a tabulation where the contents of an array do not need to be accessed, and is thus a fulcrum for leveraging laziness and fusion via the rule:
 --
@@ -555,7 +566,7 @@ tabulate ds f =
 --   [7,19],
 --   [11,23]]]
 backpermute :: (VU.Vector Int -> VU.Vector Int) -> (VU.Vector Int -> VU.Vector Int) -> Array a -> Array a
-backpermute f g a = tabulate (VU.toList (f (shape a))) (\s -> index a (VU.toList (g (VU.fromList s))))
+backpermute f g a = tabulateV (f (shape a)) (indexV a . g)
 {-# INLINEABLE backpermute #-}
 
 {- RULES
@@ -686,7 +697,7 @@ undiag ::
   (Num a) =>
   Array a ->
   Array a
-undiag a = tabulate (VU.toList (shape a VU.++ shape a)) (\xs -> bool 0 (index a xs) (isDiag (VU.fromList xs)))
+undiag a = tabulate (VU.toList (shape a VU.++ shape a)) (\xs -> bool 0 (index a (List.take (rank a) xs)) (isDiag (VU.fromList xs)))
 
 -- | Zip two arrays at an element level.
 --

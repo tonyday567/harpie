@@ -57,6 +57,8 @@ module Harpie.Shape
     Size,
     flatten,
     flattenL,
+    flattenStrides,
+    flattenStridesL,
     shapen,
     shapenL,
     stridesOf,
@@ -698,6 +700,27 @@ flattenL [] _ = 0
 flattenL _ [x] = x
 flattenL ns xs = sum $ zipWith (*) xs (stridesOfL ns)
 {-# INLINE flattenL #-}
+
+-- | Convert from an n-dimensional index to a flat index using precomputed strides.
+--
+-- >>> flattenStrides (VU.fromList [3,1]) (VU.fromList [1,1])
+-- 4
+flattenStrides :: VU.Vector Int -> VU.Vector Int -> Int
+flattenStrides strides idx = go 0 0
+  where
+    n = min (VU.length idx) (VU.length strides)
+    go acc k
+      | k == n = acc
+      | otherwise = go (acc + VU.unsafeIndex idx k * VU.unsafeIndex strides k) (k+1)
+{-# INLINE flattenStrides #-}
+
+-- | Convert from an n-dimensional index to a flat index using precomputed strides.
+flattenStridesL :: [Int] -> [Int] -> Int
+flattenStridesL strides idx = go 0 idx strides
+  where
+    go acc (x : xs) (s : ss) = go (acc + x * s) xs ss
+    go acc _ _ = acc
+{-# INLINE flattenStridesL #-}
 
 -- | Convert from a flat index to a shape index.
 --
