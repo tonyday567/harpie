@@ -1,3 +1,18 @@
+0.2.0.0
+=======
+
+- Vectorised `Harpie.Shape` value-level API: canonical functions now use
+  `Data.Vector.Unboxed (VU.Vector Int)` instead of `[Int]`.
+- Added `L`-suffixed list versions of all paired Shape value-level functions
+  for backward compatibility.
+- Updated `Harpie.Array` internal representation to store shape and strides as
+  unboxed vectors; public list-based API preserved.
+- Added `indexV` and `tabulateV` for zero-allocation vector-index element access
+  and tabulation.
+- Rewrote `prod` inner loop to use the vector-native path, restoring
+  `mult` performance to the pre-vectorisation baseline.
+- Added `Harpie.Hmatrix` bridge module for BLAS fast path on rank-2 arrays.
+
 0.2
 ===
 

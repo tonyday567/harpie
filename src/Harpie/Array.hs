@@ -185,6 +185,7 @@ import Data.Foldable hiding (find, length, minimum)
 import Data.Function
 import Data.List qualified as List
 import Data.Vector qualified as V
+import Data.Vector.Unboxed qualified as VU
 import GHC.Generics
 import Harpie.Shape hiding (asScalar, asSingleton, concatenate, range, rank, reorder, rerank, rotate, size, squeeze)
 import Harpie.Shape qualified as S
@@ -200,6 +201,7 @@ import Prelude as P hiding (cycle, drop, length, repeat, take, zip, zipWith)
 -- >>> import Harpie.Array as A
 -- >>> import Harpie.Shape qualified as S
 -- >>> import Data.Vector qualified as V
+-- >>> import Data.Vector.Unboxed qualified as VU
 -- >>> import Prettyprinter hiding (dot, fill)
 -- >>> import Data.List qualified as List
 -- >>> let s = 1 :: Array Int
@@ -291,11 +293,26 @@ import Prelude as P hiding (cycle, drop, length, repeat, take, zip, zipWith)
 --  [[13,14,15,16],
 --   [17,18,19,20],
 --   [21,22,23,24]]]
-data Array a = UnsafeArray [Int] (V.Vector a)
+data Array a = UnsafeArray !(VU.Vector Int) !(VU.Vector Int) (V.Vector a)
   deriving stock (Generic)
-  deriving stock (Eq, Ord, Show)
+  deriving stock (Eq, Ord)
+
+instance (Show a) => Show (Array a) where
+  showsPrec p (UnsafeArray s _ v) =
+    showParen (p > 10) $
+      showString "UnsafeArray " . shows (VU.toList s) . showString " " . shows v
 
 type role Array representational
+
+-- | Internal smart constructor: precomputes strides for O(1) zero-allocation indexing.
+unsafeArray :: VU.Vector Int -> V.Vector a -> Array a
+unsafeArray s v = UnsafeArray s (VU.drop 1 (VU.scanr (*) 1 s)) v
+{-# INLINE unsafeArray #-}
+
+-- | Internal smart constructor from a list shape.
+unsafeArrayL :: [Int] -> V.Vector a -> Array a
+unsafeArrayL s = unsafeArray (VU.fromList s)
+{-# INLINE unsafeArrayL #-}
 
 instance Functor Array where
   fmap f = unsafeModifyVector (V.map f)
@@ -304,11 +321,11 @@ instance Foldable Array where
   foldr f x0 a = V.foldr f x0 (asVector a)
 
 instance Traversable Array where
-  traverse f (UnsafeArray s v) =
-    array s <$> traverse f v
+  traverse f (UnsafeArray s _ v) =
+    unsafeArray s <$> traverse f v
 
 instance (Show a) => Pretty (Array a) where
-  pretty a@(UnsafeArray _ v) = case rank a of
+  pretty a@(UnsafeArray _ _ v) = case rank a of
     0 -> viaShow (V.head v)
     1 -> viaShow v
     _ ->
@@ -358,8 +375,8 @@ instance FromVector [a] a where
   vectorAs = V.toList
 
 instance FromVector (Array a) a where
-  asVector (UnsafeArray _ v) = v
-  vectorAs v = UnsafeArray [V.length v] v
+  asVector (UnsafeArray _ _ v) = v
+  vectorAs v = unsafeArrayL [V.length v] v
 
 -- | Conversion to and from an `Array`
 --
@@ -382,19 +399,19 @@ instance FromArray (Array a) a where
   arrayAs = id
 
 instance FromArray [a] a where
-  asArray l = UnsafeArray [S.rank l] (V.fromList l)
-  arrayAs (UnsafeArray _ v) = V.toList v
+  asArray l = unsafeArrayL [S.rankL l] (V.fromList l)
+  arrayAs (UnsafeArray _ _ v) = V.toList v
 
 instance FromArray (V.Vector a) a where
-  asArray v = UnsafeArray [V.length v] v
-  arrayAs (UnsafeArray _ v) = v
+  asArray v = unsafeArrayL [V.length v] v
+  arrayAs (UnsafeArray _ _ v) = v
 
 -- | Construct an array from a shape and a value without any shape validation.
 --
 -- >>> array [2,3] [0..5]
 -- UnsafeArray [2,3] [0,1,2,3,4,5]
 array :: (FromVector t a) => [Int] -> t -> Array a
-array s (asVector -> v) = UnsafeArray s v
+array s (asVector -> v) = unsafeArrayL s v
 
 infixl 4 ><
 
@@ -421,21 +438,21 @@ safeArray :: (FromVector t a) => [Int] -> t -> Maybe (Array a)
 safeArray s v =
   bool Nothing (Just a) (validate a)
   where
-    a = UnsafeArray s (asVector v)
+    a = unsafeArrayL s (asVector v)
 
 -- | Unsafely modify an array shape.
 --
--- >>> unsafeModifyShape (fmap (+1) :: [Int] -> [Int]) (array [2,3] [0..5])
+-- >>> unsafeModifyShape (VU.map (+1)) (array [2,3] [0..5])
 -- UnsafeArray [3,4] [0,1,2,3,4,5]
-unsafeModifyShape :: ([Int] -> [Int]) -> Array a -> Array a
-unsafeModifyShape f (UnsafeArray s v) = UnsafeArray (f s) v
+unsafeModifyShape :: (VU.Vector Int -> VU.Vector Int) -> Array a -> Array a
+unsafeModifyShape f (UnsafeArray s _ v) = unsafeArray (f s) v
 
 -- | Unsafely modify an array vector.
 --
 -- >>> unsafeModifyVector (V.map (+1)) (array [2,3] [0..5])
 -- UnsafeArray [2,3] [1,2,3,4,5,6]
 unsafeModifyVector :: (FromVector u a) => (FromVector v b) => (u -> v) -> Array a -> Array b
-unsafeModifyVector f (UnsafeArray s v) = UnsafeArray s (asVector (f (vectorAs v)))
+unsafeModifyVector f (UnsafeArray s _ v) = unsafeArray s (asVector (f (vectorAs v)))
 
 -- | Representation of an index into a shape (an [Int]). The index is a dimension of the shape.
 type Dim = Int
@@ -447,15 +464,15 @@ type Dims = [Int]
 --
 -- >>> shape a
 -- [2,3,4]
-shape :: Array a -> [Int]
-shape (UnsafeArray s _) = s
+shape :: Array a -> VU.Vector Int
+shape (UnsafeArray s _ _) = s
 
 -- | rank of an Array
 --
 -- >>> rank a
 -- 3
 rank :: Array a -> Int
-rank = List.length . shape
+rank = S.rank . shape
 
 -- | size of an Array, which is the total number of elements, if the Array is valid.
 --
@@ -471,9 +488,7 @@ size = S.size . shape
 -- >>> length (toScalar 0)
 -- 1
 length :: Array a -> Int
-length a = case shape a of
-  [] -> 1
-  (x : _) -> x
+length a = bool (VU.head (shape a)) 1 (VU.null (shape a))
 
 -- | Is the Array empty (has zero number of elements).
 --
@@ -488,8 +503,17 @@ isNull = (0 ==) . size
 --
 -- >>> index a [1,2,3]
 -- 23
+indexV :: Array a -> VU.Vector Int -> a
+indexV (UnsafeArray _ strides v) i = V.unsafeIndex v (S.flattenStrides strides i)
+{-# NOINLINE indexV #-}
+
+-- | Extract an element at an index, unsafely.
+--
+-- >>> index a [1,2,3]
+-- 23
 index :: Array a -> [Int] -> a
-index (UnsafeArray s v) i = V.unsafeIndex v (flatten s i)
+index a = indexV a . VU.fromList
+{-# INLINE index #-}
 
 infixl 9 !
 
@@ -507,15 +531,20 @@ infixl 9 !
 -- >>> a !? [2,3,1]
 -- Nothing
 (!?) :: Array a -> [Int] -> Maybe a
-(!?) a xs = bool Nothing (Just (a ! xs)) (xs `isFins` shape a)
+(!?) a xs = bool Nothing (Just (a ! xs)) (VU.fromList xs `S.isFins` shape a)
+
+-- | Tabulate an array supplying a shape and a vector tabulation function.
+tabulateV :: VU.Vector Int -> (VU.Vector Int -> a) -> Array a
+tabulateV ds f =
+  let strs = S.stridesOf ds
+   in UnsafeArray ds strs (V.generate (S.size ds) (f . S.shapenStrides strs))
 
 -- | Tabulate an array supplying a shape and a tabulation function.
 --
--- >>> tabulate [2,3,4] (S.flatten [2,3,4]) == a
+-- >>> tabulate [2,3,4] (S.flatten (VU.fromList [2,3,4]) . VU.fromList) == a
 -- True
 tabulate :: [Int] -> ([Int] -> a) -> Array a
-tabulate ds f =
-  UnsafeArray ds (V.generate (V.product (asVector ds)) (f . shapen ds))
+tabulate ds f = tabulateV (VU.fromList ds) (f . VU.toList)
 
 -- | @backpermute@ is a tabulation where the contents of an array do not need to be accessed, and is thus a fulcrum for leveraging laziness and fusion via the rule:
 --
@@ -523,7 +552,7 @@ tabulate ds f =
 --
 -- Many functions in this module are examples of backpermute usage.
 --
--- >>> pretty $ backpermute List.reverse List.reverse a
+-- >>> pretty $ backpermute VU.reverse VU.reverse a
 -- [[[0,12],
 --   [4,16],
 --   [8,20]],
@@ -536,8 +565,8 @@ tabulate ds f =
 --  [[3,15],
 --   [7,19],
 --   [11,23]]]
-backpermute :: ([Int] -> [Int]) -> ([Int] -> [Int]) -> Array a -> Array a
-backpermute f g a = tabulate (f (shape a)) (index a . g)
+backpermute :: (VU.Vector Int -> VU.Vector Int) -> (VU.Vector Int -> VU.Vector Int) -> Array a -> Array a
+backpermute f g a = tabulateV (f (shape a)) (indexV a . g)
 {-# INLINEABLE backpermute #-}
 
 {- RULES
@@ -596,7 +625,7 @@ empty = array [0] []
 -- [[0,1,2],
 --  [3,4,5]]
 range :: [Int] -> Array Int
-range xs = tabulate xs (flatten xs)
+range xs = tabulate xs (S.flatten (VU.fromList xs) . VU.fromList)
 
 -- | An enumeration of col-major or [colexicographic](https://en.wikipedia.org/wiki/Lexicographic_order) order.
 --
@@ -608,7 +637,7 @@ range xs = tabulate xs (flatten xs)
 --   [3,9,15,21],
 --   [5,11,17,23]]]
 corange :: [Int] -> Array Int
-corange xs = tabulate xs (flatten (List.reverse xs) . List.reverse)
+corange xs = tabulate xs (S.flatten (VU.fromList (List.reverse xs)) . VU.fromList . List.reverse)
 
 -- | Indices of an array shape.
 --
@@ -626,7 +655,7 @@ indices ds = tabulate ds id
 --  [0,1,0],
 --  [0,0,1]]
 ident :: (Num a) => [Int] -> Array a
-ident ds = tabulate ds (bool 0 1 . isDiag)
+ident ds = tabulate ds (bool 0 1 . isDiag . VU.fromList)
 
 -- | Create an array composed of a single value.
 --
@@ -647,7 +676,7 @@ konst ds a = tabulate ds (const a)
 -- >>> asVector (singleton 3) == asVector (toScalar 3)
 -- True
 singleton :: a -> Array a
-singleton a = UnsafeArray [1] (V.singleton a)
+singleton a = unsafeArrayL [1] (V.singleton a)
 
 -- | Extract the diagonal of an array.
 --
@@ -656,7 +685,7 @@ singleton a = UnsafeArray [1] (V.singleton a)
 diag ::
   Array a ->
   Array a
-diag a = backpermute minDim (replicate (rank a) . getDim 0) a
+diag a = backpermute S.minDim (VU.replicate (rank a) . S.getDim 0) a
 
 -- | Expand the array to form a diagonal array.
 --
@@ -668,21 +697,21 @@ undiag ::
   (Num a) =>
   Array a ->
   Array a
-undiag a = tabulate (shape a <> shape a) (\xs -> bool 0 (index a xs) (isDiag xs))
+undiag a = tabulate (VU.toList (shape a VU.++ shape a)) (\xs -> bool 0 (index a (List.take (rank a) xs)) (isDiag (VU.fromList xs)))
 
 -- | Zip two arrays at an element level.
 --
 -- >>> zipWith (-) v v
 -- UnsafeArray [3] [0,0,0]
 zipWith :: (a -> b -> c) -> Array a -> Array b -> Array c
-zipWith f (UnsafeArray s v) (UnsafeArray _ v') = UnsafeArray s (V.zipWith f v v')
+zipWith f (UnsafeArray s _ v) (UnsafeArray _ _ v') = unsafeArray s (V.zipWith f v v')
 
 -- | Zip two arrays at an element level, checking for shape consistency.
 --
 -- >>> zipWithSafe (-) (range [3]) (range [4])
 -- Nothing
 zipWithSafe :: (a -> b -> c) -> Array a -> Array b -> Maybe (Array c)
-zipWithSafe f (UnsafeArray s v) (UnsafeArray s' v') = bool Nothing (Just $ UnsafeArray s (V.zipWith f v v')) (s == s')
+zipWithSafe f (UnsafeArray s _ v) (UnsafeArray s' _ v') = bool Nothing (Just $ unsafeArray s (V.zipWith f v v')) (s == s')
 
 -- | Modify a single value at an index.
 --
@@ -691,7 +720,7 @@ zipWithSafe f (UnsafeArray s v) (UnsafeArray s' v') = bool Nothing (Just $ Unsaf
 --  [2,3],
 --  [4,5]]
 modify :: [Int] -> (a -> a) -> Array a -> Array a
-modify ds f a = tabulate (shape a) (\s -> bool id f (s == ds) (index a s))
+modify ds f a = tabulate (VU.toList (shape a)) (\s -> bool id f (s == ds) (index a s))
 
 -- | Maps an index function at element-level.
 --
@@ -706,7 +735,7 @@ imap ::
   ([Int] -> a -> b) ->
   Array a ->
   Array b
-imap f a = zipWith f (indices (shape a)) a
+imap f a = zipWith f (indices (VU.toList (shape a))) a
 
 -- | With a function that takes dimensions and (type-level) parameters, apply the parameters to the initial dimensions. ie
 --
@@ -715,7 +744,7 @@ imap f a = zipWith f (indices (shape a)) a
 -- >>> rowWise indexes [1,0] a
 -- UnsafeArray [4] [12,13,14,15]
 rowWise :: (Dims -> [x] -> Array a -> Array a) -> [x] -> Array a -> Array a
-rowWise f xs a = f [0 .. (S.rank xs - 1)] xs a
+rowWise f xs a = f [0 .. (S.rankL xs - 1)] xs a
 
 -- | With a function that takes dimensions and (type-level) parameters, apply the parameters to the the last dimensions. ie
 --
@@ -724,7 +753,7 @@ rowWise f xs a = f [0 .. (S.rank xs - 1)] xs a
 -- >>> colWise indexes [1,0] a
 -- UnsafeArray [2] [1,13]
 colWise :: (Dims -> [x] -> Array a -> Array a) -> [x] -> Array a -> Array a
-colWise f xs a = f (List.reverse [(rank a - S.rank xs) .. (rank a - 1)]) xs a
+colWise f xs a = f (List.reverse [(rank a - S.rankL xs) .. (rank a - 1)]) xs a
 
 -- | With a function that takes a dimension and a parameter, fold dimensions and parameters using the function.
 --
@@ -815,12 +844,14 @@ insert ::
   Array a ->
   Array a ->
   Array a
-insert d i a b = tabulate (incAt d (shape a)) go
+insert d i a b = tabulate (VU.toList (S.incAt d (shape a))) go
   where
-    go s
-      | getDim d s == i = index b (deleteDim d s)
-      | getDim d s < i = index a s
-      | otherwise = index a (decAt d s)
+    go s =
+      let s' = VU.fromList s
+       in case compare (S.getDim d s') i of
+            EQ -> index b (VU.toList (S.deleteDim d s'))
+            LT -> index a s
+            GT -> index a (VU.toList (S.decAt d s'))
 
 -- | Delete along a dimension at a position.
 --
@@ -883,20 +914,23 @@ concatenate ::
   Array a ->
   Array a ->
   Array a
-concatenate d a0 a1 = tabulate (S.concatenate d (shape a0) (shape a1)) go
+concatenate d a0 a1 = tabulate (VU.toList (S.concatenate d (shape a0) (shape a1))) go
   where
     go s =
-      bool
-        (index a0 s)
-        ( index
-            a1
-            ( insertDim
-                d
-                (getDim d s - getDim d ds0)
-                (deleteDim d s)
+      let s' = VU.fromList s
+       in bool
+            (index a0 s)
+            ( index
+                a1
+                ( VU.toList
+                    ( S.insertDim
+                        d
+                        (S.getDim d s' - S.getDim d ds0)
+                        (S.deleteDim d s')
+                    )
+                )
             )
-        )
-        (getDim d s >= getDim d ds0)
+            (S.getDim d s' >= S.getDim d ds0)
     ds0 = shape a0
 
 -- | Combine two arrays as a new dimension of a new array.
@@ -956,10 +990,10 @@ takes ::
   [Int] ->
   Array a ->
   Array a
-takes ds xs a = backpermute dsNew (List.zipWith (+) start) a
+takes ds xs a = backpermute (const dsNew) (VU.zipWith (+) start) a
   where
-    dsNew = setDims ds xsAbs
-    start = List.zipWith (\x s -> bool 0 (s + x) (x < 0)) (setDims ds xs (replicate (rank a) 0)) (shape a)
+    dsNew = S.setDims (VU.fromList ds) (VU.fromList xsAbs) (shape a)
+    start = VU.zipWith (\x s -> bool 0 (s + x) (x < 0)) (S.setDims (VU.fromList ds) (VU.fromList xs) (VU.replicate (rank a) 0)) (shape a)
     xsAbs = fmap abs xs
 
 -- | Drops the top-most elements. Negative values drop the bottom-most.
@@ -971,10 +1005,10 @@ drops ::
   [Int] ->
   Array a ->
   Array a
-drops ds xs a = backpermute dsNew (List.zipWith (\d' s' -> bool (d' + s') s' (d' < 0)) xsNew) a
+drops ds xs a = backpermute (const dsNew) (VU.zipWith (\d' s' -> bool (d' + s') s' (d' < 0)) xsNew) a
   where
-    dsNew = dropDims ds xsAbs
-    xsNew = setDims ds xs (replicate (rank a) 0)
+    dsNew = S.dropDims (VU.fromList ds) (VU.fromList xsAbs) (shape a)
+    xsNew = S.setDims (VU.fromList ds) (VU.fromList xs) (VU.replicate (rank a) 0)
     xsAbs = fmap abs xs
 
 -- | Select by dimensions and indexes.
@@ -983,7 +1017,7 @@ drops ds xs a = backpermute dsNew (List.zipWith (\d' s' -> bool (d' + s') s' (d'
 -- >>> pretty s
 -- [16,17,18,19]
 indexes :: Dims -> [Int] -> Array a -> Array a
-indexes ds xs a = backpermute (deleteDims ds) (insertDims ds xs) a
+indexes ds xs a = backpermute (const (S.deleteDims (VU.fromList ds) (shape a))) (S.insertDims (VU.fromList ds) (VU.fromList xs)) a
 
 -- | Slice along dimensions with the supplied offsets and lengths.
 --
@@ -1000,7 +1034,7 @@ slices ds os ls a = dimsWise (\d (o, l) -> slice d o l) ds (List.zip os ls) a
 -- >>> pretty $ heads [0,2] a
 -- [0,4,8]
 heads :: Dims -> Array a -> Array a
-heads ds a = indexes ds (List.replicate (S.rank ds) 0) a
+heads ds a = indexes ds (List.replicate (List.length ds) 0) a
 
 -- | Select the last element along the supplied dimensions.
 --
@@ -1009,7 +1043,7 @@ heads ds a = indexes ds (List.replicate (S.rank ds) 0) a
 lasts :: Dims -> Array a -> Array a
 lasts ds a = indexes ds lastds a
   where
-    lastds = (\i -> getDim i (shape a) - 1) <$> ds
+    lastds = (\i -> S.getDim i (shape a) - 1) <$> ds
 
 -- | Select the tail elements along the supplied dimensions.
 --
@@ -1018,10 +1052,10 @@ lasts ds a = indexes ds lastds a
 --   [17,18,19],
 --   [21,22,23]]]
 tails :: Dims -> Array a -> Array a
-tails ds a = slices ds os ls a
+tails ds a = slices ds os (VU.toList ls) a
   where
-    os = List.replicate (S.rank ds) 1
-    ls = getLastPositions ds (shape a)
+    os = List.replicate (List.length ds) 1
+    ls = S.getLastPositions (VU.fromList ds) (shape a)
 
 -- | Select the init elements along the supplied dimensions.
 --
@@ -1030,10 +1064,10 @@ tails ds a = slices ds os ls a
 --   [4,5,6],
 --   [8,9,10]]]
 inits :: Dims -> Array a -> Array a
-inits ds a = slices ds os ls a
+inits ds a = slices ds os (VU.toList ls) a
   where
-    os = List.replicate (S.rank ds) 0
-    ls = getLastPositions ds (shape a)
+    os = List.replicate (List.length ds) 0
+    ls = S.getLastPositions (VU.fromList ds) (shape a)
 
 -- | Extracts dimensions to an outer layer.
 --
@@ -1043,7 +1077,7 @@ extracts ::
   Dims ->
   Array a ->
   Array (Array a)
-extracts ds a = tabulate (getDims ds (shape a)) go
+extracts ds a = tabulate (VU.toList (S.getDims (VU.fromList ds) (shape a))) go
   where
     go s = indexes ds s a
 
@@ -1071,9 +1105,9 @@ joins ::
   Dims ->
   Array (Array a) ->
   Array a
-joins ds a = tabulate (insertDims ds so si) go
+joins ds a = tabulate (VU.toList (S.insertDims (VU.fromList ds) so si)) go
   where
-    go s = index (index a (getDims ds s)) (deleteDims ds s)
+    go s = index (index a (VU.toList (S.getDims (VU.fromList ds) (VU.fromList s)))) (VU.toList (S.deleteDims (VU.fromList ds) (VU.fromList s)))
     so = shape a
     si = shape (index a (replicate (rank a) 0))
 
@@ -1100,7 +1134,7 @@ joinsSafe ds a =
 join ::
   Array (Array a) ->
   Array a
-join a = joins (S.dimsOf (shape a)) a
+join a = joins (VU.toList (S.dimsOf (shape a))) a
 
 -- | Join inner and outer dimension layers in outer dimension order, checking for consistent inner dimension shape.
 --
@@ -1206,7 +1240,7 @@ zipsSafe ds f a b =
   bool
     (Just $ joins ds (zipWith f (extracts ds a) (extracts ds b)))
     Nothing
-    (shape a /= (shape b :: [Int]))
+    (shape a /= shape b)
 
 -- | Modify using the supplied function along dimensions & positions.
 --
@@ -1266,7 +1300,7 @@ expand ::
   Array a ->
   Array b ->
   Array c
-expand f a b = tabulate (shape a <> shape b) (\i -> f (index a (List.take r i)) (index b (List.drop r i)))
+expand f a b = tabulate (VU.toList (shape a <> shape b)) (\i -> f (index a (List.take r i)) (index b (List.drop r i)))
   where
     r = rank a
 
@@ -1286,7 +1320,7 @@ coexpand ::
   Array a ->
   Array b ->
   Array c
-coexpand f a b = tabulate (shape a <> shape b) (\i -> f (index a (List.drop r i)) (index b (List.take r i)))
+coexpand f a b = tabulate (VU.toList (shape a <> shape b)) (\i -> f (index a (List.drop r i)) (index b (List.take r i)))
   where
     r = rank a
 
@@ -1303,7 +1337,7 @@ contract ::
   (Array a -> b) ->
   Array a ->
   Array b
-contract ds f a = f . diag <$> extracts (exceptDims ds (shape a)) a
+contract ds f a = f . diag <$> extracts (VU.toList (S.exceptDims (VU.fromList ds) (shape a))) a
 
 -- | Product two arrays using the supplied function and then contract the result using the supplied matching dimensions and function.
 --
@@ -1322,9 +1356,23 @@ prod ::
   Array a ->
   Array b ->
   Array d
-prod ds0 ds1 g f a b = tabulate (S.deleteDims ds0 (shape a) <> S.deleteDims ds1 (shape b)) (\so -> g $ tabulate (S.getDims ds0 (shape a)) (\si -> f (index a (S.insertDims ds0 si (List.take sp so))) (index b (S.insertDims ds1 si (List.drop sp so)))))
+prod ds0 ds1 g f a b =
+  tabulateV
+    (S.deleteDims ds0V (shape a) <> S.deleteDims ds1V (shape b))
+    ( \so ->
+        g $
+          tabulateV
+            (S.getDims ds0V (shape a))
+            ( \si ->
+                f
+                  (indexV a (S.insertDims ds0V si (VU.take sp so)))
+                  (indexV b (S.insertDims ds1V si (VU.drop sp so)))
+            )
+    )
   where
-    sp = rank a - S.rank ds0
+    ds0V = VU.fromList ds0
+    ds1V = VU.fromList ds1
+    sp = rank a - VU.length ds0V
 
 -- | A generalisation of a dot operation, which is a multiplicative expansion of two arrays and sum contraction along the middle two dimensions.
 --
@@ -1382,14 +1430,14 @@ mult ::
   Array a ->
   Array a ->
   Array a
-mult = dot sum (*)
+mult a b = prod [rank a - 1] [0] sum (*) a b
 
 -- | @windows xs@ are xs-sized windows of an array
 --
 -- >>> shape $ windows [2,2] (range [4,3,2])
 -- [3,2,2,2,2]
 windows :: [Int] -> Array a -> Array a
-windows xs a = backpermute (expandWindows xs) (indexWindows (S.rank xs)) a
+windows xs a = backpermute (S.expandWindows (VU.fromList xs)) (S.indexWindows (S.rankL xs)) a
 
 -- | Find the starting positions of occurences of one array in another.
 --
@@ -1403,8 +1451,8 @@ find :: (Eq a) => Array a -> Array a -> Array Bool
 find i a = xs
   where
     i' = rerank (rank a) i
-    ws = windows (shape i') a
-    xs = fmap (== i') (extracts (dimWindows (expandWindows (shape i') (shape a)) (shape a)) ws)
+    ws = windows (VU.toList (shape i')) a
+    xs = fmap (== i') (extracts (VU.toList (S.dimWindows (S.expandWindows (shape i') (shape a)) (shape a))) ws)
 
 -- | Find the ending positions of one array in another except where the array overlaps with another copy.
 --
@@ -1423,8 +1471,8 @@ findNoOverlap i a = r
 
     cl :: [Int] -> [[Int]]
     cl sh = List.filter (P.not . any (> 0) . List.init) $ List.filter (P.not . all (>= 0)) $ arrayAs $ tabulate ((\x -> 2 * x - 1) <$> sh) (\s -> List.zipWith (\x x0 -> x - x0 + 1) s sh)
-    go r' s = index f s && not (any (index r') (List.filter (\x -> isFins x (shape f)) $ fmap (List.zipWith (+) s) (cl (shape i))))
-    r = tabulate (shape f) (go r)
+    go r' s = index f s && not (any (index r') (List.filter (\x -> S.isFins (VU.fromList x) (shape f)) $ fmap (List.zipWith (+) s) (cl (VU.toList (shape i)))))
+    r = tabulate (VU.toList (shape f)) (go r)
 
 -- | Find the indices of the starting location of one array in another.
 --
@@ -1442,14 +1490,14 @@ findIndices i a = fmap fst $ vectorAs $ V.filter snd $ asVector $ imap (,) b
 -- >>> isPrefixOf (array [2,2] [0,1,4,5]) a
 -- True
 isPrefixOf :: (Eq a) => Array a -> Array a -> Bool
-isPrefixOf p a = p == cut (shape p) a
+isPrefixOf p a = p == cut (VU.toList (shape p)) a
 
 -- | Check if the first array is a suffix of the second
 --
 -- >>> isSuffixOf (array [2,2] [18,19,22,23]) a
 -- True
 isSuffixOf :: (Eq a) => Array a -> Array a -> Bool
-isSuffixOf p a = p == cutSuffix (shape p) a
+isSuffixOf p a = p == cutSuffix (VU.toList (shape p)) a
 
 -- | Check if the first array is an infix of the second
 --
@@ -1469,7 +1517,7 @@ isInfixOf p a = or $ find p a
 -- >>> pretty $ fill 0 (array [3] [1..4])
 -- [1,2,3]
 fill :: a -> Array a -> Array a
-fill x (UnsafeArray s v) = UnsafeArray s (V.take (S.size s) (v <> V.replicate (S.size s - V.length v) x))
+fill x (UnsafeArray s _ v) = unsafeArray s (V.take (S.size s) (v <> V.replicate (S.size s - V.length v) x))
 
 -- | Cut an array to form a new (smaller) shape. Errors if the new shape is larger. The old array is reranked to the rank of the new shape first.
 --
@@ -1479,9 +1527,9 @@ cut ::
   [Int] ->
   Array a ->
   Array a
-cut s' a = bool (error "bad cut") (tabulate s' (index a')) (isSubset s' (shape a))
+cut s' a = bool (error "bad cut") (tabulate s' (index a')) (S.isSubset (VU.fromList s') (shape a))
   where
-    a' = rerank (S.rank s') a
+    a' = rerank (List.length s') a
 
 -- | Cut an array to form a new (smaller) shape, using suffix elements. Errors if the new shape is larger. The old array is reranked to the rank of the new shape first.
 --
@@ -1491,10 +1539,10 @@ cutSuffix ::
   [Int] ->
   Array a ->
   Array a
-cutSuffix s' a = bool (error "bad cut") (tabulate s' (index a' . List.zipWith (+) diffDim)) (isSubset s' (shape a))
+cutSuffix s' a = bool (error "bad cut") (tabulate s' (index a' . List.zipWith (+) diffDim)) (S.isSubset (VU.fromList s') (shape a))
   where
-    a' = rerank (S.rank s') a
-    diffDim = List.zipWith (-) (shape a') s'
+    a' = rerank (List.length s') a
+    diffDim = VU.toList (VU.zipWith (-) (shape a') (VU.fromList s'))
 
 -- | Pad an array to form a new shape, supplying a default value for elements outside the shape of the old array. The old array is reranked to the rank of the new shape first.
 --
@@ -1505,9 +1553,9 @@ pad ::
   [Int] ->
   Array a ->
   Array a
-pad d s' a = tabulate s' (\s -> bool d (index a' s) (s `isFins` shape a'))
+pad d s' a = tabulate s' (\s -> bool d (index a' s) (VU.fromList s `S.isFins` shape a'))
   where
-    a' = rerank (S.rank s') a
+    a' = rerank (List.length s') a
 
 -- | Left pad an array to form a new shape, supplying a default value for elements outside the shape of the old array.
 --
@@ -1522,10 +1570,10 @@ lpad ::
   [Int] ->
   Array a ->
   Array a
-lpad d s' a = tabulate s' (\s -> bool d (index a' (olds s)) (olds s `S.isFins` shape a'))
+lpad d s' a = tabulate s' (\s -> bool d (index a' (olds s)) (VU.fromList (olds s) `S.isFins` shape a'))
   where
-    a' = rerank (S.rank s') a
-    gap = List.zipWith (-) s' (shape a')
+    a' = rerank (List.length s') a
+    gap = VU.toList (VU.zipWith (-) (VU.fromList s') (shape a'))
     olds s = List.zipWith (-) s gap
 
 -- | Reshape an array (with the same or less number of elements).
@@ -1547,7 +1595,7 @@ reshape ::
   [Int] ->
   Array a ->
   Array a
-reshape s a = backpermute (const s) (shapen (shape a) . flatten s) a
+reshape s a = backpermute (const (VU.fromList s)) (S.shapen (shape a) . S.flatten (VU.fromList s)) a
 
 -- | Make an Array single dimensional.
 --
@@ -1556,7 +1604,7 @@ reshape s a = backpermute (const s) (shapen (shape a) . flatten s) a
 -- >>> pretty (flat $ toScalar 0)
 -- [0]
 flat :: Array a -> Array a
-flat a = unsafeModifyShape (pure . S.size) a
+flat a = unsafeModifyShape (VU.singleton . S.size) a
 
 -- | Reshape an array, repeating the original array. The shape of the array should be a suffix of the new shape.
 --
@@ -1571,7 +1619,7 @@ repeat ::
   [Int] ->
   Array a ->
   Array a
-repeat s a = backpermute (const s) (List.drop (S.rank s - rank a)) a
+repeat s a = backpermute (const (VU.fromList s)) (VU.drop (S.rankL s - rank a)) a
 
 -- | Reshape an array, cycling through the elements without regard to the original shape.
 --
@@ -1584,7 +1632,7 @@ cycle ::
   [Int] ->
   Array a ->
   Array a
-cycle s a = backpermute (const s) (shapen (shape a) . (`mod` size a) . flatten s) a
+cycle s a = backpermute (const (VU.fromList s)) (S.shapen (shape a) . (`mod` size a) . S.flatten (VU.fromList s)) a
 
 -- | Change rank by adding new dimensions at the front, if the new rank is greater, or combining dimensions (from left to right) into rows, if the new rank is lower.
 --
@@ -1612,7 +1660,7 @@ reorder ::
   Dims ->
   Array a ->
   Array a
-reorder ds a = backpermute (`S.reorder` ds) (\s -> insertDims ds s []) a
+reorder ds a = backpermute (`S.reorder` VU.fromList ds) (\s -> S.insertDims (VU.fromList ds) s VU.empty) a
 
 -- | Remove single dimensions.
 --
@@ -1649,7 +1697,7 @@ elongate d a = unsafeModifyShape (insertDim d 1) a
 --  [[2,6],
 --   [4,8]]]
 transpose :: Array a -> Array a
-transpose a = backpermute List.reverse List.reverse a
+transpose a = backpermute VU.reverse VU.reverse a
 
 -- | Inflate an array by inserting a new dimension given a supplied dimension and size.
 --
@@ -1687,7 +1735,7 @@ intercalate d i a = joins [d] $ asArray (List.intersperse i (arrayAs (extracts [
 --   [16,0,17,0,18,0,19],
 --   [20,0,21,0,22,0,23]]]
 intersperse :: Dim -> a -> Array a -> Array a
-intersperse d i a = intercalate d (konst (deleteDim d (shape a)) i) a
+intersperse d i a = intercalate d (konst (VU.toList (S.deleteDim d (shape a))) i) a
 
 -- | Concatenate and replace dimensions, creating a new dimension at the supplied postion.
 --
@@ -1701,7 +1749,7 @@ concats ::
   Int ->
   Array a ->
   Array a
-concats ds n a = backpermute (concatDims ds n) (unconcatDimsIndex ds n (shape a)) a
+concats ds n a = backpermute (S.concatDims (VU.fromList ds) n) (S.unconcatDimsIndex (VU.fromList ds) n (shape a)) a
 
 -- | Reverses element order along specified dimensions.
 --
@@ -1716,7 +1764,7 @@ reverses ::
   Dims ->
   Array a ->
   Array a
-reverses ds a = backpermute id (reverseIndex ds (shape a)) a
+reverses ds a = backpermute id (S.reverseIndex (VU.fromList ds) (shape a)) a
 
 -- | Rotate an array by/along dimensions & offsets.
 --
@@ -1732,7 +1780,7 @@ rotates ::
   [Int] ->
   Array a ->
   Array a
-rotates ds rs a = backpermute id (rotatesIndex ds rs (shape a)) a
+rotates ds rs a = backpermute id (S.rotatesIndex (VU.fromList ds) (VU.fromList rs) (shape a)) a
 
 -- * sorting
 
@@ -1794,7 +1842,7 @@ telecastsSafe dsa dsb f a b =
   bool
     (Just $ telecasts dsa dsb f a b)
     Nothing
-    (shape (extracts dsa a) /= (shape (extracts dsb b) :: [Int]))
+    (shape (extracts dsa a) /= shape (extracts dsb b))
 
 -- | Apply a binary array function to two arrays where the shape of the first array is a prefix of the second array. No checks on shape.
 --
@@ -1813,7 +1861,7 @@ transmit f a b = maps ds (f a) b
 -- >>> transmitSafe (zipWith (+)) (array [3] [1,2,3]) a
 -- Nothing
 transmitSafe :: (Array a -> Array b -> Array c) -> Array a -> Array b -> Maybe (Array c)
-transmitSafe f a b = bool Nothing (Just $ transmit f a b) (shape a `List.isPrefixOf` shape b)
+transmitSafe f a b = bool Nothing (Just $ transmit f a b) (VU.toList (shape a) `List.isPrefixOf` VU.toList (shape b))
 
 -- | Transmit an operation if the first array is a prefix of the second or vice versa.
 --
@@ -1827,8 +1875,8 @@ transmitSafe f a b = bool Nothing (Just $ transmit f a b) (shape a `List.isPrefi
 transmitOp :: (a -> b -> c) -> Array a -> Array b -> Array c
 transmitOp f a b
   | shape a == shape b = zipWith f a b
-  | shape a `List.isPrefixOf` shape b = transmit (zipWith f) a b
-  | shape b `List.isPrefixOf` shape a = transmit (zipWith (flip f)) b a
+  | VU.toList (shape a) `List.isPrefixOf` VU.toList (shape b) = transmit (zipWith f) a b
+  | VU.toList (shape b) `List.isPrefixOf` VU.toList (shape a) = transmit (zipWith (flip f)) b a
   | otherwise = error "bad shapes"
 
 -- | Vector specialisation of 'range'
@@ -1928,8 +1976,8 @@ infix 5 :>
 --   [2,8,0,6]]]
 uniform :: (StatefulGen g m, UniformRange a) => g -> [Int] -> (a, a) -> m (Array a)
 uniform g ds r = do
-  v <- V.replicateM (S.size ds) (uniformRM r g)
-  pure $ UnsafeArray ds v
+  v <- V.replicateM (S.size (VU.fromList ds)) (uniformRM r g)
+  pure $ unsafeArray (VU.fromList ds) v
 
 -- | Inverse of a square matrix.
 --
@@ -1950,7 +1998,7 @@ inverse a = mult (invtri (transpose (chol a))) (invtri (chol a))
 -- [[1.0,0.0,-1.0],
 --  [0.0,1.0,-2.0],
 --  [0.0,0.0,1.0]]
--- >>> ident (shape t) == mult t (invtri t)
+-- >>> ident (VU.toList (shape t)) == mult t (invtri t)
 -- True
 invtri :: (Fractional a) => Array a -> Array a
 invtri a = i
@@ -1958,8 +2006,8 @@ invtri a = i
     ti = undiag (fmap recip (diag a))
     tl = zipWith (-) a (undiag (diag a))
     l = fmap negate (dot sum (*) ti tl)
-    pow xs x = foldr ($) (ident (shape xs)) (replicate x (mult xs))
-    zero' = konst (shape a) 0
+    pow xs x = foldr ($) (ident (VU.toList (shape xs))) (replicate x (mult xs))
+    zero' = konst (VU.toList (shape a)) 0
     add = zipWith (+)
     sum' = foldl' add zero'
     i = mult (sum' (fmap (pow l) (range [n]))) ti
@@ -1978,7 +2026,7 @@ chol :: (Floating a) => Array a -> Array a
 chol a =
   let l =
         tabulate
-          (shape a)
+          (VU.toList (shape a))
           ( \[i, j] ->
               bool
                 ( 1

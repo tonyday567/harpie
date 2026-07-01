@@ -93,10 +93,6 @@ module Harpie.Fixed
     slice,
     rotate,
 
-    -- * Matrix block functions
-    splitMatrix,
-    combineMatrix,
-
     -- * Multi-dimension functions
     takes,
     takeBs,
@@ -203,6 +199,7 @@ import Data.Functor.Rep
 import Data.List qualified as List
 import Data.Maybe
 import Data.Vector qualified as V
+import Data.Vector.Unboxed qualified as VU
 import Fcf hiding (type (&&), type (+), type (++), type (-))
 import Fcf qualified
 import Fcf.Data.List
@@ -399,12 +396,12 @@ instance
   type Rep (Array s) = Fins s
 
   tabulate f =
-    Array . V.generate (S.size s) $ (f . UnsafeFins . shapen s)
+    Array . V.generate (S.size (VU.fromList s)) $ (f . UnsafeFins . VU.toList . S.shapen (VU.fromList s))
     where
       s = valuesOf @s
   {-# INLINE tabulate #-}
 
-  index (Array v) i = V.unsafeIndex v (flatten s (fromFins i))
+  index (Array v) i = V.unsafeIndex v (S.flatten (VU.fromList s) (VU.fromList (fromFins i)))
     where
       s = valuesOf @s
   {-# INLINE index #-}
@@ -512,7 +509,7 @@ pattern Dims = SNats
 -- >>> toDynamic a
 -- UnsafeArray [2,3,4] [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
 toDynamic :: (KnownNats s) => Array s a -> A.Array a
-toDynamic a = A.array (shape a) (asVector a)
+toDynamic a = A.array (VU.toList (shape a)) (asVector a)
 
 -- | Use a dynamic array in a fixed context.
 --
@@ -532,14 +529,14 @@ with ::
   (forall s. (KnownNats s) => Array s a -> r) ->
   r
 with d f =
-  withSomeSNats (fromIntegral <$> A.shape d) $ \(SNats :: SNats s) -> withKnownNats (SNats @s) (f (array @s (A.asVector d)))
+  withSomeSNats (fromIntegral <$> VU.toList (A.shape d)) $ \(SNats :: SNats s) -> withKnownNats (SNats @s) (f (array @s (A.asVector d)))
 
 -- | Get shape of an Array as a value.
 --
 -- >>> shape a
 -- [2,3,4]
-shape :: forall a s. (KnownNats s) => Array s a -> [Int]
-shape _ = valuesOf @s
+shape :: forall a s. (KnownNats s) => Array s a -> VU.Vector Int
+shape _ = VU.fromList (valuesOf @s)
 {-# INLINE shape #-}
 
 -- | Get rank of an Array as a value.
@@ -565,7 +562,7 @@ size = S.size . shape
 -- >>> length (toScalar 0)
 -- 1
 length :: (KnownNats s) => Array s a -> Int
-length a = case shape a of
+length a = case VU.toList (shape a) of
   [] -> 1
   (x : _) -> x
 
@@ -715,7 +712,7 @@ empty = array []
 -- [[0,1,2],
 --  [3,4,5]]
 range :: forall s. (KnownNats s) => Array s Int
-range = tabulate (S.flatten (valuesOf @s) . fromFins)
+range = tabulate (S.flatten (VU.fromList (valuesOf @s)) . VU.fromList . fromFins)
 
 -- | An enumeration of col-major or [colexicographic](https://en.wikipedia.org/wiki/Lexicographic_order) order.
 --
@@ -727,7 +724,7 @@ range = tabulate (S.flatten (valuesOf @s) . fromFins)
 --   [3,9,15,21],
 --   [5,11,17,23]]]
 corange :: forall s. (KnownNats s) => Array s Int
-corange = tabulate (S.flatten (List.reverse (valuesOf @s)) . List.reverse . fromFins)
+corange = tabulate (S.flatten (VU.fromList (List.reverse (valuesOf @s))) . VU.fromList . List.reverse . fromFins)
 
 -- | Indices of an array shape.
 --
@@ -745,7 +742,7 @@ indices = tabulate fromFins
 --  [0,1,0],
 --  [0,0,1]]
 ident :: (KnownNats s, Num a) => Array s a
-ident = tabulate (bool 0 1 . S.isDiag . fromFins)
+ident = tabulate (bool 0 1 . S.isDiag . VU.fromList . fromFins)
 
 -- | Create an array composed of a single value.
 --
@@ -775,7 +772,7 @@ diag ::
   ) =>
   Array s a ->
   Array s' a
-diag a = unsafeBackpermute (replicate (rank a) . getDim 0) a
+diag a = unsafeBackpermute (replicate (rank a) . S.getDimL 0) a
 
 -- | Expand an array to form a diagonal array
 --
@@ -792,7 +789,7 @@ undiag ::
   ) =>
   Array s a ->
   Array s' a
-undiag a = tabulate (\xs -> bool 0 (index a (UnsafeFins $ pure $ getDim 0 (fromFins xs))) (isDiag (fromFins xs)))
+undiag a = tabulate (\xs -> bool 0 (index a (UnsafeFins $ pure $ S.getDimL 0 (fromFins xs))) (S.isDiagL (fromFins xs)))
 
 -- | Zip two arrays at an element level.
 --
@@ -902,7 +899,7 @@ takeB ::
   SNat t ->
   Array s a ->
   Array s' a
-takeB Dim SNat a = unsafeBackpermute (modifyDim (valueOf @d) (\x -> x + getDim (valueOf @d) (shape a) - (valueOf @t))) a
+takeB Dim SNat a = unsafeBackpermute (S.modifyDimL (valueOf @d) (\x -> x + S.getDimL (valueOf @d) (VU.toList (shape a)) - (valueOf @t))) a
 
 -- | Drop the top-most elements across the specified dimension.
 --
@@ -923,7 +920,7 @@ drop ::
   SNat t ->
   Array s a ->
   Array s' a
-drop Dim SNat a = unsafeBackpermute (S.modifyDim (valueOf @d) (\x -> x + valueOf @t)) a
+drop Dim SNat a = unsafeBackpermute (S.modifyDimL (valueOf @d) (\x -> x + valueOf @t)) a
 
 -- | Drop the bottom-most elements across the specified dimension.
 --
@@ -950,58 +947,6 @@ dropB _ _ a = unsafeBackpermute id a
 -- Matrix block functions
 -- ---------------------------------------------------------------------------
 
--- | Split a square matrix into four quadrants at the halfway point of
--- each dimension.
---
--- >>> let m = range @'[4,4] :: Array '[4,4] Int
--- >>> let (a,b,c,d) = splitMatrix m
--- >>> shape a
--- [2,2]
--- >>> shape d
--- [2,2]
-splitMatrix ::
-  forall n a.
-  ( KnownNat n,
-    KnownNat (Div n 2),
-    KnownNat (n - Div n 2)
-  ) =>
-  Matrix n n a ->
-  ( Matrix (Div n 2) (Div n 2) a,
-    Matrix (Div n 2) (n - Div n 2) a,
-    Matrix (n - Div n 2) (Div n 2) a,
-    Matrix (n - Div n 2) (n - Div n 2) a
-  )
-splitMatrix arr =
-  let k = fromIntegral (valueOf @(Div n 2)) :: Int
-      idx ij = case fromFins ij of (i : j : _) -> index arr (UnsafeFins [i, j]); _ -> P.error "splitMatrix: impossible"
-      idxR ij = case fromFins ij of (i : j : _) -> index arr (UnsafeFins [i, j + k]); _ -> P.error "splitMatrix: impossible"
-      idxB ij = case fromFins ij of (i : j : _) -> index arr (UnsafeFins [i + k, j]); _ -> P.error "splitMatrix: impossible"
-      idxBR ij = case fromFins ij of (i : j : _) -> index arr (UnsafeFins [i + k, j + k]); _ -> P.error "splitMatrix: impossible"
-   in (tabulate idx, tabulate idxR, tabulate idxB, tabulate idxBR)
-
--- | Combine four quadrant matrices into a single square matrix.
-combineMatrix ::
-  forall n a.
-  ( KnownNat n,
-    KnownNat (Div n 2),
-    KnownNat (n - Div n 2)
-  ) =>
-  Matrix (Div n 2) (Div n 2) a ->
-  Matrix (Div n 2) (n - Div n 2) a ->
-  Matrix (n - Div n 2) (Div n 2) a ->
-  Matrix (n - Div n 2) (n - Div n 2) a ->
-  Matrix n n a
-combineMatrix a b c d =
-  let k = fromIntegral (valueOf @(Div n 2)) :: Int
-   in tabulate $ \ij ->
-        case fromFins ij of
-          (i : j : _) ->
-            bool
-              (bool (index d (UnsafeFins [i - k, j - k])) (index c (UnsafeFins [i - k, j])) (j < k))
-              (bool (index b (UnsafeFins [i, j - k])) (index a (UnsafeFins [i, j])) (j < k))
-              (i < k)
-          _ -> P.error "combineMatrix: impossible"
-
 -- | Select an index along a dimension.
 --
 -- >>> let s = select (Dim @2) (S.fin @4 3) a
@@ -1019,7 +964,7 @@ select ::
   Fin p ->
   Array s a ->
   Array s' a
-select Dim p a = unsafeBackpermute (S.insertDim (valueOf @d) (fromFin p)) a
+select Dim p a = unsafeBackpermute (S.insertDimL (valueOf @d) (fromFin p)) a
 
 -- | Insert along a dimension at a position.
 --
@@ -1049,9 +994,9 @@ insert ::
 insert Dim i a b = tabulate go
   where
     go s
-      | getDim d s' == fromFin i = index b (UnsafeFins (deleteDim d s'))
-      | getDim d s' < fromFin i = index a (UnsafeFins s')
-      | otherwise = index a (UnsafeFins (decAt d s'))
+      | S.getDimL d s' == fromFin i = index b (UnsafeFins (S.deleteDimL d s'))
+      | S.getDimL d s' < fromFin i = index a (UnsafeFins s')
+      | otherwise = index a (UnsafeFins (S.decAtL d s'))
       where
         s' = fromFins s
     d = valueOf @d
@@ -1076,7 +1021,7 @@ delete ::
   Fin p ->
   Array s a ->
   Array s' a
-delete Dim p a = unsafeBackpermute (\s -> bool (incAt d s) s (getDim d s < fromFin p)) a
+delete Dim p a = unsafeBackpermute (\s -> bool (S.incAtL d s) s (S.getDimL d s < fromFin p)) a
   where
     d = valueOf @d
 
@@ -1101,7 +1046,7 @@ append ::
   Array s a ->
   Array si a ->
   Array s' a
-append (Dim :: Dim d) = insert (Dim @d) (UnsafeFin (getDim (valueOf @d) (valuesOf @s)))
+append (Dim :: Dim d) = insert (Dim @d) (UnsafeFin (S.getDimL (valueOf @d) (valuesOf @s)))
 
 -- | Insert along a dimension at the beginning.
 --
@@ -1153,14 +1098,14 @@ concatenate Dim a0 a1 = tabulate (go . fromFins)
         ( index
             a1
             ( UnsafeFins $
-                insertDim
+                S.insertDimL
                   d'
-                  (getDim d' s - getDim d' ds0)
-                  (deleteDim d' s)
+                  (S.getDimL d' s - S.getDimL d' ds0)
+                  (S.deleteDimL d' s)
             )
         )
-        (getDim d' s >= getDim d' ds0)
-    ds0 = shape a0
+        (S.getDimL d' s >= S.getDimL d' ds0)
+    ds0 = VU.toList (shape a0)
     d' = valueOf @d
 
 -- | Combine two arrays as a new dimension of a new array.
@@ -1206,7 +1151,7 @@ slice ::
   SNat l ->
   Array s a ->
   Array s' a
-slice Dim SNat _ a = unsafeBackpermute (S.modifyDim (valueOf @d) (+ (valueOf @off))) a
+slice Dim SNat _ a = unsafeBackpermute (S.modifyDimL (valueOf @d) (+ (valueOf @off))) a
 
 -- | Rotate an array along a dimension.
 --
@@ -1224,7 +1169,7 @@ rotate ::
   Int ->
   Array s a ->
   Array s a
-rotate Dim r a = unsafeBackpermute (rotateIndex (valueOf @d) r (shape a)) a
+rotate Dim r a = unsafeBackpermute (S.rotateIndexL (valueOf @d) r (VU.toList (shape a))) a
 
 -- * multi-dimensional operators
 
@@ -1264,7 +1209,7 @@ takeBs ::
   Array s' a
 takeBs _ _ a = unsafeBackpermute (List.zipWith (+) start) a
   where
-    start = List.zipWith (-) (shape a) (S.setDims (valuesOf @ds) (valuesOf @xs) (shape a))
+    start = List.zipWith (-) (VU.toList (shape a)) (S.setDimsL (valuesOf @ds) (valuesOf @xs) (VU.toList (shape a)))
 
 -- | Across the specified dimensions, drops the top-most elements.
 --
@@ -1325,7 +1270,7 @@ indexes ::
   Fins xs ->
   Array s a ->
   Array s' a
-indexes Dims xs a = unsafeBackpermute (S.insertDims (valuesOf @ds) (fromFins xs)) a
+indexes Dims xs a = unsafeBackpermute (S.insertDimsL (valuesOf @ds) (fromFins xs)) a
 
 -- | Select by dimensions and indexes, supplying indexes as a type.
 --
@@ -1372,7 +1317,7 @@ slices ::
   Array s' a
 slices _ _ _ a = unsafeBackpermute (List.zipWith (+) o) a
   where
-    o = S.setDims (valuesOf @ds) (valuesOf @offs) (replicate (rank a) 0)
+    o = S.setDimsL (valuesOf @ds) (valuesOf @offs) (replicate (rank a) 0)
 
 -- | Select the first element along the supplied dimensions.
 --
@@ -1406,7 +1351,7 @@ lasts ::
   Array s' a
 lasts ds a = indexes ds (UnsafeFins lastds) a
   where
-    lastds = (\i -> getDim i (shape a) - 1) <$> (valuesOf @ds)
+    lastds = (\i -> S.getDimL i (VU.toList (shape a)) - 1) <$> (valuesOf @ds)
 
 -- | Select the tail elements along the supplied dimensions.
 --
@@ -1514,7 +1459,7 @@ joins ::
   Array st a
 joins _ a = tabulate go
   where
-    go s = index (index a (UnsafeFins $ S.getDims (valuesOf @ds) (fromFins s))) (UnsafeFins $ S.deleteDims (valuesOf @ds) (fromFins s))
+    go s = index (index a (UnsafeFins $ S.getDimsL (valuesOf @ds) (fromFins s))) (UnsafeFins $ S.deleteDimsL (valuesOf @ds) (fromFins s))
 
 -- | Join inner and outer dimension layers in outer dimension order.
 --
@@ -1815,7 +1760,7 @@ prod ::
   Array s0 a ->
   Array s1 b ->
   Array st d
-prod SNats SNats g f a b = unsafeTabulate (\so -> g $ unsafeTabulate (\si -> f (unsafeIndex a (S.insertDims (valuesOf @ds0) si (List.take sp so))) (unsafeIndex b (S.insertDims (valuesOf @ds1) si (List.drop sp so)))))
+prod SNats SNats g f a b = unsafeTabulate (\so -> g $ unsafeTabulate (\si -> f (unsafeIndex a (S.insertDimsL (valuesOf @ds0) si (List.take sp so))) (unsafeIndex b (S.insertDimsL (valuesOf @ds1) si (List.drop sp so)))))
   where
     sp = rank a - rankOf @ds0
 
@@ -1920,7 +1865,7 @@ windows ::
     ws ~ Eval (ExpandWindows w s)
   ) =>
   SNats w -> Array s a -> Array ws a
-windows SNats a = unsafeBackpermute (S.indexWindows (rankOf @w)) a
+windows SNats a = unsafeBackpermute (S.indexWindowsL (rankOf @w)) a
 
 -- | Find the starting positions of occurences of one array in another.
 --
@@ -1987,7 +1932,7 @@ findNoOverlap i a = r
 
     cl :: [Int] -> [[Int]]
     cl sh = List.filter (P.not . any (> 0) . List.init) $ List.filter (P.not . all (>= 0)) $ A.arrayAs $ A.tabulate ((\x -> 2 * x - 1) <$> sh) (\s -> List.zipWith (\x x0 -> x - x0 + 1) s sh)
-    go r' s = index f (UnsafeFins s) && not (any (index r' . UnsafeFins) (List.filter (\x -> isFins x (shape f)) $ fmap (List.zipWith (+) s) (cl (shape i))))
+    go r' s = index f (UnsafeFins s) && not (any (index r' . UnsafeFins) (List.filter (\x -> S.isFinsL x (VU.toList (shape f))) $ fmap (List.zipWith (+) s) (cl (VU.toList (shape i)))))
     r = unsafeTabulate (go r)
 
 -- | Check if the first array is a prefix of the second.
@@ -2062,7 +2007,7 @@ fill ::
     KnownNats s'
   ) =>
   a -> Array s a -> Array s' a
-fill x (Array v) = Array (V.take (S.size (valuesOf @s')) (v <> V.replicate (S.size (valuesOf @s') - V.length v) x))
+fill x (Array v) = Array (V.take (S.size (VU.fromList (valuesOf @s'))) (v <> V.replicate (S.size (VU.fromList (valuesOf @s')) - V.length v) x))
 
 -- | Cut an array to form a new (smaller) shape. Errors if the new shape is larger. The old array is reranked to the rank of the new shape first.
 --
@@ -2099,7 +2044,7 @@ cutSuffix ::
 cutSuffix a = unsafeBackpermute (List.zipWith (+) diffDim) a'
   where
     a' = rerank (SNat @r) a
-    diffDim = List.zipWith (-) (shape a') (valuesOf @s')
+    diffDim = List.zipWith (-) (VU.toList (shape a')) (valuesOf @s')
 
 -- | Pad an array to form a new shape, supplying a default value for elements outside the shape of the old array. The old array is reranked to the rank of the new shape first.
 --
@@ -2116,7 +2061,7 @@ pad ::
   a ->
   Array s a ->
   Array s' a
-pad d a = tabulate (\s -> bool d (index a' (unsafeCoerce s)) (fromFins s `S.isFins` shape a'))
+pad d a = tabulate (\s -> bool d (index a' (unsafeCoerce s)) (fromFins s `S.isFinsL` VU.toList (shape a')))
   where
     a' = rerank (SNat @r) a
 
@@ -2139,10 +2084,10 @@ lpad ::
   a ->
   Array s a ->
   Array s' a
-lpad d a = tabulate (\s -> bool d (index a' (UnsafeFins $ olds s)) (olds s `S.isFins` shape a'))
+lpad d a = tabulate (\s -> bool d (index a' (UnsafeFins $ olds s)) (olds s `S.isFinsL` VU.toList (shape a')))
   where
     a' = rerank (SNat @r) a
-    gap = List.zipWith (-) (valuesOf @s') (shape a')
+    gap = List.zipWith (-) (valuesOf @s') (VU.toList (shape a'))
     olds s = List.zipWith (-) (fromFins s) gap
 
 -- | Reshape an array (with the same number of elements).
@@ -2168,7 +2113,7 @@ reshape ::
   ) =>
   Array s a ->
   Array s' a
-reshape = unsafeBackpermute (shapen s . flatten s')
+reshape = unsafeBackpermute (VU.toList . S.shapen (VU.fromList s) . S.flatten (VU.fromList s') . VU.fromList)
   where
     s = valuesOf @s
     s' = valuesOf @s'
@@ -2206,7 +2151,7 @@ repeat ::
   ) =>
   Array s a ->
   Array s' a
-repeat a = unsafeBackpermute (List.drop (S.rank (valuesOf @s') - rank a)) a
+repeat a = unsafeBackpermute (List.drop (S.rankL (valuesOf @s') - rank a)) a
 
 -- | Reshape an array, cycling through the elements without regard to the original shape.
 --
@@ -2222,7 +2167,7 @@ cycle ::
   ) =>
   Array s a ->
   Array s' a
-cycle a = unsafeBackpermute (S.shapen (shape a) . (`mod` size a) . S.flatten (valuesOf @s')) a
+cycle a = unsafeBackpermute (VU.toList . S.shapen (shape a) . (`mod` size a) . S.flatten (VU.fromList (valuesOf @s')) . VU.fromList) a
 
 -- | Change rank by adding new dimensions at the front, if the new rank is greater, or combining dimensions (from left to right) into rows, if the new rank is lower.
 --
@@ -2261,7 +2206,7 @@ reorder ::
   SNats ds ->
   Array s a ->
   Array s' a
-reorder SNats a = unsafeBackpermute (\s -> S.insertDims (valuesOf @ds) s []) a
+reorder SNats a = unsafeBackpermute (\s -> S.insertDimsL (valuesOf @ds) s []) a
 
 -- | Remove single dimensions.
 --
@@ -2325,7 +2270,7 @@ inflate ::
   SNat x ->
   Array s a ->
   Array s' a
-inflate SNat _ a = unsafeBackpermute (S.deleteDim (valueOf @d)) a
+inflate SNat _ a = unsafeBackpermute (S.deleteDimL (valueOf @d)) a
 
 -- | Intercalate an array along dimensions.
 --
@@ -2404,7 +2349,7 @@ concats ::
   SNat newd ->
   Array s a ->
   Array s' a
-concats SNats SNat a = unsafeBackpermute (unconcatDimsIndex ds n (shape a)) a
+concats SNats SNat a = unsafeBackpermute (S.unconcatDimsIndexL ds n (VU.toList (shape a))) a
   where
     n = valueOf @newd
     ds = valuesOf @ds
@@ -2424,7 +2369,7 @@ reverses ::
   Dims ds ->
   Array s a ->
   Array s a
-reverses SNats a = unsafeBackpermute (reverseIndex (valuesOf @ds) (shape a)) a
+reverses SNats a = unsafeBackpermute (S.reverseIndexL (valuesOf @ds) (VU.toList (shape a))) a
 
 -- | Rotate an array by/along dimensions & offsets.
 --
@@ -2444,7 +2389,7 @@ rotates ::
   [Int] ->
   Array s a ->
   Array s a
-rotates SNats rs a = unsafeBackpermute (rotatesIndex (valuesOf @ds) rs (valuesOf @s)) a
+rotates SNats rs a = unsafeBackpermute (S.rotatesIndexL (valuesOf @ds) rs (valuesOf @s)) a
 
 -- | Sort an array along the supplied dimensions.
 --
@@ -2790,7 +2735,7 @@ uniform ::
   ) =>
   g -> (a, a) -> m (Array s a)
 uniform g r = do
-  v <- V.replicateM (S.size (valuesOf @s)) (uniformRM r g)
+  v <- V.replicateM (S.size (VU.fromList (valuesOf @s))) (uniformRM r g)
   pure $ array v
 
 -- | Inverse of a square matrix.
@@ -2842,7 +2787,7 @@ chol a = l
     l = tabulate (\s -> norm_ 1 l s (index a s - cross_ l s))
 
 norm_ :: (Floating a, KnownNat m) => Int -> Matrix m m a -> Fins '[m, m] -> a -> a
-norm_ d l (UnsafeFins s) = bool (1 / diag l ! [S.getDim d s] *) sqrt (S.isDiag s)
+norm_ d l (UnsafeFins s) = bool (1 / diag l ! [S.getDimL d s] *) sqrt (S.isDiagL s)
 
 cross_ :: (Num a, KnownNat m) => Matrix m m a -> Fins '[m, m] -> a
 cross_ l s = sum (fmap (\k -> l ! [i, k] * l ! [j, k]) (A.range [j]))

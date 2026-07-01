@@ -22,7 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "ormolu disabled"
+      - uses: haskell-actions/run-ormolu@v17
+        with:
+          version: "0.8.1.1"
   build:
     name: GHC ${{ matrix.ghc-version }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -94,3 +96,27 @@ jobs:
           chmod a+x $HOME/.cabal/bin/cabal-docspec
           $HOME/.cabal/bin/cabal-docspec --version
           cabal-docspec
+
+  hmatrix:
+    name: hmatrix bridge (GHC 9.14 on ubuntu-latest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install BLAS/LAPACK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libblas-dev liblapack-dev
+
+      - name: Set up GHC 9.14
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.14'
+
+      - name: Build with hmatrix flag
+        run: |
+          cabal configure --flag hmatrix
+          cabal build all
+
+      - name: Check cabal file
+        run: cabal check

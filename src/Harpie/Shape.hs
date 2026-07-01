@@ -38,51 +38,80 @@ module Harpie.Shape
 
     -- * Shape Operators at value- and type- level.
     rank,
+    rankL,
     Rank,
     range,
+    rangeL,
     Range,
     rerank,
+    rerankL,
     Rerank,
     dimsOf,
+    dimsOfL,
     DimsOf,
     endDimsOf,
+    endDimsOfL,
     EndDimsOf,
     size,
+    sizeL,
     Size,
     flatten,
+    flattenL,
+    flattenStrides,
+    flattenStridesL,
     shapen,
+    shapenL,
+    stridesOf,
+    stridesOfL,
+    shapenStrides,
+    shapenStridesL,
     asSingleton,
+    asSingletonL,
     AsSingleton,
     asScalar,
+    asScalarL,
     AsScalar,
+    lte,
+    lteL,
+    LTE,
     isSubset,
+    isSubsetL,
     IsSubset,
     exceptDims,
+    exceptDimsL,
     ExceptDims,
     reorder,
+    reorderL,
     Reorder,
     ReorderOk,
     squeeze,
+    squeezeL,
     Squeeze,
 
     -- * Primitives
     Min,
     Max,
     minimum,
+    minimumL,
     Minimum,
 
     -- * Position
     isFin,
     IsFin,
     isFins,
+    isFinsL,
     IsFins,
     isDim,
+    isDimL,
     IsDim,
     isDims,
+    isDimsL,
     IsDims,
     lastPos,
+    lastPosL,
     LastPos,
     minDim,
+    minDimL,
     MinDim,
 
     -- * combinators
@@ -91,66 +120,97 @@ module Harpie.Shape
 
     -- * single dimension
     GetIndex,
-    SetIndex,
     getDim,
+    getDimL,
     GetDim,
     modifyDim,
+    modifyDimL,
     ModifyDim,
     incAt,
+    incAtL,
     IncAt,
     decAt,
+    decAtL,
     DecAt,
     setDim,
+    setDimL,
     SetDim,
     takeDim,
+    takeDimL,
     TakeDim,
+    halfDim,
+    Half,
+    HalveDim,
     dropDim,
+    dropDimL,
     DropDim,
     deleteDim,
+    deleteDimL,
     DeleteDim,
     insertDim,
+    insertDimL,
     InsertDim,
     InsertOk,
     SliceOk,
     SlicesOk,
     concatenate,
+    concatenateL,
     Concatenate,
     ConcatenateOk,
 
     -- * multiple dimension
     getDims,
+    getDimsL,
     GetDims,
     getLastPositions,
+    getLastPositionsL,
     GetLastPositions,
     modifyDims,
+    modifyDimsL,
     insertDims,
+    insertDimsL,
     InsertDims,
     preDeletePositions,
+    preDeletePositionsL,
     PreDeletePositions,
     preInsertPositions,
+    preInsertPositionsL,
     PreInsertPositions,
     setDims,
+    setDimsL,
     SetDims,
     deleteDims,
+    deleteDimsL,
     DeleteDims,
     dropDims,
+    dropDimsL,
     DropDims,
     concatDims,
+    concatDimsL,
     ConcatDims,
 
     -- * value-only operations
     unconcatDimsIndex,
+    unconcatDimsIndexL,
     reverseIndex,
+    reverseIndexL,
     rotate,
+    rotateL,
     rotateIndex,
+    rotateIndexL,
     rotatesIndex,
+    rotatesIndexL,
     isDiag,
+    isDiagL,
 
     -- * windowed
     expandWindows,
+    expandWindowsL,
     ExpandWindows,
     indexWindows,
+    indexWindowsL,
     dimWindows,
+    dimWindowsL,
     DimWindows,
 
     -- * Fcf re-exports
@@ -168,6 +228,7 @@ import Data.Proxy
 import Data.Type.Bool hiding (Not)
 import Data.Type.Equality
 import Data.Type.Ord hiding (Max, Min)
+import Data.Vector.Unboxed qualified as VU
 import Fcf hiding (type (&&), type (+), type (++), type (-), type (<), type (>), type (||))
 import Fcf qualified
 import Fcf.Class.Foldable
@@ -186,6 +247,7 @@ import Prelude as P hiding (minimum)
 -- >>> import Prelude
 -- >>> import Fcf
 -- >>> import GHC.Exts ()
+-- >>> import Data.Vector.Unboxed qualified as VU
 -- >>> import Harpie.Shape as S
 
 -- | Get the value of a type level Nat.
@@ -401,15 +463,23 @@ fins x = fromMaybe (error "value outside bounds") (safeFins x)
 -- >>> safeFins [2] :: Maybe (Fins '[2])
 -- Nothing
 safeFins :: forall s. (KnownNats s) => [Int] -> Maybe (Fins s)
-safeFins xs = bool Nothing (Just (UnsafeFins xs)) (isFins xs (valuesOf @s))
+safeFins xs = bool Nothing (Just (UnsafeFins xs)) (isFinsL xs (valuesOf @s))
 
 -- | Number of dimensions
 --
--- >>> rank @Int [2,3,4]
+-- >>> rank (VU.fromList [2,3,4])
 -- 3
-rank :: [a] -> Int
-rank = length
+rank :: VU.Vector Int -> Int
+rank = VU.length
 {-# INLINE rank #-}
+
+-- | Number of dimensions
+--
+-- >>> rankL @Int [2,3,4]
+-- 3
+rankL :: [a] -> Int
+rankL = length
+{-# INLINE rankL #-}
 
 -- | Number of dimensions
 --
@@ -429,8 +499,36 @@ type instance
 --
 -- >>> range 3
 -- [0,1,2]
-range :: Int -> [Int]
-range n = [0 .. (n - 1)]
+range :: Int -> VU.Vector Int
+range n = VU.enumFromTo 0 (n - 1)
+
+-- | Enumerate a range of rank n
+--
+-- >>> rangeL 0
+-- []
+--
+-- >>> rangeL 3
+-- [0,1,2]
+rangeL :: Int -> [Int]
+rangeL n = [0 .. (n - 1)]
+
+-- | Enumerate between two Nats
+--
+-- >>> :k! Eval (EnumFromTo 0 3)
+-- ...
+-- = [0, 1, 2, 3]
+data EnumFromTo :: Nat -> Nat -> Exp [Nat]
+
+type instance Eval (EnumFromTo a b) = Eval (Unfoldr (EnumFromToHelper b) a)
+
+data EnumFromToHelper :: Nat -> Nat -> Exp (Maybe (a, Nat))
+
+type instance
+  Eval (EnumFromToHelper b a) =
+    If
+      (a >? b)
+      'Nothing
+      ('Just '(a, a + 1))
 
 -- | Enumerate a range of rank n
 --
@@ -449,17 +547,31 @@ type instance
 
 -- | Create a new rank by adding ones to the left, if the new rank is greater, or combining dimensions (from left to right) into rows, if the new rank is lower.
 --
--- >>> rerank 4 [2,3,4]
+-- >>> rerank 4 (VU.fromList [2,3,4])
 -- [1,2,3,4]
--- >>> rerank 2 [2,3,4]
+-- >>> rerank 2 (VU.fromList [2,3,4])
 -- [6,4]
-rerank :: Int -> [Int] -> [Int]
+rerank :: Int -> VU.Vector Int -> VU.Vector Int
 rerank r xs =
+  VU.replicate (r - r') 1
+    VU.++ bool VU.empty (VU.singleton (VU.product (VU.take (r' - r + 1) xs))) (r <= r')
+    VU.++ VU.drop (r' - r + 1) xs
+  where
+    r' = rank xs
+
+-- | Create a new rank by adding ones to the left, if the new rank is greater, or combining dimensions (from left to right) into rows, if the new rank is lower.
+--
+-- >>> rerankL 4 [2,3,4]
+-- [1,2,3,4]
+-- >>> rerankL 2 [2,3,4]
+-- [6,4]
+rerankL :: Int -> [Int] -> [Int]
+rerankL r xs =
   replicate (r - r') 1
     <> bool [] [product (take (r' - r + 1) xs)] (r <= r')
     <> drop (r' - r + 1) xs
   where
-    r' = rank xs
+    r' = rankL xs
 
 -- | Create a new rank by adding ones to the left, if the new rank is greater, or combining dimensions (from left to right) into rows, if the new rank is lower.
 --
@@ -484,10 +596,17 @@ type instance
 
 -- | Enumerate the dimensions of a shape.
 --
--- dimsOf [2,3,4]
+-- dimsOf (VU.fromList [2,3,4])
 -- [0,1,2]
-dimsOf :: [Int] -> [Int]
+dimsOf :: VU.Vector Int -> VU.Vector Int
 dimsOf s = range (rank s)
+
+-- | Enumerate the dimensions of a shape.
+--
+-- dimsOfL [2,3,4]
+-- [0,1,2]
+dimsOfL :: [Int] -> [Int]
+dimsOfL s = rangeL (rankL s)
 
 -- | Enumerate the dimensions of a shape.
 --
@@ -502,10 +621,17 @@ type instance
 
 -- | Enumerate the final dimensions of a shape.
 --
--- >>> endDimsOf [1,0] [2,3,4]
+-- >>> endDimsOf (VU.fromList [1,0]) (VU.fromList [2,3,4])
 -- [2,1]
-endDimsOf :: [Int] -> [Int] -> [Int]
-endDimsOf xs s = take (rank xs) (List.reverse (dimsOf s))
+endDimsOf :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int
+endDimsOf xs s = VU.take (rank xs) (VU.reverse (dimsOf s))
+
+-- | Enumerate the final dimensions of a shape.
+--
+-- >>> endDimsOfL [1,0] [2,3,4]
+-- [2,1]
+endDimsOfL :: [Int] -> [Int] -> [Int]
+endDimsOfL xs s = take (rankL xs) (List.reverse (dimsOfL s))
 
 -- | Enumerate the final dimensions of a shape.
 --
@@ -520,13 +646,24 @@ type instance
 
 -- | Total number of elements (if the list is the shape of a hyper-rectangular array).
 --
--- >>> size [2,3,4]
+-- >>> size (VU.fromList [2,3,4])
 -- 24
-size :: [Int] -> Int
-size [] = 1
-size [x] = x
-size xs = P.product xs
+size :: VU.Vector Int -> Int
+size v
+  | VU.null v = 1
+  | VU.length v == 1 = VU.head v
+  | otherwise = VU.product v
 {-# INLINE size #-}
+
+-- | Total number of elements (if the list is the shape of a hyper-rectangular array).
+--
+-- >>> sizeL [2,3,4]
+-- 24
+sizeL :: [Int] -> Int
+sizeL [] = 1
+sizeL [x] = x
+sizeL xs = P.product xs
+{-# INLINE sizeL #-}
 
 -- | Total number of elements (if the list is the shape of a hyper-rectangular array).
 --
@@ -539,45 +676,112 @@ type instance Eval (Size xs) = Eval (Foldr (Fcf.*) 1 xs)
 
 -- | Convert from a n-dimensional shape list index to a flat index, which, technically is the lexicographic position of the position in a row-major array.
 --
--- >>> flatten [2,3,4] [1,1,1]
+-- >>> flatten (VU.fromList [2,3,4]) (VU.fromList [1,1,1])
 -- 17
 --
--- >>> flatten [] [1,1,1]
+-- >>> flatten (VU.fromList []) (VU.fromList [1,1,1])
 -- 0
-flatten :: [Int] -> [Int] -> Int
-flatten [] _ = 0
-flatten _ [x'] = x'
-flatten ns xs = sum $ zipWith (*) xs (drop 1 $ scanr (*) 1 ns)
+flatten :: VU.Vector Int -> VU.Vector Int -> Int
+flatten ns _ | VU.null ns = 0
+flatten _ xs | VU.length xs == 1 = VU.head xs
+flatten ns xs = VU.sum $ VU.zipWith (*) xs (VU.drop 1 $ VU.scanr (*) 1 ns)
 {-# INLINE flatten #-}
+
+-- | Convert from a n-dimensional shape list index to a flat index.
+--
+-- >>> flattenL [2,3,4] [1,1,1]
+-- 17
+--
+-- >>> flattenL [] [1,1,1]
+-- 0
+flattenL :: [Int] -> [Int] -> Int
+flattenL [] _ = 0
+flattenL _ [x] = x
+flattenL ns xs = sum $ zipWith (*) xs (stridesOfL ns)
+{-# INLINE flattenL #-}
+
+-- | Convert from an n-dimensional index to a flat index using precomputed strides.
+--
+-- >>> flattenStrides (VU.fromList [3,1]) (VU.fromList [1,1])
+-- 4
+flattenStrides :: VU.Vector Int -> VU.Vector Int -> Int
+flattenStrides strides idx = go 0 0
+  where
+    n = min (VU.length idx) (VU.length strides)
+    go acc k
+      | k == n = acc
+      | otherwise = go (acc + VU.unsafeIndex idx k * VU.unsafeIndex strides k) (k + 1)
+{-# INLINE flattenStrides #-}
+
+-- | Convert from an n-dimensional index to a flat index using precomputed strides.
+flattenStridesL :: [Int] -> [Int] -> Int
+flattenStridesL strides idx = go 0 idx strides
+  where
+    go acc (x : xs) (s : ss) = go (acc + x * s) xs ss
+    go acc _ _ = acc
+{-# INLINE flattenStridesL #-}
 
 -- | Convert from a flat index to a shape index.
 --
--- >>> shapen [2,3,4] 17
+-- >>> shapen (VU.fromList [2,3,4]) 17
 -- [1,1,1]
-shapen :: [Int] -> Int -> [Int]
-shapen [] _ = []
-shapen [_] x' = [x']
-shapen [_, y] x' = let (i, j) = divMod x' y in [i, j]
-shapen ns x =
-  fst $
-    foldr
-      ( \a (acc, r) ->
-          let (d, m) = divMod r a
-           in (m : acc, d)
-      )
-      ([], x)
-      ns
+shapen :: VU.Vector Int -> Int -> VU.Vector Int
+shapen ss x = shapenStrides (stridesOf ss) x
 {-# INLINE shapen #-}
+
+-- | Convert from a flat index to a shape index.
+--
+-- >>> shapenL [2,3,4] 17
+-- [1,1,1]
+shapenL :: [Int] -> Int -> [Int]
+shapenL ss x = shapenStridesL (stridesOfL ss) x
+
+-- | Precompute strides from shape.
+stridesOf :: VU.Vector Int -> VU.Vector Int
+stridesOf = VU.drop 1 . VU.scanr (*) 1
+
+-- | Internal: shapen with precomputed strides, avoiding repeated scanr.
+shapenStrides :: VU.Vector Int -> Int -> VU.Vector Int
+shapenStrides v _ | VU.null v = VU.empty
+shapenStrides v x' | VU.length v == 1 = VU.singleton x'
+shapenStrides v r =
+  let s = VU.head v
+      ss' = VU.tail v
+      (i, j) = divMod r s
+   in VU.cons i (shapenStrides ss' j)
+{-# INLINE shapenStrides #-}
+
+-- | Precompute strides from shape.
+stridesOfL :: [Int] -> [Int]
+stridesOfL = drop 1 . scanr (*) 1
+
+-- | Internal: shapen with precomputed strides, avoiding repeated scanr.
+shapenStridesL :: [Int] -> Int -> [Int]
+shapenStridesL [] _ = []
+shapenStridesL [_] x' = [x']
+shapenStridesL (s : ss') r = let (i, j) = divMod r s in i : shapenStridesL ss' j
+{-# INLINE shapenStridesL #-}
 
 -- | Convert a scalar to a dimensioned shape
 --
--- >>> asSingleton []
+-- >>> asSingleton (VU.fromList [])
 -- [1]
--- >>> asSingleton [2,3,4]
+-- >>> asSingleton (VU.fromList [2,3,4])
 -- [2,3,4]
-asSingleton :: [Int] -> [Int]
-asSingleton [] = [1]
-asSingleton x = x
+asSingleton :: VU.Vector Int -> VU.Vector Int
+asSingleton v
+  | VU.null v = VU.singleton 1
+  | otherwise = v
+
+-- | Convert a scalar to a dimensioned shape
+--
+-- >>> asSingletonL []
+-- [1]
+-- >>> asSingletonL [2,3,4]
+-- [2,3,4]
+asSingletonL :: [Int] -> [Int]
+asSingletonL [] = [1]
+asSingletonL x = x
 
 -- | Convert a scalar to a dimensioned shape
 -- >>> :k! Eval (AsSingleton '[])
@@ -594,13 +798,24 @@ type instance
 
 -- | Convert a (potentially) [1] dimensioned shape to a scalar shape
 --
--- >>> asScalar [1]
+-- >>> asScalar (VU.fromList [1])
 -- []
--- >>> asScalar [2,3,4]
+-- >>> asScalar (VU.fromList [2,3,4])
 -- [2,3,4]
-asScalar :: [Int] -> [Int]
-asScalar [1] = []
-asScalar x = x
+asScalar :: VU.Vector Int -> VU.Vector Int
+asScalar v
+  | VU.length v == 1 && VU.head v == 1 = VU.empty
+  | otherwise = v
+
+-- | Convert a (potentially) [1] dimensioned shape to a scalar shape
+--
+-- >>> asScalarL [1]
+-- []
+-- >>> asScalarL [2,3,4]
+-- [2,3,4]
+asScalarL :: [Int] -> [Int]
+asScalarL [1] = []
+asScalarL x = x
 
 -- | Convert a (potentially) [1] dimensioned shape to a scalar shape
 -- >>> :k! Eval (AsScalar '[1])
@@ -615,10 +830,33 @@ type instance
   Eval (AsScalar xs) =
     If (xs == '[1]) '[] xs
 
-lte :: [Int] -> [Int] -> Bool
+-- | Check if a shape is a subset (<=) another shape after reranking.
+--
+-- >>> lte (VU.fromList [2,3,4]) (VU.fromList [2,3,4])
+-- True
+--
+-- >>> lte (VU.fromList [1,2]) (VU.fromList [2,3,4])
+-- True
+--
+-- >>> lte (VU.fromList [2,1]) (VU.fromList [1])
+-- False
+lte :: VU.Vector Int -> VU.Vector Int -> Bool
 lte xs ys =
-  and (zipWith (<=) xs ys)
-    && rank xs == rank ys
+  VU.and (VU.zipWith (<=) (rerank (rank ys) xs) ys)
+
+-- | Check if a shape is a subset (<=) another shape after reranking.
+--
+-- >>> lteL [2,3,4] [2,3,4]
+-- True
+--
+-- >>> lteL [1,2] [2,3,4]
+-- True
+--
+-- >>> lteL [2,1] [1]
+-- False
+lteL :: [Int] -> [Int] -> Bool
+lteL xs ys =
+  and (zipWith (<=) (rerankL (rankL ys) xs) ys)
 
 data LTE :: [Nat] -> [Nat] -> Exp Bool
 
@@ -633,16 +871,29 @@ type instance
 
 -- | Check if a shape is a subset (<=) another shape after reranking.
 --
--- >>> isSubset [2,3,4] [2,3,4]
+-- >>> isSubset (VU.fromList [2,3,4]) (VU.fromList [2,3,4])
 -- True
 --
--- >>> isSubset [1,2] [2,3,4]
+-- >>> isSubset (VU.fromList [1,2]) (VU.fromList [2,3,4])
 -- True
 --
--- >>> isSubset [2,1] [1]
+-- >>> isSubset (VU.fromList [2,1]) (VU.fromList [1])
 -- False
-isSubset :: [Int] -> [Int] -> Bool
+isSubset :: VU.Vector Int -> VU.Vector Int -> Bool
 isSubset xs ys = lte (rerank (rank ys) xs) ys
+
+-- | Check if a shape is a subset (<=) another shape after reranking.
+--
+-- >>> isSubsetL [2,3,4] [2,3,4]
+-- True
+--
+-- >>> isSubsetL [1,2] [2,3,4]
+-- True
+--
+-- >>> isSubsetL [2,1] [1]
+-- False
+isSubsetL :: [Int] -> [Int] -> Bool
+isSubsetL xs ys = lteL (rerankL (rankL ys) xs) ys
 
 -- | Check if a shape is a subset (<=) another shape after reranking.
 --
@@ -665,10 +916,17 @@ type instance
 
 -- | Compute dimensions for a shape other than the supplied dimensions.
 --
--- >>> exceptDims [1,2] [2,3,4]
+-- >>> exceptDims (VU.fromList [1,2]) (VU.fromList [2,3,4])
 -- [0]
-exceptDims :: [Int] -> [Int] -> [Int]
-exceptDims ds s = deleteDims ds [0 .. (rank s - 1)]
+exceptDims :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int
+exceptDims ds s = deleteDims ds (VU.enumFromTo 0 (rank s - 1))
+
+-- | Compute dimensions for a shape other than the supplied dimensions.
+--
+-- >>> exceptDimsL [1,2] [2,3,4]
+-- [0]
+exceptDimsL :: [Int] -> [Int] -> [Int]
+exceptDimsL ds s = deleteDimsL ds [0 .. (rankL s - 1)]
 
 -- | Compute dimensions for a shape other than the supplied dimensions.
 --
@@ -683,12 +941,18 @@ type instance
 
 -- | Reorder the dimensions of shape according to a list of positions.
 --
--- >>> reorder [2,3,4] [2,0,1]
+-- >>> reorder (VU.fromList [2,3,4]) (VU.fromList [2,0,1])
 -- [4,2,3]
-reorder :: [Int] -> [Int] -> [Int]
-reorder [] _ = []
-reorder _ [] = []
-reorder s (d : ds) = getDim d s : reorder s ds
+reorder :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int
+reorder s ds = VU.map (`getDim` s) ds
+
+-- | Reorder the dimensions of shape according to a list of positions.
+--
+-- >>> reorderL [2,3,4] [2,0,1]
+-- [4,2,3]
+reorderL :: [Int] -> [Int] -> [Int]
+reorderL s (d : ds) = getDimL d s : reorderL s ds
+reorderL _ _ = []
 
 -- | Reorder the dimensions of shape according to a list of positions.
 --
@@ -718,10 +982,17 @@ type instance
 
 -- | remove 1's from a list
 --
--- >>> squeeze [0,1,2,3]
+-- >>> squeeze (VU.fromList [0,1,2,3])
 -- [0,2,3]
-squeeze :: [Int] -> [Int]
-squeeze = filter (/= 1)
+squeeze :: VU.Vector Int -> VU.Vector Int
+squeeze = VU.filter (/= 1)
+
+-- | remove 1's from a list
+--
+-- >>> squeezeL [0,1,2,3]
+-- [0,2,3]
+squeezeL :: [Int] -> [Int]
+squeezeL = filter (/= 1)
 
 -- | Remove 1's from a list.
 --
@@ -736,15 +1007,22 @@ type instance
 
 -- | minimum of a list
 --
--- >>> S.minimum []
--- *** Exception: zero-ranked
--- ...
--- >>> S.minimum [2,3,4]
+-- >>> S.minimum (VU.fromList [2,3,4])
 -- 2
-minimum :: [Int] -> Int
-minimum [] = error "zero-ranked"
-minimum [x] = x
-minimum (x : xs) = P.min x (minimum xs)
+minimum :: VU.Vector Int -> Int
+minimum v
+  | VU.null v = error "zero-ranked"
+  | VU.length v == 1 = VU.head v
+  | otherwise = VU.minimum v
+
+-- | minimum of a list
+--
+-- >>> S.minimumL [2,3,4]
+-- 2
+minimumL :: [Int] -> Int
+minimumL [] = error "zero-ranked"
+minimumL [x] = x
+minimumL (x : xs) = P.min x (minimumL xs)
 
 -- | minimum of a list
 --
@@ -806,12 +1084,21 @@ type instance
 
 -- | Check if i is a valid Fins (aka in-bounds index of a Shape)
 --
--- >>> isFins [0,1] [2,2]
+-- >>> isFins (VU.fromList [0,1]) (VU.fromList [2,2])
 -- True
--- >>> isFins [0,1] [2,1]
+-- >>> isFins (VU.fromList [0,1]) (VU.fromList [2,1])
 -- False
-isFins :: [Int] -> [Int] -> Bool
-isFins xs ds = length xs == length ds && and (zipWith isFin xs ds)
+isFins :: VU.Vector Int -> VU.Vector Int -> Bool
+isFins xs ds = VU.length xs == VU.length ds && VU.and (VU.zipWith isFin xs ds)
+
+-- | Check if i is a valid Fins (aka in-bounds index of a Shape)
+--
+-- >>> isFinsL [0,1] [2,2]
+-- True
+-- >>> isFinsL [0,1] [2,1]
+-- False
+isFinsL :: [Int] -> [Int] -> Bool
+isFinsL xs ds = length xs == length ds && and (zipWith isFin xs ds)
 
 -- | Check if i is a valid Fins (aka in-bounds index of a Shape)
 --
@@ -830,12 +1117,21 @@ type instance
 
 -- | Is a value a valid dimension of a shape.
 --
--- >>> isDim 2 [2,3,4]
+-- >>> isDim 2 (VU.fromList [2,3,4])
 -- True
--- >>> isDim 0 []
+-- >>> isDim 0 (VU.fromList [])
 -- True
-isDim :: Int -> [Int] -> Bool
-isDim d s = isFin d (rank s) || d == 0 && null s
+isDim :: Int -> VU.Vector Int -> Bool
+isDim d s = isFin d (rank s) || d == 0 && VU.null s
+
+-- | Is a value a valid dimension of a shape.
+--
+-- >>> isDimL 2 [2,3,4]
+-- True
+-- >>> isDimL 0 []
+-- True
+isDimL :: Int -> [Int] -> Bool
+isDimL d s = isFin d (rankL s) || d == 0 && null s
 
 -- | Is a value a valid dimension of a shape.
 --
@@ -854,12 +1150,21 @@ type instance
 
 -- | Are values valid dimensions of a shape.
 --
--- >>> isDims [2,1] [2,3,4]
+-- >>> isDims (VU.fromList [2,1]) (VU.fromList [2,3,4])
 -- True
--- >>> isDims [0] []
+-- >>> isDims (VU.fromList [0]) (VU.fromList [])
 -- True
-isDims :: [Int] -> [Int] -> Bool
-isDims ds s = all (`isDim` s) ds
+isDims :: VU.Vector Int -> VU.Vector Int -> Bool
+isDims ds s = VU.all (`isDim` s) ds
+
+-- | Are values valid dimensions of a shape.
+--
+-- >>> isDimsL [2,1] [2,3,4]
+-- True
+-- >>> isDimsL [0] []
+-- True
+isDimsL :: [Int] -> [Int] -> Bool
+isDimsL ds s = all (`isDimL` s) ds
 
 -- | Are values valid dimensions of a shape.
 --
@@ -877,13 +1182,23 @@ type instance
 
 -- | Get the last position of a dimension of a shape.
 --
--- >>> lastPos 2 [2,3,4]
+-- >>> lastPos 2 (VU.fromList [2,3,4])
 -- 3
--- >>> lastPos 0 []
+-- >>> lastPos 0 (VU.fromList [])
 -- 0
-lastPos :: Int -> [Int] -> Int
+lastPos :: Int -> VU.Vector Int -> Int
 lastPos d s =
-  bool (getDim d s - 1) 0 (0 == d && null s)
+  bool (getDim d s - 1) 0 (0 == d && VU.null s)
+
+-- | Get the last position of a dimension of a shape.
+--
+-- >>> lastPosL 2 [2,3,4]
+-- 3
+-- >>> lastPosL 0 []
+-- 0
+lastPosL :: Int -> [Int] -> Int
+lastPosL d s =
+  bool (getDimL d s - 1) 0 (0 == d && null s)
 
 -- | Get the last position of a dimension of a shape.
 --
@@ -904,13 +1219,24 @@ type instance
 
 -- | Get the minimum dimension as a singleton dimension.
 --
--- >>> minDim [2,3,4]
+-- >>> minDim (VU.fromList [2,3,4])
 -- [2]
--- >>> minDim []
+-- >>> minDim (VU.fromList [])
 -- []
-minDim :: [Int] -> [Int]
-minDim [] = []
-minDim s = [minimum s]
+minDim :: VU.Vector Int -> VU.Vector Int
+minDim v
+  | VU.null v = VU.empty
+  | otherwise = VU.singleton (minimum v)
+
+-- | Get the minimum dimension as a singleton dimension.
+--
+-- >>> minDimL [2,3,4]
+-- [2]
+-- >>> minDimL []
+-- []
+minDimL :: [Int] -> [Int]
+minDimL [] = []
+minDimL s = [minimumL s]
 
 -- | Get the minimum dimension as a singleton dimension.
 --
@@ -928,24 +1254,6 @@ type instance
       (s == '[])
       '[]
       '[Eval (Minimum s)]
-
--- | Enumerate between two Nats
---
--- >>> :k! Eval (EnumFromTo 0 3)
--- ...
--- = [0, 1, 2, 3]
-data EnumFromTo :: Nat -> Nat -> Exp [Nat]
-
-type instance Eval (EnumFromTo a b) = Eval (Unfoldr (EnumFromToHelper b) a)
-
-data EnumFromToHelper :: Nat -> Nat -> Exp (Maybe (a, Nat))
-
-type instance
-  Eval (EnumFromToHelper b a) =
-    If
-      (a >? b)
-      'Nothing
-      ('Just '(a, a + 1))
 
 -- | Left fold.
 --
@@ -974,19 +1282,39 @@ type family GetIndexImpl (n :: Nat) (xs :: [k]) where
 
 -- | Get the dimension of a shape at the supplied index. Error if out-of-bounds.
 --
--- >>> getDim 1 [2,3,4]
+-- >>> getDim 1 (VU.fromList [2,3,4])
 -- 3
--- >>> getDim 3 [2,3,4]
+-- >>> getDim 3 (VU.fromList [2,3,4])
 -- *** Exception: getDim outside bounds
 -- ...
--- >>> getDim 0 []
+-- >>> getDim 0 (VU.fromList [])
 -- 1
-getDim :: Int -> [Int] -> Int
-getDim 0 [] = 1
+getDim :: Int -> VU.Vector Int -> Int
+getDim 0 v | VU.null v = 1
 getDim i s = fromMaybe (error "getDim outside bounds") (maybeGetDim s i)
 
-maybeGetDim :: [a] -> Int -> Maybe a
-maybeGetDim xs n
+-- | Get the dimension of a shape at the supplied index. Error if out-of-bounds.
+--
+-- >>> getDimL 1 [2,3,4]
+-- 3
+-- >>> getDimL 3 [2,3,4]
+-- *** Exception: getDim outside bounds
+-- ...
+-- >>> getDimL 0 []
+-- 1
+getDimL :: Int -> [Int] -> Int
+getDimL 0 [] = 1
+getDimL i s = fromMaybe (error "getDim outside bounds") (maybeGetDimL s i)
+
+maybeGetDim :: VU.Vector Int -> Int -> Maybe Int
+maybeGetDim v n
+  | n < 0 = Nothing
+  | n >= VU.length v = Nothing
+  | otherwise = Just (VU.unsafeIndex v n)
+{-# INLINEABLE maybeGetDim #-}
+
+maybeGetDimL :: [a] -> Int -> Maybe a
+maybeGetDimL xs n
   | n < 0 = Nothing
   | otherwise =
       foldr
@@ -997,7 +1325,7 @@ maybeGetDim xs n
         (const Nothing)
         xs
         n
-{-# INLINEABLE maybeGetDim #-}
+{-# INLINEABLE maybeGetDimL #-}
 
 -- | Get the dimension of a shape at the supplied index. Error if out-of-bounds or non-computable (usually unknown to the compiler).
 --
@@ -1021,14 +1349,28 @@ type instance
 
 -- | modify an index at a specific dimension. Errors if out of bounds.
 --
--- >>> modifyDim 0 (+1) [0,1,2]
+-- >>> modifyDim 0 (+1) (VU.fromList [0,1,2])
 -- [1,1,2]
--- >>> modifyDim 0 (+1) []
+-- >>> modifyDim 0 (+1) (VU.fromList [])
 -- [2]
-modifyDim :: Int -> (Int -> Int) -> [Int] -> [Int]
-modifyDim 0 f [] = [f 1]
-modifyDim d f xs =
-  getDim d xs
+modifyDim :: Int -> (Int -> Int) -> VU.Vector Int -> VU.Vector Int
+modifyDim 0 f v
+  | VU.null v = VU.singleton (f 1)
+modifyDim d f v =
+  let x = getDim d v
+      x' = f x
+   in VU.take d v VU.++ VU.singleton x' VU.++ VU.drop (d + 1) v
+
+-- | modify an index at a specific dimension. Errors if out of bounds.
+--
+-- >>> modifyDimL 0 (+1) [0,1,2]
+-- [1,1,2]
+-- >>> modifyDimL 0 (+1) []
+-- [2]
+modifyDimL :: Int -> (Int -> Int) -> [Int] -> [Int]
+modifyDimL 0 f [] = [f 1]
+modifyDimL d f xs =
+  getDimL d xs
     & f
     & (: drop (d + 1) xs)
     & (take d xs <>)
@@ -1046,12 +1388,21 @@ type instance
 
 -- | Increment the index at a dimension of a shape by 1. Scalars turn into singletons.
 --
--- >>> incAt 1 [2,3,4]
+-- >>> incAt 1 (VU.fromList [2,3,4])
 -- [2,4,4]
--- >>> incAt 0 []
+-- >>> incAt 0 (VU.fromList [])
 -- [2]
-incAt :: Int -> [Int] -> [Int]
+incAt :: Int -> VU.Vector Int -> VU.Vector Int
 incAt d ds = modifyDim d (+ 1) (asSingleton ds)
+
+-- | Increment the index at a dimension of a shape by 1. Scalars turn into singletons.
+--
+-- >>> incAtL 1 [2,3,4]
+-- [2,4,4]
+-- >>> incAtL 0 []
+-- [2]
+incAtL :: Int -> [Int] -> [Int]
+incAtL d ds = modifyDimL d (+ 1) (asSingletonL ds)
 
 -- | Increment the index at a dimension of a shape by 1. Scalars turn into singletons.
 --
@@ -1069,10 +1420,17 @@ type instance
 
 -- | Decrement the index at a dimension os a shape by 1.
 --
--- >>> decAt 1 [2,3,4]
+-- >>> decAt 1 (VU.fromList [2,3,4])
 -- [2,2,4]
-decAt :: Int -> [Int] -> [Int]
+decAt :: Int -> VU.Vector Int -> VU.Vector Int
 decAt d = modifyDim d (\x -> x - 1)
+
+-- | Decrement the index at a dimension of a shape by 1.
+--
+-- >>> decAtL 1 [2,3,4]
+-- [2,2,4]
+decAtL :: Int -> [Int] -> [Int]
+decAtL d = modifyDimL d (\x -> x - 1)
 
 -- | Decrement the index at a dimension of a shape by 1.
 --
@@ -1087,12 +1445,21 @@ type instance
 
 -- | replace an index at a specific dimension, or transform a scalar into being 1-dimensional.
 --
--- >>> setDim 0 1 [2,3,4]
+-- >>> setDim 0 1 (VU.fromList [2,3,4])
 -- [1,3,4]
--- >>> setDim 0 3 []
+-- >>> setDim 0 3 (VU.fromList [])
 -- [3]
-setDim :: Int -> Int -> [Int] -> [Int]
+setDim :: Int -> Int -> VU.Vector Int -> VU.Vector Int
 setDim d x = modifyDim d (const x)
+
+-- | replace an index at a specific dimension, or transform a scalar into being 1-dimensional.
+--
+-- >>> setDimL 0 1 [2,3,4]
+-- [1,3,4]
+-- >>> setDimL 0 3 []
+-- [3]
+setDimL :: Int -> Int -> [Int] -> [Int]
+setDimL d x = modifyDimL d (const x)
 
 -- | replace an index at a specific dimension.
 --
@@ -1121,7 +1488,8 @@ halfDim n = n `P.div` 2
 -- | Halve a type-level natural.
 --
 -- >>> :k! Eval (Half 5)
--- 2
+-- Eval (Half 5) :: ghc-internal:GHC.Internal.Bignum.Natural.Natural
+-- = 2
 data Half :: Nat -> Exp Nat
 
 type instance
@@ -1131,7 +1499,8 @@ type instance
 -- | Halve a dimension of a shape.
 --
 -- >>> :k! Eval (HalveDim 0 [5, 7])
--- [2, 7]
+-- Eval (HalveDim 0 [5, 7]) :: [ghc-internal:GHC.Internal.Bignum.Natural.Natural]
+-- = [2, 7]
 data HalveDim :: Nat -> [Nat] -> Exp [Nat]
 
 type instance
@@ -1140,10 +1509,17 @@ type instance
 
 -- | Take along a dimension.
 --
--- >>> takeDim 0 1 [2,3,4]
+-- >>> takeDim 0 1 (VU.fromList [2,3,4])
 -- [1,3,4]
-takeDim :: Int -> Int -> [Int] -> [Int]
-takeDim d t = modifyDim d (min t)
+takeDim :: Int -> Int -> VU.Vector Int -> VU.Vector Int
+takeDim d t = modifyDim d (P.min t)
+
+-- | Take along a dimension.
+--
+-- >>> takeDimL 0 1 [2,3,4]
+-- [1,3,4]
+takeDimL :: Int -> Int -> [Int] -> [Int]
+takeDimL d t = modifyDimL d (P.min t)
 
 -- | Take along a dimension.
 --
@@ -1159,10 +1535,17 @@ type instance
 
 -- | Drop along a dimension.
 --
--- >>> dropDim 2 1 [2,3,4]
+-- >>> dropDim 2 1 (VU.fromList [2,3,4])
 -- [2,3,3]
-dropDim :: Int -> Int -> [Int] -> [Int]
-dropDim d t = modifyDim d (max 0 . (\x -> x - t))
+dropDim :: Int -> Int -> VU.Vector Int -> VU.Vector Int
+dropDim d t = modifyDim d (P.max 0 . (\x -> x - t))
+
+-- | Drop along a dimension.
+--
+-- >>> dropDimL 2 1 [2,3,4]
+-- [2,3,3]
+dropDimL :: Int -> Int -> [Int] -> [Int]
+dropDimL d t = modifyDimL d (P.max 0 . (\x -> x - t))
 
 -- | Drop along a dimension.
 --
@@ -1182,12 +1565,21 @@ type instance
 
 -- | delete the i'th dimension. No effect on a scalar.
 --
--- >>> deleteDim 1 [2, 3, 4]
+-- >>> deleteDim 1 (VU.fromList [2, 3, 4])
 -- [2,4]
--- >>> deleteDim 2 []
+-- >>> deleteDim 2 (VU.fromList [])
 -- []
-deleteDim :: Int -> [Int] -> [Int]
-deleteDim i s = take i s ++ drop (i + 1) s
+deleteDim :: Int -> VU.Vector Int -> VU.Vector Int
+deleteDim i s = VU.take i s VU.++ VU.drop (i + 1) s
+
+-- | delete the i'th dimension. No effect on a scalar.
+--
+-- >>> deleteDimL 1 [2, 3, 4]
+-- [2,4]
+-- >>> deleteDimL 2 []
+-- []
+deleteDimL :: Int -> [Int] -> [Int]
+deleteDimL i s = take i s ++ drop (i + 1) s
 
 -- | delete the i'th dimension
 --
@@ -1205,12 +1597,21 @@ type instance
 
 -- | Insert a new dimension at a position (or at the end if > rank).
 --
--- >>> insertDim 1 3 [2,4]
+-- >>> insertDim 1 3 (VU.fromList [2,4])
 -- [2,3,4]
--- >>> insertDim 0 4 []
+-- >>> insertDim 0 4 (VU.fromList [])
 -- [4]
-insertDim :: Int -> Int -> [Int] -> [Int]
-insertDim d i s = take d s ++ (i : drop d s)
+insertDim :: Int -> Int -> VU.Vector Int -> VU.Vector Int
+insertDim d i s = VU.take d s VU.++ VU.cons i (VU.drop d s)
+
+-- | Insert a new dimension at a position (or at the end if > rank).
+--
+-- >>> insertDimL 1 3 [2,4]
+-- [2,3,4]
+-- >>> insertDimL 0 4 []
+-- [4]
+insertDimL :: Int -> Int -> [Int] -> [Int]
+insertDimL d i s = take d s ++ (i : drop d s)
 
 -- | Insert a new dimension at a position (or at the end if > rank).
 --
@@ -1301,19 +1702,38 @@ type instance
 --
 -- Bespoke logic for scalars.
 --
--- >>> concatenate 1 [2,3,4] [2,3,4]
+-- >>> concatenate 1 (VU.fromList [2,3,4]) (VU.fromList [2,3,4])
 -- [2,6,4]
--- >>> concatenate 0 [3] []
+-- >>> concatenate 0 (VU.fromList [3]) (VU.fromList [])
 -- [4]
--- >>> concatenate 0 [] [3]
+-- >>> concatenate 0 (VU.fromList []) (VU.fromList [3])
 -- [4]
--- >>> concatenate 0 [] []
+-- >>> concatenate 0 (VU.fromList []) (VU.fromList [])
 -- [2]
-concatenate :: Int -> [Int] -> [Int] -> [Int]
-concatenate _ [] [] = [2]
-concatenate _ [] [x] = [x + 1]
-concatenate _ [x] [] = [x + 1]
-concatenate i s0 s1 = take i s0 ++ (getDim i s0 + getDim i s1 : drop (i + 1) s0)
+concatenate :: Int -> VU.Vector Int -> VU.Vector Int -> VU.Vector Int
+concatenate _ v0 v1
+  | VU.null v0 && VU.null v1 = VU.singleton 2
+  | VU.null v0 && VU.length v1 == 1 = VU.singleton (VU.head v1 + 1)
+  | VU.length v0 == 1 && VU.null v1 = VU.singleton (VU.head v0 + 1)
+concatenate i s0 s1 = VU.take i s0 VU.++ VU.cons (getDim i s0 + getDim i s1) (VU.drop (i + 1) s0)
+
+-- | concatenate two arrays at dimension i
+--
+-- Bespoke logic for scalars.
+--
+-- >>> concatenateL 1 [2,3,4] [2,3,4]
+-- [2,6,4]
+-- >>> concatenateL 0 [3] []
+-- [4]
+-- >>> concatenateL 0 [] [3]
+-- [4]
+-- >>> concatenateL 0 [] []
+-- [2]
+concatenateL :: Int -> [Int] -> [Int] -> [Int]
+concatenateL _ [] [] = [2]
+concatenateL _ [] [x] = [x + 1]
+concatenateL _ [x] [] = [x + 1]
+concatenateL i s0 s1 = take i s0 ++ (getDimL i s0 + getDimL i s1 : drop (i + 1) s0)
 
 -- | concatenate two arrays at dimension i
 --
@@ -1354,13 +1774,23 @@ type instance
 
 -- | Get dimensions of a shape.
 --
--- >>> getDims [2,0] [2,3,4]
+-- >>> getDims (VU.fromList [2,0]) (VU.fromList [2,3,4])
 -- [4,2]
--- >>> getDims [2] []
+-- >>> getDims (VU.fromList [2]) (VU.fromList [])
 -- []
-getDims :: [Int] -> [Int] -> [Int]
-getDims _ [] = []
-getDims i s = (`getDim` s) <$> i
+getDims :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int
+getDims _ v | VU.null v = VU.empty
+getDims i s = VU.map (`getDim` s) i
+
+-- | Get dimensions of a shape.
+--
+-- >>> getDimsL [2,0] [2,3,4]
+-- [4,2]
+-- >>> getDimsL [2] []
+-- []
+getDimsL :: [Int] -> [Int] -> [Int]
+getDimsL _ [] = []
+getDimsL i s = (`getDimL` s) <$> i
 
 -- | Get dimensions of a shape.
 --
@@ -1378,13 +1808,23 @@ type instance
 
 -- | Get the index of the last position in the selected dimensions of a shape. Errors on a 0-dimension.
 --
--- >>> getLastPositions [2,0] [2,3,4]
+-- >>> getLastPositions (VU.fromList [2,0]) (VU.fromList [2,3,4])
 -- [3,1]
--- >>> getLastPositions [0] [0]
+-- >>> getLastPositions (VU.fromList [0]) (VU.fromList [0])
 -- [-1]
-getLastPositions :: [Int] -> [Int] -> [Int]
+getLastPositions :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int
 getLastPositions ds s =
-  fmap (\x -> x - 1) (getDims ds s)
+  VU.map (\x -> x - 1) (getDims ds s)
+
+-- | Get the index of the last position in the selected dimensions of a shape. Errors on a 0-dimension.
+--
+-- >>> getLastPositionsL [2,0] [2,3,4]
+-- [3,1]
+-- >>> getLastPositionsL [0] [0]
+-- [-1]
+getLastPositionsL :: [Int] -> [Int] -> [Int]
+getLastPositionsL ds s =
+  fmap (\x -> x - 1) (getDimsL ds s)
 
 -- | Get the index of the last position in the selected dimensions of a shape. Errors on a 0-dimension.
 --
@@ -1399,22 +1839,46 @@ type instance
 
 -- | modify dimensions of a shape with (separate) functions.
 --
--- >>> modifyDims [0,1] [(+1), (+5)] [2,3,4]
+-- >>> modifyDims (VU.fromList [0,1]) [(+1), (+5)] (VU.fromList [2,3,4])
 -- [3,8,4]
-modifyDims :: [Int] -> [Int -> Int] -> [Int] -> [Int]
-modifyDims ds fs ns = foldl' (\ns' (d, f) -> modifyDim d f ns') ns (zip ds fs)
+modifyDims :: VU.Vector Int -> [Int -> Int] -> VU.Vector Int -> VU.Vector Int
+modifyDims ds fs ns = foldl' (\ns' (d, f) -> modifyDim d f ns') ns (VU.toList ds `zip` fs)
+
+-- | modify dimensions of a shape with (separate) functions.
+--
+-- >>> modifyDimsL [0,1] [(+1), (+5)] [2,3,4]
+-- [3,8,4]
+modifyDimsL :: [Int] -> [Int -> Int] -> [Int] -> [Int]
+modifyDimsL ds fs ns = foldl' (\ns' (d, f) -> modifyDimL d f ns') ns (zip ds fs)
 
 -- | Convert a list of positions that reference deletions according to a final shape to 1 that references deletions relative to an initial shape.
 --
 -- To delete the positions [1,2,5] from a list, for example, you need to delete position 1, (arriving at a 4 element list), then position 1, arriving at a 3 element list, and finally position 3.
 --
--- >>> preDeletePositions [1,2,5]
+-- >>> preDeletePositions (VU.fromList [1,2,5])
 -- [1,1,3]
 --
--- >>> preDeletePositions [1,2,0]
+-- >>> preDeletePositions (VU.fromList [1,2,0])
 -- [1,1,0]
-preDeletePositions :: [Int] -> [Int]
-preDeletePositions as = reverse (go as [])
+preDeletePositions :: VU.Vector Int -> VU.Vector Int
+preDeletePositions as = VU.reverse (go as VU.empty)
+  where
+    go v r
+      | VU.null v = r
+      | otherwise = let x = VU.head v; xs = VU.tail v in go (VU.map (decPast x) xs) (VU.cons x r)
+    decPast x y = bool (y - 1) y (y < x)
+
+-- | Convert a list of positions that reference deletions according to a final shape to 1 that references deletions relative to an initial shape.
+--
+-- To delete the positions [1,2,5] from a list, for example, you need to delete position 1, (arriving at a 4 element list), then position 1, arriving at a 3 element list, and finally position 3.
+--
+-- >>> preDeletePositionsL [1,2,5]
+-- [1,1,3]
+--
+-- >>> preDeletePositionsL [1,2,0]
+-- [1,1,0]
+preDeletePositionsL :: [Int] -> [Int]
+preDeletePositionsL as = reverse (go as [])
   where
     go [] r = r
     go (x : xs) r = go (decPast x <$> xs) (x : r)
@@ -1456,13 +1920,26 @@ type instance
 -- To insert into positions [1,2,0] from a list, starting from a 2 element list, for example, you need to insert at position 0, (arriving at a 3 element list), then position 1, arriving at a 4 element list, and finally position 0.
 --
 -- > preInsertPositions == reverse . preDeletePositions . reverse
--- >>> preInsertPositions [1,2,5]
+-- >>> preInsertPositions (VU.fromList [1,2,5])
 -- [1,2,5]
 --
--- >>> preInsertPositions [1,2,0]
+-- >>> preInsertPositions (VU.fromList [1,2,0])
 -- [0,1,0]
-preInsertPositions :: [Int] -> [Int]
-preInsertPositions = reverse . preDeletePositions . reverse
+preInsertPositions :: VU.Vector Int -> VU.Vector Int
+preInsertPositions = VU.reverse . preDeletePositions . VU.reverse
+
+-- | Convert a list of position that reference insertions according to a final shape to 1 that references list insertions relative to an initial shape.
+--
+-- To insert into positions [1,2,0] from a list, starting from a 2 element list, for example, you need to insert at position 0, (arriving at a 3 element list), then position 1, arriving at a 4 element list, and finally position 0.
+--
+-- > preInsertPositionsL == reverse . preDeletePositionsL . reverse
+-- >>> preInsertPositionsL [1,2,5]
+-- [1,2,5]
+--
+-- >>> preInsertPositionsL [1,2,0]
+-- [0,1,0]
+preInsertPositionsL :: [Int] -> [Int]
+preInsertPositionsL = reverse . preDeletePositionsL . reverse
 
 -- | Convert a list of position that reference insertions according to a final shape to 1 that references list insertions relative to an initial shape.
 --
@@ -1484,10 +1961,17 @@ type instance
 
 -- | drop dimensions of a shape according to a list of positions (where position refers to the initial shape)
 --
--- >>> deleteDims [1,0] [2, 3, 4]
+-- >>> deleteDims (VU.fromList [1,0]) (VU.fromList [2, 3, 4])
 -- [4]
-deleteDims :: [Int] -> [Int] -> [Int]
-deleteDims i s = foldl' (flip deleteDim) s (preDeletePositions i)
+deleteDims :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int
+deleteDims i s = VU.foldl' (flip deleteDim) s (preDeletePositions i)
+
+-- | drop dimensions of a shape according to a list of positions (where position refers to the initial shape)
+--
+-- >>> deleteDimsL [1,0] [2, 3, 4]
+-- [4]
+deleteDimsL :: [Int] -> [Int] -> [Int]
+deleteDimsL i s = foldl' (flip deleteDimL) s (preDeletePositionsL i)
 
 -- | drop dimensions of a shape according to a list of positions (where position refers to the initial shape)
 --
@@ -1502,14 +1986,25 @@ type instance
 
 -- | Insert a list of dimensions according to dimensions and positions.  Note that the list of positions references the final shape and not the initial shape.
 --
--- >>> insertDims [0] [5] []
+-- >>> insertDims (VU.fromList [0]) (VU.fromList [5]) (VU.fromList [])
 -- [5]
--- >>> insertDims [1,0] [3,2] [4]
+-- >>> insertDims (VU.fromList [1,0]) (VU.fromList [3,2]) (VU.fromList [4])
 -- [2,3,4]
-insertDims :: [Int] -> [Int] -> [Int] -> [Int]
-insertDims ds xs s = foldl' (flip (uncurry insertDim)) s ps
+insertDims :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int -> VU.Vector Int
+insertDims ds xs s = VU.foldl' (flip (uncurry insertDim)) s ps
   where
-    ps = zip (preInsertPositions ds) xs
+    ps = VU.zip (preInsertPositions ds) xs
+
+-- | Insert a list of dimensions according to dimensions and positions.  Note that the list of positions references the final shape and not the initial shape.
+--
+-- >>> insertDimsL [0] [5] []
+-- [5]
+-- >>> insertDimsL [1,0] [3,2] [4]
+-- [2,3,4]
+insertDimsL :: [Int] -> [Int] -> [Int] -> [Int]
+insertDimsL ds xs s = foldl' (flip (uncurry insertDimL)) s ps
+  where
+    ps = zip (preInsertPositionsL ds) xs
 
 -- | insert a list of dimensions according to dimension,position tuple lists.  Note that the list of positions references the final shape and not the initial shape.
 --
@@ -1527,13 +2022,23 @@ type instance
 
 -- | Set dimensions of a shape.
 --
--- >>> setDims [0,1] [1,5] [2,3,4]
+-- >>> setDims (VU.fromList [0,1]) (VU.fromList [1,5]) (VU.fromList [2,3,4])
 -- [1,5,4]
 --
--- >>> setDims [0] [3] []
+-- >>> setDims (VU.fromList [0]) (VU.fromList [3]) (VU.fromList [])
 -- [3]
-setDims :: [Int] -> [Int] -> [Int] -> [Int]
-setDims ds xs ns = foldl' (\ns' (d, x) -> setDim d x ns') ns (zip ds xs)
+setDims :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int -> VU.Vector Int
+setDims ds xs ns = VU.foldl' (\ns' (d, x) -> setDim d x ns') ns (VU.zip ds xs)
+
+-- | Set dimensions of a shape.
+--
+-- >>> setDimsL [0,1] [1,5] [2,3,4]
+-- [1,5,4]
+--
+-- >>> setDimsL [0] [3] []
+-- [3]
+setDimsL :: [Int] -> [Int] -> [Int] -> [Int]
+setDimsL ds xs ns = foldl' (\ns' (d, x) -> setDimL d x ns') ns (zip ds xs)
 
 -- | Set dimensions of a shape.
 --
@@ -1552,12 +2057,21 @@ type instance
 
 -- | Drop a number of elements of a shape along the supplied dimensions.
 --
--- >>> dropDims [0,2] [1,3] [2,3,4]
+-- >>> dropDims (VU.fromList [0,2]) (VU.fromList [1,3]) (VU.fromList [2,3,4])
 -- [1,3,1]
-dropDims :: [Int] -> [Int] -> [Int] -> [Int]
+dropDims :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int -> VU.Vector Int
 dropDims ds xs s = setDims ds xs' s
   where
-    xs' = zipWith (-) (getDims ds s) xs
+    xs' = VU.zipWith (-) (getDims ds s) xs
+
+-- | Drop a number of elements of a shape along the supplied dimensions.
+--
+-- >>> dropDimsL [0,2] [1,3] [2,3,4]
+-- [1,3,1]
+dropDimsL :: [Int] -> [Int] -> [Int] -> [Int]
+dropDimsL ds xs s = setDimsL ds xs' s
+  where
+    xs' = zipWith (-) (getDimsL ds s) xs
 
 -- | Drop a number of elements of a shape along the supplied dimensions.
 --
@@ -1572,10 +2086,17 @@ type instance
 
 -- | Concatenate and replace dimensions, creating a new dimension at the supplied postion.
 --
--- >>> concatDims [0,1] 1 [2,3,4]
+-- >>> concatDims (VU.fromList [0,1]) 1 (VU.fromList [2,3,4])
 -- [4,6]
-concatDims :: [Int] -> Int -> [Int] -> [Int]
+concatDims :: VU.Vector Int -> Int -> VU.Vector Int -> VU.Vector Int
 concatDims ds n s = insertDim n (size $ getDims ds s) (deleteDims ds s)
+
+-- | Concatenate and replace dimensions, creating a new dimension at the supplied postion.
+--
+-- >>> concatDimsL [0,1] 1 [2,3,4]
+-- [4,6]
+concatDimsL :: [Int] -> Int -> [Int] -> [Int]
+concatDimsL ds n s = insertDimL n (sizeL $ getDimsL ds s) (deleteDimsL ds s)
 
 -- | Drop a number of elements of a shape along the supplied dimensions.
 --
@@ -1590,61 +2111,119 @@ type instance
 
 -- | Unconcatenate and reinsert dimensions for an index.
 --
--- >>> unconcatDimsIndex [0,1] 1 [4,6] [2,3]
+-- >>> unconcatDimsIndex (VU.fromList [0,1]) 1 (VU.fromList [4,6]) (VU.fromList [2,3])
 -- [0,3,2]
-unconcatDimsIndex :: [Int] -> Int -> [Int] -> [Int] -> [Int]
+unconcatDimsIndex :: VU.Vector Int -> Int -> VU.Vector Int -> VU.Vector Int -> VU.Vector Int
 unconcatDimsIndex ds n s i = insertDims ds (shapen (getDims ds s) (getDim n i)) (deleteDim n i)
+
+-- | Unconcatenate and reinsert dimensions for an index.
+--
+-- >>> unconcatDimsIndexL [0,1] 1 [4,6] [2,3]
+-- [0,3,2]
+unconcatDimsIndexL :: [Int] -> Int -> [Int] -> [Int] -> [Int]
+unconcatDimsIndexL ds n s i = insertDimsL ds (shapenL (getDimsL ds s) (getDimL n i)) (deleteDimL n i)
 
 -- | reverse an index along specific dimensions.
 --
--- >>> reverseIndex [0] [2,3,4] [0,1,2]
+-- >>> reverseIndex (VU.fromList [0]) (VU.fromList [2,3,4]) (VU.fromList [0,1,2])
 -- [1,1,2]
-reverseIndex :: [Int] -> [Int] -> [Int] -> [Int]
-reverseIndex ds ns xs = fmap (\(i, x, n) -> bool x (n - 1 - x) (i `elem` ds)) (zip3 [0 ..] xs ns)
+reverseIndex :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int -> VU.Vector Int
+reverseIndex ds ns xs = VU.map (\(i, x, n) -> bool x (n - 1 - x) (VU.elem i ds)) (VU.zip3 (VU.enumFromTo 0 (VU.length xs - 1)) xs ns)
+
+-- | reverse an index along specific dimensions.
+--
+-- >>> reverseIndexL [0] [2,3,4] [0,1,2]
+-- [1,1,2]
+reverseIndexL :: [Int] -> [Int] -> [Int] -> [Int]
+reverseIndexL ds ns xs = fmap (\(i, x, n) -> bool x (n - 1 - x) (i `elem` ds)) (zip3 [0 ..] xs ns)
 
 -- | rotate a list
 --
--- >>> rotate 1 [0..3]
+-- >>> rotate 1 (VU.fromList [0..3])
 -- [1,2,3,0]
--- >>> rotate (-1) [0..3]
+-- >>> rotate (-1) (VU.fromList [0..3])
 -- [3,0,1,2]
-rotate :: Int -> [a] -> [a]
-rotate r xs = drop r' xs <> take r' xs
+rotate :: Int -> VU.Vector Int -> VU.Vector Int
+rotate r xs = VU.drop r' xs VU.++ VU.take r' xs
+  where
+    r' = r `mod` VU.length xs
+
+-- | rotate a list
+--
+-- >>> rotateL 1 [0..3]
+-- [1,2,3,0]
+-- >>> rotateL (-1) [0..3]
+-- [3,0,1,2]
+rotateL :: Int -> [a] -> [a]
+rotateL r xs = drop r' xs <> take r' xs
   where
     r' = r `mod` List.length xs
 
 -- | rotate an index along a specific dimension.
 --
--- >>> rotateIndex 0 1 [2,3,4] [0,1,2]
+-- >>> rotateIndex 0 1 (VU.fromList [2,3,4]) (VU.fromList [0,1,2])
 -- [1,1,2]
-rotateIndex :: Int -> Int -> [Int] -> [Int] -> [Int]
+rotateIndex :: Int -> Int -> VU.Vector Int -> VU.Vector Int -> VU.Vector Int
 rotateIndex d r s = modifyDim d (\x -> (x + r) `mod` getDim d s)
+
+-- | rotate an index along a specific dimension.
+--
+-- >>> rotateIndexL 0 1 [2,3,4] [0,1,2]
+-- [1,1,2]
+rotateIndexL :: Int -> Int -> [Int] -> [Int] -> [Int]
+rotateIndexL d r s = modifyDimL d (\x -> (x + r) `mod` getDimL d s)
 
 -- | rotate an index along specific dimensions.
 --
--- >>> rotatesIndex [0] [1] [2,3,4] [0,1,2]
+-- >>> rotatesIndex (VU.fromList [0]) (VU.fromList [1]) (VU.fromList [2,3,4]) (VU.fromList [0,1,2])
 -- [1,1,2]
-rotatesIndex :: [Int] -> [Int] -> [Int] -> [Int] -> [Int]
-rotatesIndex ds rs s xs = foldr (\(d, r) acc -> rotateIndex d r s acc) xs (zip ds rs)
+rotatesIndex :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int -> VU.Vector Int -> VU.Vector Int
+rotatesIndex ds rs s xs = VU.foldr (\(d, r) acc -> rotateIndex d r s acc) xs (VU.zip ds rs)
+
+-- | rotate an index along specific dimensions.
+--
+-- >>> rotatesIndexL [0] [1] [2,3,4] [0,1,2]
+-- [1,1,2]
+rotatesIndexL :: [Int] -> [Int] -> [Int] -> [Int] -> [Int]
+rotatesIndexL ds rs s xs = foldr (\(d, r) acc -> rotateIndexL d r s acc) xs (zip ds rs)
 
 -- | Test whether an index is a diagonal one.
 --
--- >>> isDiag [2,2,2]
+-- >>> isDiag (VU.fromList [2,2,2])
 -- True
--- >>> isDiag [1,2]
+-- >>> isDiag (VU.fromList [1,2])
 -- False
-isDiag :: (Eq a) => [a] -> Bool
-isDiag [] = True
-isDiag [_] = True
-isDiag [x, y] = x == y
-isDiag (x : y : xs) = x == y && isDiag (y : xs)
+isDiag :: VU.Vector Int -> Bool
+isDiag v
+  | VU.length v <= 1 = True
+  | VU.length v == 2 = VU.unsafeIndex v 0 == VU.unsafeIndex v 1
+  | otherwise = VU.unsafeIndex v 0 == VU.unsafeIndex v 1 && isDiag (VU.tail v)
+
+-- | Test whether an index is a diagonal one.
+--
+-- >>> isDiagL [2,2,2]
+-- True
+-- >>> isDiagL [1,2]
+-- False
+isDiagL :: (Eq a) => [a] -> Bool
+isDiagL [] = True
+isDiagL [_] = True
+isDiagL [x, y] = x == y
+isDiagL (x : y : xs) = x == y && isDiagL (y : xs)
 
 -- | Expanded shape of a windowed array
 --
--- >>> expandWindows [2,2] [4,3,2]
+-- >>> expandWindows (VU.fromList [2,2]) (VU.fromList [4,3,2])
 -- [3,2,2,2,2]
-expandWindows :: [Int] -> [Int] -> [Int]
-expandWindows ws ds = List.zipWith (\s' x' -> s' - x' + 1) ds ws <> ws <> List.drop (rank ws) ds
+expandWindows :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int
+expandWindows ws ds = VU.zipWith (\s' x' -> s' - x' + 1) ds ws VU.++ ws VU.++ VU.drop (rank ws) ds
+
+-- | Expanded shape of a windowed array
+--
+-- >>> expandWindowsL [2,2] [4,3,2]
+-- [3,2,2,2,2]
+expandWindowsL :: [Int] -> [Int] -> [Int]
+expandWindowsL ws ds = List.zipWith (\s' x' -> s' - x' + 1) ds ws <> ws <> List.drop (rankL ws) ds
 
 -- | Expanded shape of a windowed array
 --
@@ -1659,17 +2238,31 @@ type instance
 
 -- | Index into windows of an expanded windowed array, given a rank of the windows.
 --
--- >>> indexWindows 2 [0,1,2,1,1]
+-- >>> indexWindows 2 (VU.fromList [0,1,2,1,1])
 -- [2,2,1]
-indexWindows :: Int -> [Int] -> [Int]
-indexWindows r ds = List.zipWith (+) (List.take r ds) (List.take r (List.drop r ds)) <> List.drop (r + r) ds
+indexWindows :: Int -> VU.Vector Int -> VU.Vector Int
+indexWindows r ds = VU.zipWith (+) (VU.take r ds) (VU.take r (VU.drop r ds)) VU.++ VU.drop (r + r) ds
+
+-- | Index into windows of an expanded windowed array, given a rank of the windows.
+--
+-- >>> indexWindowsL 2 [0,1,2,1,1]
+-- [2,2,1]
+indexWindowsL :: Int -> [Int] -> [Int]
+indexWindowsL r ds = List.zipWith (+) (List.take r ds) (List.take r (List.drop r ds)) <> List.drop (r + r) ds
 
 -- | Dimensions of a windowed array.
 --
--- >>> dimWindows [2,2] [2,3,4]
+-- >>> dimWindows (VU.fromList [2,2]) (VU.fromList [2,3,4])
 -- [0,1,2]
-dimWindows :: [Int] -> [Int] -> [Int]
-dimWindows ws s = range (rank s) <> [rank s * 2 .. (rank ws - 1)]
+dimWindows :: VU.Vector Int -> VU.Vector Int -> VU.Vector Int
+dimWindows ws s = range (rank s) VU.++ VU.enumFromTo (rank s * 2) (rank ws - 1)
+
+-- | Dimensions of a windowed array.
+--
+-- >>> dimWindowsL [2,2] [2,3,4]
+-- [0,1,2]
+dimWindowsL :: [Int] -> [Int] -> [Int]
+dimWindowsL ws s = rangeL (rankL s) <> [rankL s * 2 .. (rankL ws - 1)]
 
 -- | Dimensions of a windowed array.
 --

@@ -53,6 +53,13 @@ extra-doc-files:
   ChangeLog.md
   readme.md
 
+flag hmatrix
+  description:
+    Enable the Harpie.Hmatrix BLAS bridge. This requires LAPACK/BLAS
+    system libraries.
+  manual: True
+  default: False
+
 source-repository head
   type: git
   location: https://github.com/tonyday567/harpie
@@ -66,6 +73,9 @@ common ghc-options-stanza
     -Wincomplete-uni-patterns
     -Wpartial-fields
     -Wredundant-constraints
+
+  if impl(ghc >= 9.14)
+    ghc-options: -Wno-pattern-namespace-specifier
 
 common ghc2021-stanza
   default-language: GHC2021
@@ -155,6 +165,13 @@ library
     vector >=0.12.3 && <0.14,
     vector-algorithms >=0.9.0 && <0.10,
 
+  if flag(hmatrix)
+    build-depends:
+      hmatrix >=0.20 && <0.22
+
+    exposed-modules:
+      Harpie.Hmatrix
+
   exposed-modules:
     Harpie.Array
     Harpie.Fixed
@@ -180,3 +197,4 @@ executable harpie-bug-issue1
     base >=4.14 && <5,
     first-class-families >=0.8.1 && <0.9,
     harpie,
+    vector >=0.12.3 && <0.14,
