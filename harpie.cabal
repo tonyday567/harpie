@@ -174,7 +174,13 @@ library
 
   exposed-modules:
     Harpie.Array
+    Harpie.Array.Generic
+    Harpie.Array.Storable
+    Harpie.Array.Unboxed
     Harpie.Fixed
+    Harpie.Fixed.Generic
+    Harpie.Fixed.Storable
+    Harpie.Fixed.Unboxed
     Harpie.Shape
     Harpie.Sort
 
