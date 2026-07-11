@@ -1,3 +1,17 @@
+0.3.0.0
+=======
+
+- Refactored array internals around `Data.Vector.Generic`.
+- Added `Harpie.Array.Generic`, `Harpie.Array.Storable`, and
+  `Harpie.Array.Unboxed`.
+- Added `Harpie.Fixed.Generic`, `Harpie.Fixed.Storable`, and
+  `Harpie.Fixed.Unboxed`.
+- `Harpie.Array` and `Harpie.Fixed` remain as boxed-vector facades.
+- Added `fmapA`, `sumA`, `traverseA` to `Harpie.Fixed.Generic` for
+  vector-family-generic operations without a `Functor` constraint.
+- Updated `Harpie.Hmatrix` to bridge both dynamic and fixed storable
+  rank-2 arrays.
+
 0.2.0.0
 =======
 
