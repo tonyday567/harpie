@@ -184,6 +184,19 @@ library
     Harpie.Shape
     Harpie.Sort
 
+  -- Generic module doctests are polymorphic in the vector family and need
+  -- explicit concrete vector types throughout; they are excluded until
+  -- someone updates them.
+  x-docspec-options:
+    -m Harpie.Array
+    -m Harpie.Array.Storable
+    -m Harpie.Array.Unboxed
+    -m Harpie.Fixed
+    -m Harpie.Fixed.Storable
+    -m Harpie.Fixed.Unboxed
+    -m Harpie.Shape
+    -m Harpie.Sort
+
 common ghc-options-exe-stanza
   ghc-options:
     -fforce-recomp
