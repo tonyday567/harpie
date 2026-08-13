@@ -764,6 +764,11 @@ singleton a = unsafeArray (V.singleton a)
 --
 -- >>> pretty $ diag (ident @[3,3])
 -- [1,1,1]
+--
+-- In circuit vocabulary this is Δ on indices: the first coordinate is
+-- duplicated across every dimension, identifying the contracting subspace
+-- before the fold (∇) in 'contract'.  See
+-- coffee/loom/harpie-circuit-census.md.
 diag ::
   forall s' a s.
   ( KnownNats s,
@@ -1661,6 +1666,11 @@ diffs SNats xs f a = zips (Dims @ds) f (drops (Dims @ds) xs a) (dropBs (Dims @ds
 --    [([1,0],[1,0]),([1,0],[1,1])]],
 --   [[([1,1],[0,0]),([1,1],[0,1])],
 --    [([1,1],[1,0]),([1,1],[1,1])]]]]
+--
+-- In circuit vocabulary this is the /tensor/ (⊗) reading of pairing: both
+-- operands materialise on disjoint regions of the output shape @sa ++ sb@.
+-- 'coexpand' is the bias-swapped twin, and 'prod' is the fused
+-- multiplicative-disjunction (⅋) form.  See coffee/loom/harpie-circuit-census.md.
 expand ::
   forall sc sa sb a b c.
   ( KnownNats sa,
@@ -1687,6 +1697,11 @@ expand f a b = tabulate (\i -> f (index a (UnsafeFins $ List.take r (fromFins i)
 -- [[(0,3),(1,3),(2,3)],
 --  [(0,4),(1,4),(2,4)],
 --  [(0,5),(1,5),(2,5)]]
+--
+-- This is the bias-swapped twin of 'expand': the first array's axes occupy the
+-- suffix of the product shape rather than the prefix.  In circuit vocabulary
+-- this is the other scheduling order of the two operands along the shared
+-- channel.  See coffee/loom/harpie-circuit-census.md.
 coexpand ::
   forall sc sa sb a b c.
   ( KnownNats sa,
@@ -1705,6 +1720,12 @@ coexpand f a b = tabulate (\i -> f (index a (UnsafeFins $ List.drop r (fromFins 
 -- | Contract an array by applying the supplied (folding) function on diagonal elements of the dimensions.
 --
 -- This generalises a tensor contraction by allowing the number of contracting diagonals to be other than 2.
+--
+-- The implementation is Δ on indices followed by ∇ on values: 'extracts' and
+-- 'diag' duplicate the shared index across the contracting dimensions, and
+-- the supplied folding function eliminates that channel.  'prod' is the fused
+-- multiplicative-disjunction (⅋) form of the same cycle.  See
+-- coffee/loom/harpie-circuit-census.md.
 --
 --
 -- >>> pretty $ contract (Dims @[1,2]) sum (expand (*) m (transpose m))
@@ -1737,6 +1758,12 @@ contract SNats f a = f . diag <$> extracts (Dims @ds') a
 -- With full laziness, this computation would be equivalent to:
 --
 -- > f . diag <$> extracts (Dims @ds') (expand g a b)
+--
+-- In circuit vocabulary this is the fused /multiplicative disjunction/ (⅋)
+-- form of contraction: the two arrays share the contracting index @si@ without
+-- materialising the @s0 ++ s1@ product.  The per-side 'insertDimsL'
+-- placements are the alignment schedule.  See
+-- coffee/loom/harpie-circuit-census.md.
 prod ::
   forall a b c d s0 s1 so0 so1 si st ds0 ds1.
   ( KnownNats so0,
@@ -1785,6 +1812,11 @@ prod SNats SNats g f a b = unsafeTabulate (\so -> g $ unsafeTabulate (\si -> f (
 --
 -- >>> pretty $ dot sum (*) m v
 -- [5,14]
+--
+-- In circuit vocabulary this is 'prod' with the canonical contracting
+-- dimensions: the last axis of the first array and the first axis of the
+-- second.  It is the inner/tensor/dot product in the fused ⅋ form.  See
+-- coffee/loom/harpie-circuit-census.md.
 dot ::
   forall a b c d ds0 ds1 s0 s1 so0 so1 st si.
   ( KnownNats s0,
