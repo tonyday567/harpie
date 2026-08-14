@@ -1267,10 +1267,10 @@ expand f a b = tabulate (\i -> f (index a (UnsafeFins $ List.take r (fromFins i)
 -- [[(0,3),(1,3),(2,3)],
 --  [(0,4),(1,4),(2,4)],
 --  [(0,5),(1,5),(2,5)]]
-coexpand :: forall v sc sa sb a b c. (KnownNats sa, KnownNats sb, KnownNats sc, sc ~ Eval ((++) sa sb), VG.Vector v a, VG.Vector v b, VG.Vector v c) => (a -> b -> c) -> Array v sa a -> Array v sb b -> Array v sc c
-coexpand f a b = tabulate (\i -> f (index a (UnsafeFins $ List.drop r (fromFins i))) (index b (UnsafeFins $ List.take r (fromFins i))))
+coexpand :: forall v sc sa sb a b c. (KnownNats sa, KnownNats sb, KnownNats sc, sc ~ Eval ((++) sb sa), VG.Vector v a, VG.Vector v b, VG.Vector v c) => (a -> b -> c) -> Array v sa a -> Array v sb b -> Array v sc c
+coexpand f a b = tabulate (\i -> f (index a (UnsafeFins $ List.drop rb (fromFins i))) (index b (UnsafeFins $ List.take rb (fromFins i))))
   where
-    r = rank a
+    rb = rank b
 
 -- | Contract an array by applying the supplied (folding) function on diagonal elements of the dimensions.
 --

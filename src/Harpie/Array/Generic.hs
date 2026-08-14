@@ -1325,15 +1325,20 @@ expand f a b = tabulate (VU.toList (shape a <> shape b)) (\i -> f (index a (List
 -- [[(0,3),(1,3),(2,3)],
 --  [(0,4),(1,4),(2,4)],
 --  [(0,5),(1,5),(2,5)]]
+--
+-- The output shape is @shape b ++ shape a@, so the first array's axes occupy
+-- the suffix of the product shape rather than the prefix.  Equivalently, it is
+-- @expand@ followed by the block-swap permutation that exchanges the two
+-- operand shapes.
 coexpand ::
   (VG.Vector v a, VG.Vector v b, VG.Vector v c) =>
   (a -> b -> c) ->
   Array v a ->
   Array v b ->
   Array v c
-coexpand f a b = tabulate (VU.toList (shape a <> shape b)) (\i -> f (index a (List.drop r i)) (index b (List.take r i)))
+coexpand f a b = tabulate (VU.toList (shape b <> shape a)) (\i -> f (index a (List.drop rb i)) (index b (List.take rb i)))
   where
-    r = rank a
+    rb = rank b
 
 -- | Contract an array by applying the supplied (folding) function on diagonal elements of the dimensions.
 --
