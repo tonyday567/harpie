@@ -188,11 +188,6 @@ module Harpie.Fixed.Generic
 
     -- * Math
     uniform,
-    invtri,
-    inverse,
-    chol,
-    -- cross_,
-    -- norm_,
   )
 where
 
@@ -1823,61 +1818,4 @@ uniform g r = do
   v <- VG.replicateM (S.size (VU.fromList (valuesOf @s))) (uniformRM r g) :: m (v a)
   pure $ array @v @s v
 
--- | Inverse of a square matrix.
---
--- > A.mult (D.inverse a) a == a
---
--- >>> e = array @[3,3] @Double [4,12,-16,12,37,-43,-16,-43,98]
--- >>> pretty (inverse e)
--- [[49.36111111111111,-13.555555555555554,2.1111111111111107],
---  [-13.555555555555554,3.7777777777777772,-0.5555555555555555],
---  [2.1111111111111107,-0.5555555555555555,0.1111111111111111]]
-inverse :: forall v a m. (Add.Additive a, Mult.Multiplicative a, Floating a, KnownNat m, VG.Vector v a, VG.Vector v Int, VG.Vector v (Array v '[m, m] a)) => Matrix v m m a -> Matrix v m m a
-inverse a = mult (invtri (transpose (chol a))) (invtri (chol a))
 
--- | [Inversion of a Triangular Matrix](https://math.stackexchange.com/questions/1003801/inverse-of-an-invertible-upper-triangular-matrix-of-order-3)
---
--- >>> t = array @[3,3] @Double [1,0,1,0,1,2,0,0,1]
--- >>> pretty (invtri t)
--- [[1.0,0.0,-1.0],
---  [0.0,1.0,-2.0],
---  [0.0,0.0,1.0]]
---
--- >>> ident == mult t (invtri t)
--- True
-invtri :: forall v a n. (KnownNat n, Add.Additive a, Mult.Multiplicative a, Floating a, VG.Vector v a, VG.Vector v Int, VG.Vector v (Array v '[n, n] a)) => Matrix v n n a -> Matrix v n n a
-invtri a = i
-  where
-    ti = undiag (fmapA recip (diag a))
-    tl = zipWith (-) a (undiag (diag a))
-    l = fmapA negate (dot sumA (*) ti tl)
-    pow xs x = foldr ($) (ident @[n, n]) (replicate x (mult xs))
-    zero' = konst @[n, n] 0
-    add = zipWith (+)
-    sum' = foldlA' add zero'
-    i = mult (sum' (fmapA (pow l) (range @v @'[n]))) ti
-
--- | Cholesky decomposition using the <https://en.wikipedia.org/wiki/Cholesky_decomposition#The_Cholesky_algorithm Cholesky-Crout> algorithm.
---
--- >>> e = array @[3,3] @Double [4,12,-16,12,37,-43,-16,-43,98]
--- >>> pretty (chol e)
--- [[2.0,0.0,0.0],
---  [6.0,1.0,0.0],
---  [-8.0,5.0,3.0]]
--- >>> mult (chol e) (transpose (chol e)) == e
--- True
-chol :: forall v a m. (KnownNat m, Floating a, KnownNats '[m, m], VG.Vector v a, VG.Vector v Int) => Matrix v m m a -> Matrix v m m a
-chol a = l
-  where
-    l = tabulate (\s -> norm_ 1 l s (index a s - cross_ l s))
-
-norm_ :: forall v a m. (Floating a, KnownNat m, VG.Vector v a) => Int -> Matrix v m m a -> Fins '[m, m] -> a -> a
-norm_ d l (UnsafeFins s) = bool (1 / diag l ! [S.getDimL d s] *) sqrt (S.isDiagL s)
-
-cross_ :: forall v a m. (Num a, KnownNat m, VG.Vector v a, VG.Vector v Int) => Matrix v m m a -> Fins '[m, m] -> a
-cross_ l s = VG.sum (VG.map (\k -> l ! [i, k] * l ! [j, k]) (A.asVector (A.range [j] :: A.Array v Int)))
-  where
-    ij = fromFins s
-    (i, j) = case ij of
-      [x, y] -> (x, y)
-      _ -> error "cross_: invalid Fins dimension (expected 2D index)"

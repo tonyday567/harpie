@@ -252,11 +252,4 @@ snoc = G.snoc
 iota :: (VG.Vector VU.Vector Int) => Int -> Array Int
 iota = G.iota
 
-invtri :: forall a v. (Add.Additive a, Mult.Multiplicative a, Fractional a, VG.Vector VU.Vector a, VG.Vector VU.Vector Int, VG.Vector VU.Vector (Array a)) => Array a -> Array a
-invtri = G.invtri
 
-inverse :: (Add.Additive a, Mult.Multiplicative a, Floating a, VG.Vector VU.Vector a, VG.Vector VU.Vector Int, VG.Vector VU.Vector (Array a)) => Array a -> Array a
-inverse = G.inverse
-
-chol :: (Floating a, VG.Vector VU.Vector a) => Array a -> Array a
-chol = G.chol

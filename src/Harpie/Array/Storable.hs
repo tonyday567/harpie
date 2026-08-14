@@ -253,11 +253,4 @@ snoc = G.snoc
 iota :: (VG.Vector VS.Vector Int) => Int -> Array Int
 iota = G.iota
 
-invtri :: forall a v. (Add.Additive a, Mult.Multiplicative a, Fractional a, VG.Vector VS.Vector a, VG.Vector VS.Vector Int, VG.Vector VS.Vector (Array a)) => Array a -> Array a
-invtri = G.invtri
 
-inverse :: (Add.Additive a, Mult.Multiplicative a, Floating a, VG.Vector VS.Vector a, VG.Vector VS.Vector Int, VG.Vector VS.Vector (Array a)) => Array a -> Array a
-inverse = G.inverse
-
-chol :: (Floating a, VG.Vector VS.Vector a) => Array a -> Array a
-chol = G.chol

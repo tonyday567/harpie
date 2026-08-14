@@ -183,11 +183,6 @@ module Harpie.Fixed
 
     -- * Math
     uniform,
-    invtri,
-    inverse,
-    chol,
-    -- cross_,
-    -- norm_,
   )
 where
 
@@ -255,9 +250,7 @@ import Prelude as P hiding (cycle, drop, length, repeat, sequence, take, zipWith
 --  [[12,13,14,15],
 --   [16,17,18,19],
 --   [20,21,22,23]]]
--- >>> e = array @[3,3] @Double [4,12,-16,12,37,-43,-16,-43,98]
--- >>> l = chol e
-
+--
 -- $usage
 --
 -- >>> :set -XDataKinds
@@ -2773,61 +2766,4 @@ uniform g r = do
   v <- V.replicateM (S.size (VU.fromList (valuesOf @s))) (uniformRM r g)
   pure $ array v
 
--- | Inverse of a square matrix.
---
--- > A.mult (D.inverse a) a == a
---
--- >>> e = array @[3,3] @Double [4,12,-16,12,37,-43,-16,-43,98]
--- >>> pretty (inverse e)
--- [[49.36111111111111,-13.555555555555554,2.1111111111111107],
---  [-13.555555555555554,3.7777777777777772,-0.5555555555555555],
---  [2.1111111111111107,-0.5555555555555555,0.1111111111111111]]
-inverse :: (Add.Additive a, Mult.Multiplicative a, Floating a, KnownNat m) => Matrix m m a -> Matrix m m a
-inverse a = mult (invtri (transpose (chol a))) (invtri (chol a))
 
--- | [Inversion of a Triangular Matrix](https://math.stackexchange.com/questions/1003801/inverse-of-an-invertible-upper-triangular-matrix-of-order-3)
---
--- >>> t = array @[3,3] @Double [1,0,1,0,1,2,0,0,1]
--- >>> pretty (invtri t)
--- [[1.0,0.0,-1.0],
---  [0.0,1.0,-2.0],
---  [0.0,0.0,1.0]]
---
--- >>> ident == mult t (invtri t)
--- True
-invtri :: forall a n. (KnownNat n, Add.Additive a, Mult.Multiplicative a, Floating a) => Matrix n n a -> Matrix n n a
-invtri a = i
-  where
-    ti = undiag (fmap recip (diag a))
-    tl = zipWith (-) a (undiag (diag a))
-    l = fmap negate (dot sum (*) ti tl)
-    pow xs x = foldr ($) (ident @[n, n]) (replicate x (mult xs))
-    zero' = konst @[n, n] 0
-    add = zipWith (+)
-    sum' = foldl' add zero'
-    i = mult (sum' (fmap (pow l) (range @'[n]))) ti
-
--- | Cholesky decomposition using the <https://en.wikipedia.org/wiki/Cholesky_decomposition#The_Cholesky_algorithm Cholesky-Crout> algorithm.
---
--- >>> e = array @[3,3] @Double [4,12,-16,12,37,-43,-16,-43,98]
--- >>> pretty (chol e)
--- [[2.0,0.0,0.0],
---  [6.0,1.0,0.0],
---  [-8.0,5.0,3.0]]
--- >>> mult (chol e) (transpose (chol e)) == e
--- True
-chol :: (KnownNat m, Floating a, KnownNats '[m, m]) => Matrix m m a -> Matrix m m a
-chol a = l
-  where
-    l = tabulate (\s -> norm_ 1 l s (index a s - cross_ l s))
-
-norm_ :: (Floating a, KnownNat m) => Int -> Matrix m m a -> Fins '[m, m] -> a -> a
-norm_ d l (UnsafeFins s) = bool (1 / diag l ! [S.getDimL d s] *) sqrt (S.isDiagL s)
-
-cross_ :: (Num a, KnownNat m) => Matrix m m a -> Fins '[m, m] -> a
-cross_ l s = sum (fmap (\k -> l ! [i, k] * l ! [j, k]) (A.range [j]))
-  where
-    ij = fromFins s
-    (i, j) = case ij of
-      [x, y] -> (x, y)
-      _ -> error "cross_: invalid Fins dimension (expected 2D index)"

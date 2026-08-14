@@ -173,9 +173,6 @@ module Harpie.Array
 
     -- * Math
     uniform,
-    invtri,
-    inverse,
-    chol,
   )
 where
 
@@ -1981,73 +1978,4 @@ uniform g ds r = do
   v <- V.replicateM (S.size (VU.fromList ds)) (uniformRM r g)
   pure $ unsafeArray (VU.fromList ds) v
 
--- | Inverse of a square matrix.
---
--- >>> e = array [3,3] [4,12,-16,12,37,-43,-16,-43,98] :: Array Double
--- >>> pretty (inverse e)
--- [[49.36111111111111,-13.555555555555554,2.1111111111111107],
---  [-13.555555555555554,3.7777777777777772,-0.5555555555555555],
---  [2.1111111111111107,-0.5555555555555555,0.1111111111111111]]
---
--- > mult (inverse a) a == a
-inverse :: (Add.Additive a, Mult.Multiplicative a, Floating a) => Array a -> Array a
-inverse a = mult (invtri (transpose (chol a))) (invtri (chol a))
 
--- | [Inversion of a Triangular Matrix](https://math.stackexchange.com/questions/1003801/inverse-of-an-invertible-upper-triangular-matrix-of-order-3)
---
--- >>> t = array [3,3] ([1,0,1,0,1,2,0,0,1] :: [Double]) :: Array Double
--- >>> pretty (invtri t)
--- [[1.0,0.0,-1.0],
---  [0.0,1.0,-2.0],
---  [0.0,0.0,1.0]]
--- >>> ident (VU.toList (shape t)) == mult t (invtri t)
--- True
-invtri :: (Add.Additive a, Mult.Multiplicative a, Fractional a) => Array a -> Array a
-invtri a = i
-  where
-    ti = undiag (fmap recip (diag a))
-    tl = zipWith (-) a (undiag (diag a))
-    l = fmap negate (dot sum (*) ti tl)
-    pow xs x = foldr ($) (ident (VU.toList (shape xs))) (replicate x (mult xs))
-    zero' = konst (VU.toList (shape a)) 0
-    add = zipWith (+)
-    sum' = foldl' add zero'
-    i = mult (sum' (fmap (pow l) (range [n]))) ti
-    n = S.getDim 0 (shape a)
-
--- | Cholesky decomposition using the <https://en.wikipedia.org/wiki/Cholesky_decomposition#The_Cholesky_algorithm Cholesky-Crout> algorithm.
---
--- >>> e = array [3,3] [4,12,-16,12,37,-43,-16,-43,98] :: Array Double
--- >>> pretty (chol e)
--- [[2.0,0.0,0.0],
---  [6.0,1.0,0.0],
---  [-8.0,5.0,3.0]]
--- >>> mult (chol e) (transpose (chol e)) == e
--- True
-chol :: (Floating a) => Array a -> Array a
-chol a =
-  let l =
-        tabulate
-          (VU.toList (shape a))
-          ( \[i, j] ->
-              bool
-                ( 1
-                    / index l [j, j]
-                    * ( index a [i, j]
-                          - sum
-                            ( (\k -> index l [i, k] * index l [j, k])
-                                <$> [0 .. (j - 1)]
-                            )
-                      )
-                )
-                ( sqrt
-                    ( index a [i, i]
-                        - sum
-                          ( (\k -> index l [j, k] ^ (2 :: Int))
-                              <$> [0 .. (j - 1)]
-                          )
-                    )
-                )
-                (i == j)
-          )
-   in l
