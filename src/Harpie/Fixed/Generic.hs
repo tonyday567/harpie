@@ -206,13 +206,20 @@ import Harpie.Array.Generic qualified as A
 import Harpie.Shape hiding (asScalar, asSingleton, concatenate, range, rank, reorder, rerank, rotate, size, squeeze)
 import Harpie.Shape qualified as S
 import Harpie.Sort
+import NumHask.Algebra.Action (AdditiveAction (..), DivisiveAction (..), MultiplicativeAction (..), SubtractiveAction (..))
+import NumHask.Algebra.Additive (Additive (..), Subtractive (..))
 import NumHask.Algebra.Additive qualified as Add
+import NumHask.Algebra.Lattice (JoinSemiLattice (..), MeetSemiLattice (..))
+import NumHask.Algebra.Metric (Epsilon (..))
+import NumHask.Algebra.Multiplicative (Divisive (..), Multiplicative (..))
 import NumHask.Algebra.Multiplicative qualified as Mult
+import NumHask.Data.Integral (FromInteger (..))
+import NumHask.Data.Rational (FromRational (..))
 import Prettyprinter hiding (dot, fill)
 import System.Random hiding (uniform)
 import System.Random.Stateful hiding (uniform)
 import Unsafe.Coerce
-import Prelude as P hiding (cycle, drop, length, repeat, sequence, take, zipWith)
+import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRational, length, negate, repeat, sequence, take, zipWith)
 
 -- $setup
 --
@@ -367,13 +374,109 @@ newtype Array v (s :: [Nat]) a = Array (v a)
   deriving stock (Functor, Foldable, Generic, Traversable)
   deriving newtype (Eq, Ord, Show)
 
-instance (Num a, KnownNats s, VG.Vector v a, Functor v) => Num (Array v s a) where
+instance
+  ( Additive a,
+    KnownNats s,
+    VG.Vector v a
+  ) =>
+  Additive (Array v s a)
+  where
   (+) = zipWith (+)
-  (-) = zipWith (-)
-  (*) = error "multiplication not defined"
-  abs = fmap abs
-  signum = fmap signum
-  fromInteger x = konst @s (fromInteger x)
+  zero = konst zero
+
+instance
+  ( Subtractive a,
+    KnownNats s,
+    VG.Vector v a
+  ) =>
+  Subtractive (Array v s a)
+  where
+  negate = fmapA negate
+
+instance
+  ( Multiplicative a,
+    KnownNats s,
+    VG.Vector v a
+  ) =>
+  MultiplicativeAction (Array v s a)
+  where
+  type Scalar (Array v s a) = a
+  (|*) r s = fmapA (s *) r
+
+instance
+  ( Additive a,
+    KnownNats s,
+    VG.Vector v a
+  ) =>
+  AdditiveAction (Array v s a)
+  where
+  type AdditiveScalar (Array v s a) = a
+  (|+) r s = fmapA (s +) r
+
+instance
+  ( Subtractive a,
+    KnownNats s,
+    VG.Vector v a
+  ) =>
+  SubtractiveAction (Array v s a)
+  where
+  (|-) r s = fmapA (\x -> x - s) r
+
+instance
+  ( Divisive a,
+    KnownNats s,
+    VG.Vector v a
+  ) =>
+  DivisiveAction (Array v s a)
+  where
+  (|/) r s = fmapA (/ s) r
+
+instance
+  ( KnownNats s,
+    JoinSemiLattice a,
+    VG.Vector v a,
+    Eq (v a)
+  ) =>
+  JoinSemiLattice (Array v s a)
+  where
+  (\/) = zipWith (\/)
+
+instance
+  ( KnownNats s,
+    MeetSemiLattice a,
+    VG.Vector v a,
+    Eq (v a)
+  ) =>
+  MeetSemiLattice (Array v s a)
+  where
+  (/\) = zipWith (/\)
+
+instance
+  ( KnownNats s,
+    Subtractive a,
+    Epsilon a,
+    VG.Vector v a,
+    Eq (v a)
+  ) =>
+  Epsilon (Array v s a)
+  where
+  epsilon = konst epsilon
+
+instance
+  ( FromInteger a,
+    VG.Vector v a
+  ) =>
+  FromInteger (Array v ('[] :: [Nat]) a)
+  where
+  fromInteger x = toScalar (fromInteger x)
+
+instance
+  ( FromRational a,
+    VG.Vector v a
+  ) =>
+  FromRational (Array v ('[] :: [Nat]) a)
+  where
+  fromRational x = toScalar (fromRational x)
 
 instance (KnownNats s, Show a, Show (v a), VG.Vector v a, VG.Vector v (A.Array v a)) => Pretty (Array v s a) where
   pretty = pretty . toDynamic

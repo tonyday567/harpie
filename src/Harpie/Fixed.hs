@@ -204,13 +204,20 @@ import Harpie.Array qualified as A
 import Harpie.Shape hiding (asScalar, asSingleton, concatenate, range, rank, reorder, rerank, rotate, size, squeeze)
 import Harpie.Shape qualified as S
 import Harpie.Sort
+import NumHask.Algebra.Action (AdditiveAction (..), DivisiveAction (..), MultiplicativeAction (..), SubtractiveAction (..))
+import NumHask.Algebra.Additive (Additive (..), Subtractive (..))
 import NumHask.Algebra.Additive qualified as Add
+import NumHask.Algebra.Lattice (JoinSemiLattice (..), MeetSemiLattice (..))
+import NumHask.Algebra.Metric (Epsilon (..))
+import NumHask.Algebra.Multiplicative (Divisive (..), Multiplicative (..))
 import NumHask.Algebra.Multiplicative qualified as Mult
+import NumHask.Data.Integral (FromInteger (..))
+import NumHask.Data.Rational (FromRational (..))
 import Prettyprinter hiding (dot, fill)
 import System.Random hiding (uniform)
 import System.Random.Stateful hiding (uniform)
 import Unsafe.Coerce
-import Prelude as P hiding (cycle, drop, length, repeat, sequence, take, zipWith)
+import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRational, length, negate, repeat, sequence, take, zipWith)
 
 -- $setup
 --
@@ -364,13 +371,95 @@ newtype Array (s :: [Nat]) a where
   deriving stock (Functor, Foldable, Generic, Traversable)
   deriving newtype (Eq, Eq1, Ord, Ord1, Show, Show1)
 
-instance (Num a, KnownNats s) => Num (Array s a) where
+instance
+  ( Additive a,
+    KnownNats s
+  ) =>
+  Additive (Array s a)
+  where
   (+) = zipWith (+)
-  (-) = zipWith (-)
-  (*) = error "multiplication not defined"
-  abs = fmap abs
-  signum = fmap signum
-  fromInteger x = konst @s (fromInteger x)
+  zero = konst zero
+
+instance
+  ( Subtractive a,
+    KnownNats s
+  ) =>
+  Subtractive (Array s a)
+  where
+  negate = fmap negate
+
+instance
+  ( Multiplicative a,
+    KnownNats s
+  ) =>
+  MultiplicativeAction (Array s a)
+  where
+  type Scalar (Array s a) = a
+  (|*) r s = fmap (s *) r
+
+instance
+  ( Additive a,
+    KnownNats s
+  ) =>
+  AdditiveAction (Array s a)
+  where
+  type AdditiveScalar (Array s a) = a
+  (|+) r s = fmap (s +) r
+
+instance
+  ( Subtractive a,
+    KnownNats s
+  ) =>
+  SubtractiveAction (Array s a)
+  where
+  (|-) r s = fmap (\x -> x - s) r
+
+instance
+  ( Divisive a,
+    KnownNats s
+  ) =>
+  DivisiveAction (Array s a)
+  where
+  (|/) r s = fmap (/ s) r
+
+instance
+  ( KnownNats s,
+    JoinSemiLattice a
+  ) =>
+  JoinSemiLattice (Array s a)
+  where
+  (\/) = zipWith (\/)
+
+instance
+  ( KnownNats s,
+    MeetSemiLattice a
+  ) =>
+  MeetSemiLattice (Array s a)
+  where
+  (/\) = zipWith (/\)
+
+instance
+  ( KnownNats s,
+    Subtractive a,
+    Epsilon a
+  ) =>
+  Epsilon (Array s a)
+  where
+  epsilon = konst epsilon
+
+instance
+  ( FromInteger a
+  ) =>
+  FromInteger (Array ('[] :: [Nat]) a)
+  where
+  fromInteger x = toScalar (fromInteger x)
+
+instance
+  ( FromRational a
+  ) =>
+  FromRational (Array ('[] :: [Nat]) a)
+  where
+  fromRational x = toScalar (fromRational x)
 
 instance (KnownNats s, Show a) => Pretty (Array s a) where
   pretty = pretty . toDynamic
