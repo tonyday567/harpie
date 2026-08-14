@@ -104,6 +104,20 @@ This, more general specification, should (one-day) allow more opportunities for 
 
 > forall f f' g g' (a :: forall a. Array a)). backpermute f g (backpermute f' g' a) == backpermute (f . f') (g . g') a
 
+Categorical completeness
+---
+
+harpie's shape operators are not an arbitrary bag of utilities. They are the structure maps of the free symmetric monoidal category with finite biproducts over finite index sets:
+
+- `insertDim` is the diagonal / broadcast `A → A^k`.
+- `deleteDim` is the discard / counit `A → I`.
+- `takeDim` and `dropDim` are the two coproduct injections of a dimension split.
+- `concatenate` is the codiagonal / copairing along an axis.
+- `reorder`, `transpose`, `rotate` and `reverse` are the free-SMC braidings and affine reflections.
+- `flatten` / `shapen` / `stridesOf` are the affine indexing maps.
+
+Together these generate the deterministic array-shape core of APL, J, BQN and Uiua. harpie already implements Uiua's shape verbs in `~/haskell/huihua/`; see `loom/harpie-shape-census.md` for the full dictionary and `loom/harpie-circuit-census.md` for the array-level contraction story.
+
 Type Ugliness
 ===
 

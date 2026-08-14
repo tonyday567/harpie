@@ -2245,6 +2245,10 @@ indexWindows r ds = VU.zipWith (+) (VU.take r ds) (VU.take r (VU.drop r ds)) VU.
 
 -- | Index into windows of an expanded windowed array, given a rank of the windows.
 --
+-- This is the schedule morphism that backs 'Harpie.Fixed.windows': it fuses the
+-- outer window-position index with the inner window-offset index into a single
+-- index into the original array.
+--
 -- >>> indexWindowsL 2 [0,1,2,1,1]
 -- [2,2,1]
 indexWindowsL :: Int -> [Int] -> [Int]

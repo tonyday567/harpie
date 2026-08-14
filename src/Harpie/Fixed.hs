@@ -1662,10 +1662,10 @@ diffs SNats xs f a = zips (Dims @ds) f (drops (Dims @ds) xs a) (dropBs (Dims @ds
 --   [[([1,1],[0,0]),([1,1],[0,1])],
 --    [([1,1],[1,0]),([1,1],[1,1])]]]]
 --
--- In circuit vocabulary this is the /tensor/ (⊗) reading of pairing: both
--- operands materialise on disjoint regions of the output shape @sa ++ sb@.
--- 'coexpand' is the bias-swapped twin, and 'prod' is the fused
--- multiplicative-disjunction (⅋) form.  See coffee/loom/harpie-circuit-census.md.
+-- Conceptually this is the tensor (⊗) product of arrays: the two operands are
+-- placed on disjoint regions of the output shape @sa ++ sb@.  'coexpand' is the
+-- same product with the operand order swapped, and 'prod' is the fused
+-- multiplicative-disjunction (⅋) form of contraction.
 expand ::
   forall sc sa sb a b c.
   ( KnownNats sa,
@@ -1694,9 +1694,8 @@ expand f a b = tabulate (\i -> f (index a (UnsafeFins $ List.take r (fromFins i)
 --  [(0,5),(1,5),(2,5)]]
 --
 -- This is the bias-swapped twin of 'expand': the first array's axes occupy the
--- suffix of the product shape rather than the prefix.  In circuit vocabulary
--- this is the other scheduling order of the two operands along the shared
--- channel.  See coffee/loom/harpie-circuit-census.md.
+-- suffix of the product shape rather than the prefix.  Conceptually this is the
+-- tensor (⊗) product with the opposite scheduling order.
 coexpand ::
   forall sc sa sb a b c.
   ( KnownNats sa,
@@ -1719,8 +1718,7 @@ coexpand f a b = tabulate (\i -> f (index a (UnsafeFins $ List.drop r (fromFins 
 -- The implementation is Δ on indices followed by ∇ on values: 'extracts' and
 -- 'diag' duplicate the shared index across the contracting dimensions, and
 -- the supplied folding function eliminates that channel.  'prod' is the fused
--- multiplicative-disjunction (⅋) form of the same cycle.  See
--- coffee/loom/harpie-circuit-census.md.
+-- multiplicative-disjunction (⅋) form of the same cycle.
 --
 --
 -- >>> pretty $ contract (Dims @[1,2]) sum (expand (*) m (transpose m))
@@ -1754,11 +1752,10 @@ contract SNats f a = f . diag <$> extracts (Dims @ds') a
 --
 -- > f . diag <$> extracts (Dims @ds') (expand g a b)
 --
--- In circuit vocabulary this is the fused /multiplicative disjunction/ (⅋)
--- form of contraction: the two arrays share the contracting index @si@ without
--- materialising the @s0 ++ s1@ product.  The per-side 'insertDimsL'
--- placements are the alignment schedule.  See
--- coffee/loom/harpie-circuit-census.md.
+-- Conceptually this is the fused multiplicative-disjunction (⅋) form of
+-- contraction: the two arrays share the contracting index @si@ without
+-- materialising the @s0 ++ s1@ outer product.  The per-side dimension arguments
+-- are the alignment schedule that identifies the shared axis.
 prod ::
   forall a b c d s0 s1 so0 so1 si st ds0 ds1.
   ( KnownNats so0,
@@ -1808,10 +1805,9 @@ prod SNats SNats g f a b = unsafeTabulate (\so -> g $ unsafeTabulate (\si -> f (
 -- >>> pretty $ dot sum (*) m v
 -- [5,14]
 --
--- In circuit vocabulary this is 'prod' with the canonical contracting
--- dimensions: the last axis of the first array and the first axis of the
--- second.  It is the inner/tensor/dot product in the fused ⅋ form.  See
--- coffee/loom/harpie-circuit-census.md.
+-- Conceptually this is 'prod' with the canonical contracting dimensions: the
+-- last axis of the first array and the first axis of the second.  It is the
+-- inner/tensor/dot product in the fused ⅋ form.
 dot ::
   forall a b c d ds0 ds1 s0 s1 so0 so1 st si.
   ( KnownNats s0,
@@ -1882,7 +1878,12 @@ mult ::
   Array st a
 mult = dot (foldr (Add.+) Add.zero) (Mult.*)
 
--- | @windows xs@ are xs-sized windows of an array
+-- | @windows xs@ are xs-sized windows of an array.
+--
+-- Conceptually this is a schedule morphism on the index category: the window
+-- position and the intra-window offset are two index streams that share the
+-- underlying data array, and 'Harpie.Shape.indexWindowsL' is the schedule that
+-- fuses them back into a single index.
 --
 -- >>> shape $ windows (Dims @[2,2]) (range @[4,3,2])
 -- [3,2,2,2,2]
@@ -2496,7 +2497,12 @@ ordersBy ::
   Dims ds -> (Array si a -> Array si b) -> Array s a -> Array so Int
 ordersBy SNats c a = unsafeModifyVector (orderByV c) (extracts (Dims @ds) a)
 
--- | Apply a binary array function to two arrays with matching shapes across the supplied (matching) dimensions.
+-- | Apply a binary array function to two arrays with matching shapes across the
+-- supplied dimensions.
+--
+-- Conceptually this is aligned broadcasting as a batch schedule: the outer
+-- dimensions are matched, and the supplied function is applied pointwise across
+-- the shared batch axes.
 --
 -- >>> a = array @[2,3] [0..5]
 -- >>> b = array @'[3] [6..8]
@@ -2526,7 +2532,11 @@ telecasts ::
   SNats ma -> SNats mb -> (Array sia a -> Array sib b -> Array sic c) -> Array sa a -> Array sb b -> Array sc c
 telecasts SNats SNats f a b = join (zipWith f (extracts (SNats @ma) a) (extracts (SNats @mb) b))
 
--- | Apply a binary array function to two arrays where the shape of the first array is a prefix of the second array.
+-- | Apply a binary array function to two arrays where the shape of the first
+-- array is a prefix of the second array.
+--
+-- Conceptually this is prefix broadcasting: the smaller array is tiled across
+-- the trailing axes of the larger one before the binary function is applied.
 --
 -- >>> a = array @[2,3] [0..5]
 -- >>> pretty $ transmit (zipWith (+)) (toScalar 1) a
