@@ -209,6 +209,8 @@ import Harpie.Array qualified as A
 import Harpie.Shape hiding (asScalar, asSingleton, concatenate, range, rank, reorder, rerank, rotate, size, squeeze)
 import Harpie.Shape qualified as S
 import Harpie.Sort
+import NumHask.Algebra.Additive qualified as Add
+import NumHask.Algebra.Multiplicative qualified as Mult
 import Prettyprinter hiding (dot, fill)
 import System.Random hiding (uniform)
 import System.Random.Stateful hiding (uniform)
@@ -741,8 +743,8 @@ indices = tabulate fromFins
 -- [[1,0,0],
 --  [0,1,0],
 --  [0,0,1]]
-ident :: (KnownNats s, Num a) => Array s a
-ident = tabulate (bool 0 1 . S.isDiag . VU.fromList . fromFins)
+ident :: (KnownNats s, Add.Additive a, Mult.Multiplicative a) => Array s a
+ident = tabulate (bool Add.zero Mult.one . S.isDiag . VU.fromList . fromFins)
 
 -- | Create an array composed of a single value.
 --
@@ -790,11 +792,11 @@ undiag ::
   ( KnownNats s,
     KnownNats s',
     s' ~ Eval ((++) s s),
-    Num a
+    Add.Additive a
   ) =>
   Array s a ->
   Array s' a
-undiag a = tabulate (\xs -> bool 0 (index a (UnsafeFins $ pure $ S.getDimL 0 (fromFins xs))) (S.isDiagL (fromFins xs)))
+undiag a = tabulate (\xs -> bool Add.zero (index a (UnsafeFins $ pure $ S.getDimL 0 (fromFins xs))) (S.isDiagL (fromFins xs)))
 
 -- | Zip two arrays at an element level.
 --
@@ -1864,7 +1866,8 @@ dot f g a b = prod (Dims @ds0) (Dims @ds1) f g a b
 -- [5,14]
 mult ::
   forall a ds0 ds1 s0 s1 so0 so1 st si.
-  ( Num a,
+  ( Add.Additive a,
+    Mult.Multiplicative a,
     KnownNats s0,
     KnownNats s1,
     KnownNats ds0,
@@ -1884,7 +1887,7 @@ mult ::
   Array s0 a ->
   Array s1 a ->
   Array st a
-mult = dot sum (*)
+mult = dot (foldr (Add.+) Add.zero) (Mult.*)
 
 -- | @windows xs@ are xs-sized windows of an array
 --
@@ -2779,7 +2782,7 @@ uniform g r = do
 -- [[49.36111111111111,-13.555555555555554,2.1111111111111107],
 --  [-13.555555555555554,3.7777777777777772,-0.5555555555555555],
 --  [2.1111111111111107,-0.5555555555555555,0.1111111111111111]]
-inverse :: (Eq a, Floating a, KnownNat m) => Matrix m m a -> Matrix m m a
+inverse :: (Add.Additive a, Mult.Multiplicative a, Floating a, KnownNat m) => Matrix m m a -> Matrix m m a
 inverse a = mult (invtri (transpose (chol a))) (invtri (chol a))
 
 -- | [Inversion of a Triangular Matrix](https://math.stackexchange.com/questions/1003801/inverse-of-an-invertible-upper-triangular-matrix-of-order-3)
@@ -2792,7 +2795,7 @@ inverse a = mult (invtri (transpose (chol a))) (invtri (chol a))
 --
 -- >>> ident == mult t (invtri t)
 -- True
-invtri :: forall a n. (KnownNat n, Floating a) => Matrix n n a -> Matrix n n a
+invtri :: forall a n. (KnownNat n, Add.Additive a, Mult.Multiplicative a, Floating a) => Matrix n n a -> Matrix n n a
 invtri a = i
   where
     ti = undiag (fmap recip (diag a))

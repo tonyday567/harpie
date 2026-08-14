@@ -211,6 +211,8 @@ import Harpie.Array.Generic qualified as A
 import Harpie.Shape hiding (asScalar, asSingleton, concatenate, range, rank, reorder, rerank, rotate, size, squeeze)
 import Harpie.Shape qualified as S
 import Harpie.Sort
+import NumHask.Algebra.Additive qualified as Add
+import NumHask.Algebra.Multiplicative qualified as Mult
 import Prettyprinter hiding (dot, fill)
 import System.Random hiding (uniform)
 import System.Random.Stateful hiding (uniform)
@@ -486,8 +488,8 @@ foldlA' f z (Array v) = VG.foldl' f z v
 toListA :: forall v s a. (VG.Vector v a) => Array v s a -> [a]
 toListA (Array v) = VG.toList v
 
-sumA :: forall v s a. (Num a, VG.Vector v a) => Array v s a -> a
-sumA (Array v) = VG.sum v
+sumA :: forall v s a. (Add.Additive a, VG.Vector v a) => Array v s a -> a
+sumA (Array v) = VG.foldr (Add.+) Add.zero v
 
 orA :: forall v s. (VG.Vector v Bool) => Array v s Bool -> Bool
 orA (Array v) = VG.or v
@@ -751,8 +753,8 @@ indices = tabulate fromFins
 -- [[1,0,0],
 --  [0,1,0],
 --  [0,0,1]]
-ident :: (KnownNats s, Num a, VG.Vector v a) => Array v s a
-ident = tabulate (bool 0 1 . S.isDiag . VU.fromList . fromFins)
+ident :: (KnownNats s, Add.Additive a, Mult.Multiplicative a, VG.Vector v a) => Array v s a
+ident = tabulate (bool Add.zero Mult.one . S.isDiag . VU.fromList . fromFins)
 
 -- | Create an array composed of a single value.
 --
@@ -783,8 +785,8 @@ diag a = unsafeBackpermute (replicate (rank a) . S.getDimL 0) a
 -- [[0,0,0],
 --  [0,1,0],
 --  [0,0,2]]
-undiag :: forall v s' a s. (KnownNats s, KnownNats s', s' ~ Eval ((++) s s), Num a, VG.Vector v a) => Array v s a -> Array v s' a
-undiag a = tabulate (\xs -> bool 0 (index a (UnsafeFins $ pure $ S.getDimL 0 (fromFins xs))) (S.isDiagL (fromFins xs)))
+undiag :: forall v s' a s. (KnownNats s, KnownNats s', s' ~ Eval ((++) s s), Add.Additive a, VG.Vector v a) => Array v s a -> Array v s' a
+undiag a = tabulate (\xs -> bool Add.zero (index a (UnsafeFins $ pure $ S.getDimL 0 (fromFins xs))) (S.isDiagL (fromFins xs)))
 
 -- | Zip two arrays at an element level.
 --
@@ -1344,8 +1346,8 @@ dot f g a b = prod (Dims @ds0) (Dims @ds1) f g a b
 --
 -- >>> pretty $ mult m v
 -- [5,14]
-mult :: forall v a ds0 ds1 s0 s1 so0 so1 st si. (Num a, KnownNats s0, KnownNats s1, KnownNats ds0, KnownNats ds1, KnownNats so0, KnownNats so1, KnownNats st, KnownNats si, so0 ~ Eval (DeleteDims ds0 s0), so1 ~ Eval (DeleteDims ds1 s1), si ~ Eval (GetDims ds0 s0), si ~ Eval (GetDims ds1 s1), st ~ Eval ((++) so0 so1), ds0 ~ '[Eval ((Fcf.-) (Eval (Rank s0)) 1)], ds1 ~ '[0], VG.Vector v a) => Array v s0 a -> Array v s1 a -> Array v st a
-mult = dot sumA (*)
+mult :: forall v a ds0 ds1 s0 s1 so0 so1 st si. (Add.Additive a, Mult.Multiplicative a, KnownNats s0, KnownNats s1, KnownNats ds0, KnownNats ds1, KnownNats so0, KnownNats so1, KnownNats st, KnownNats si, so0 ~ Eval (DeleteDims ds0 s0), so1 ~ Eval (DeleteDims ds1 s1), si ~ Eval (GetDims ds0 s0), si ~ Eval (GetDims ds1 s1), st ~ Eval ((++) so0 so1), ds0 ~ '[Eval ((Fcf.-) (Eval (Rank s0)) 1)], ds1 ~ '[0], VG.Vector v a) => Array v s0 a -> Array v s1 a -> Array v st a
+mult = dot sumA (Mult.*)
 
 -- | @windows xs@ are xs-sized windows of an array
 --
@@ -1830,7 +1832,7 @@ uniform g r = do
 -- [[49.36111111111111,-13.555555555555554,2.1111111111111107],
 --  [-13.555555555555554,3.7777777777777772,-0.5555555555555555],
 --  [2.1111111111111107,-0.5555555555555555,0.1111111111111111]]
-inverse :: forall v a m. (Eq a, Floating a, KnownNat m, VG.Vector v a, VG.Vector v Int, VG.Vector v (Array v '[m, m] a)) => Matrix v m m a -> Matrix v m m a
+inverse :: forall v a m. (Add.Additive a, Mult.Multiplicative a, Floating a, KnownNat m, VG.Vector v a, VG.Vector v Int, VG.Vector v (Array v '[m, m] a)) => Matrix v m m a -> Matrix v m m a
 inverse a = mult (invtri (transpose (chol a))) (invtri (chol a))
 
 -- | [Inversion of a Triangular Matrix](https://math.stackexchange.com/questions/1003801/inverse-of-an-invertible-upper-triangular-matrix-of-order-3)
@@ -1843,7 +1845,7 @@ inverse a = mult (invtri (transpose (chol a))) (invtri (chol a))
 --
 -- >>> ident == mult t (invtri t)
 -- True
-invtri :: forall v a n. (KnownNat n, Floating a, VG.Vector v a, VG.Vector v Int, VG.Vector v (Array v '[n, n] a)) => Matrix v n n a -> Matrix v n n a
+invtri :: forall v a n. (KnownNat n, Add.Additive a, Mult.Multiplicative a, Floating a, VG.Vector v a, VG.Vector v Int, VG.Vector v (Array v '[n, n] a)) => Matrix v n n a -> Matrix v n n a
 invtri a = i
   where
     ti = undiag (fmapA recip (diag a))

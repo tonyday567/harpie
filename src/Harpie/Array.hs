@@ -190,6 +190,8 @@ import GHC.Generics
 import Harpie.Shape hiding (asScalar, asSingleton, concatenate, range, rank, reorder, rerank, rotate, size, squeeze)
 import Harpie.Shape qualified as S
 import Harpie.Sort
+import NumHask.Algebra.Additive qualified as Add
+import NumHask.Algebra.Multiplicative qualified as Mult
 import Prettyprinter hiding (dot, fill)
 import System.Random hiding (uniform)
 import System.Random.Stateful hiding (uniform)
@@ -654,8 +656,8 @@ indices ds = tabulate ds id
 -- [[1,0,0],
 --  [0,1,0],
 --  [0,0,1]]
-ident :: (Num a) => [Int] -> Array a
-ident ds = tabulate ds (bool 0 1 . isDiag . VU.fromList)
+ident :: (Add.Additive a, Mult.Multiplicative a) => [Int] -> Array a
+ident ds = tabulate ds (bool Add.zero Mult.one . isDiag . VU.fromList)
 
 -- | Create an array composed of a single value.
 --
@@ -694,10 +696,10 @@ diag a = backpermute S.minDim (VU.replicate (rank a) . S.getDim 0) a
 --  [0,1,0],
 --  [0,0,2]]
 undiag ::
-  (Num a) =>
+  (Add.Additive a) =>
   Array a ->
   Array a
-undiag a = tabulate (VU.toList (shape a VU.++ shape a)) (\xs -> bool 0 (index a (List.take (rank a) xs)) (isDiag (VU.fromList xs)))
+undiag a = tabulate (VU.toList (shape a VU.++ shape a)) (\xs -> bool Add.zero (index a (List.take (rank a) xs)) (isDiag (VU.fromList xs)))
 
 -- | Zip two arrays at an element level.
 --
@@ -1426,11 +1428,11 @@ dot f g a b = contract [r - 1, r] f (expand g a b)
 -- >>> pretty $ mult m v
 -- [5,14]
 mult ::
-  (Num a) =>
+  (Add.Additive a, Mult.Multiplicative a) =>
   Array a ->
   Array a ->
   Array a
-mult a b = prod [rank a - 1] [0] sum (*) a b
+mult a b = prod [rank a - 1] [0] (foldr (Add.+) Add.zero) (Mult.*) a b
 
 -- | @windows xs@ are xs-sized windows of an array
 --
@@ -1988,7 +1990,7 @@ uniform g ds r = do
 --  [2.1111111111111107,-0.5555555555555555,0.1111111111111111]]
 --
 -- > mult (inverse a) a == a
-inverse :: (Floating a) => Array a -> Array a
+inverse :: (Add.Additive a, Mult.Multiplicative a, Floating a) => Array a -> Array a
 inverse a = mult (invtri (transpose (chol a))) (invtri (chol a))
 
 -- | [Inversion of a Triangular Matrix](https://math.stackexchange.com/questions/1003801/inverse-of-an-invertible-upper-triangular-matrix-of-order-3)
@@ -2000,7 +2002,7 @@ inverse a = mult (invtri (transpose (chol a))) (invtri (chol a))
 --  [0.0,0.0,1.0]]
 -- >>> ident (VU.toList (shape t)) == mult t (invtri t)
 -- True
-invtri :: (Fractional a) => Array a -> Array a
+invtri :: (Add.Additive a, Mult.Multiplicative a, Fractional a) => Array a -> Array a
 invtri a = i
   where
     ti = undiag (fmap recip (diag a))

@@ -1,4 +1,5 @@
 packages:
   harpie.cabal
+  ../numhask/numhask.cabal
 
 write-ghc-environment-files: always

@@ -160,6 +160,7 @@ library
     base >=4.18 && <5,
     distributive >=0.4 && <0.7,
     first-class-families >=0.8.1 && <0.9,
+    numhask >=0.14 && <0.15,
     prettyprinter >=1.7 && <1.8,
     random >=1.2 && <1.4,
     vector >=0.12.3 && <0.14,

@@ -40,6 +40,8 @@ import Harpie.Array.Generic hiding
   )
 import Harpie.Array.Generic qualified as G
 import Harpie.Shape qualified as S
+import NumHask.Algebra.Additive qualified as Add
+import NumHask.Algebra.Multiplicative qualified as Mult
 import Prelude hiding (cycle, drop, length, repeat, take, zip, zipWith)
 
 type Array a = G.Array VU.Vector a
@@ -139,7 +141,7 @@ corange = G.corange
 indices :: (VG.Vector VU.Vector [Int]) => [Int] -> Array [Int]
 indices = G.indices
 
-ident :: (Num a, VG.Vector VU.Vector a) => [Int] -> Array a
+ident :: (Add.Additive a, Mult.Multiplicative a, VG.Vector VU.Vector a) => [Int] -> Array a
 ident = G.ident
 
 konst :: (VG.Vector VU.Vector a) => [Int] -> a -> Array a
@@ -250,10 +252,10 @@ snoc = G.snoc
 iota :: (VG.Vector VU.Vector Int) => Int -> Array Int
 iota = G.iota
 
-invtri :: forall a v. (Fractional a, VG.Vector VU.Vector a, VG.Vector VU.Vector Int, VG.Vector VU.Vector (Array a)) => Array a -> Array a
+invtri :: forall a v. (Add.Additive a, Mult.Multiplicative a, Fractional a, VG.Vector VU.Vector a, VG.Vector VU.Vector Int, VG.Vector VU.Vector (Array a)) => Array a -> Array a
 invtri = G.invtri
 
-inverse :: (Floating a, VG.Vector VU.Vector a, VG.Vector VU.Vector Int, VG.Vector VU.Vector (Array a)) => Array a -> Array a
+inverse :: (Add.Additive a, Mult.Multiplicative a, Floating a, VG.Vector VU.Vector a, VG.Vector VU.Vector Int, VG.Vector VU.Vector (Array a)) => Array a -> Array a
 inverse = G.inverse
 
 chol :: (Floating a, VG.Vector VU.Vector a) => Array a -> Array a
