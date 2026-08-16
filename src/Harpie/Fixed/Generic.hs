@@ -228,28 +228,29 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 -- >>> :set -Wno-type-defaults
 -- >>> :set -Wno-name-shadowing
 -- >>> import Prelude hiding (cycle, repeat, take, drop, zipWith, length)
--- >>> import Harpie.Fixed as F
+-- >>> import Harpie.Fixed.Generic
 -- >>> import Harpie.Shape qualified as S
 -- >>> import Harpie.Shape (SNats, Fin (..), Fins (..))
 -- >>> import GHC.TypeNats
+-- >>> import Data.Vector qualified as Vec
 -- >>> import Data.List qualified as List
 -- >>> import Prettyprinter hiding (dot,fill)
 -- >>> import Data.Functor.Rep
--- >>> s = 1 :: Array '[] Int
+-- >>> s = array @Vec.Vector @'[] @Int [1]
 -- >>> s
 -- [1]
 -- >>> shape s
 -- []
 -- >>> pretty s
 -- 1
--- >>> let v = range @'[3]
+-- >>> let v = range :: Array Vec.Vector '[3] Int
 -- >>> pretty v
 -- [0,1,2]
--- >>> let m = range @[2,3]
+-- >>> let m = range :: Array Vec.Vector [2,3] Int
 -- >>> pretty m
 -- [[0,1,2],
 --  [3,4,5]]
--- >>> a = range @[2,3,4]
+-- >>> a = range :: Array Vec.Vector [2,3,4] Int
 -- >>> a
 -- [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
 -- >>> pretty a
@@ -259,7 +260,7 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 --  [[12,13,14,15],
 --   [16,17,18,19],
 --   [20,21,22,23]]]
--- >>> e = array @[3,3] @Double [4,12,-16,12,37,-43,-16,-43,98]
+-- >>> e = array @Vec.Vector @[3,3] @Double [4,12,-16,12,37,-43,-16,-43,98]
 -- >>> l = chol e
 
 -- $usage
@@ -295,7 +296,7 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 --
 -- An array with no dimensions (a scalar).
 --
--- >>> s = 1 :: Array '[] Int
+-- >>> s = 1 :: Array Vec.Vector '[] Int
 -- >>> s
 -- [1]
 -- >>> shape s
@@ -338,7 +339,7 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 --
 -- >>> array @[2,3,4] @Int [1..24]
 -- [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
--- >>> array [1..24] :: Array '[2,3,4] Int
+-- >>> array [1..24] :: Array Vec.Vector '[2,3,4] Int
 -- [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
 -- >>> pretty (array @[2,3,4] @Int [1..24])
 -- [[[1,2,3,4],
@@ -348,7 +349,7 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 --   [17,18,19,20],
 --   [21,22,23,24]]]
 --
--- >>> array [1,2,3] :: Array '[2,2] Int
+-- >>> array [1,2,3] :: Array Vec.Vector '[2,2] Int
 -- *** Exception: Shape Mismatch
 -- ...
 --
@@ -362,10 +363,10 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 -- >>> index a (S.UnsafeFins [1,2,3])
 -- 23
 --
--- >>> :t tabulate id :: Array [2,3] (Fins [2,3])
--- tabulate id :: Array [2,3] (Fins [2,3])
---   :: Array [2, 3] (Fins [2, 3])
--- >>> pretty (tabulate id :: Array [2,3] (Fins [2,3]))
+-- >>> :t tabulate id :: Array Vec.Vector [2,3] (Fins [2,3])
+-- tabulate id :: Array Vec.Vector [2,3] (Fins [2,3])
+--   :: Array Vec.Vector [2, 3] (Fins [2, 3])
+-- >>> pretty (tabulate id :: Array Vec.Vector [2,3] (Fins [2,3]))
 -- [[[0,0],[0,1],[0,2]],
 --  [[1,0],[1,1],[1,2]]]
 type role Array nominal nominal nominal
@@ -506,7 +507,7 @@ index (Array v) i = VG.unsafeIndex v (S.flatten (VU.fromList s) (VU.fromList (fr
 -- >>> asVector (range @[2,3])
 -- [0,1,2,3,4,5]
 --
--- >>> -- >>> vectorAs (VG.fromList [0..5]) :: Array [2,3] Int
+-- >>> -- >>> vectorAs (VG.fromList [0..5]) :: Array Vec.Vector [2,3] Int
 -- [0,1,2,3,4,5]
 class (VG.Vector v a) => FromVector t v a | t -> a where
   asVector :: t -> v a
@@ -526,14 +527,14 @@ instance {-# INCOHERENT #-} (VG.Vector v a) => FromVector (Array v s a) v a wher
 
 -- | Construct an array without shape validation.
 --
--- >>> unsafeArray [0..4] :: Array [2,3] Int
+-- >>> unsafeArray [0..4] :: Array Vec.Vector [2,3] Int
 -- [0,1,2,3,4]
 unsafeArray :: (KnownNats s, FromVector t v a, VG.Vector v a) => t -> Array v s a
 unsafeArray (asVector -> v) = Array v
 
 -- | Validate the size and shape of an array.
 --
--- >>> validate (unsafeArray [0..4] :: Array [2,3] Int)
+-- >>> validate (unsafeArray [0..4] :: Array Vec.Vector [2,3] Int)
 -- False
 validate :: (KnownNats s, VG.Vector v a) => Array v s a -> Bool
 validate a@(Array v) = size a == VG.length v
@@ -550,7 +551,7 @@ safeArray v =
 
 -- | Construct an Array, throwing an exception on a bad shape.
 --
--- >>> array [0..22] :: Array [2,3,4] Int
+-- >>> array [0..22] :: Array Vec.Vector [2,3,4] Int
 -- *** Exception: Shape Mismatch
 -- ...
 array :: forall v s a t. (KnownNats s, FromVector t v a, VG.Vector v a) => t -> Array v s a
@@ -568,7 +569,7 @@ unsafeModifyShape (Array v) = Array v
 
 -- | Unsafely modify an array vector.
 --
--- >>> -- >>> pretty (unsafeModifyVector (V.map (+1)) (array [0..5] :: Array [2,3] Int))
+-- >>> -- >>> pretty (unsafeModifyVector (V.map (+1)) (array [0..5] :: Array Vec.Vector [2,3] Int))
 -- [[1,2,3],
 --  [4,5,6]]
 unsafeModifyVector :: forall v s a b. (KnownNats s, VG.Vector v a, VG.Vector v b) => (v a -> v b) -> Array v s a -> Array v s b
@@ -678,9 +679,9 @@ length a = case VU.toList (shape a) of
 
 -- | Is the Array empty (has zero number of elements).
 --
--- >>> isNull (array [] :: Array [2,0] ())
+-- >>> isNull (array [] :: Array Vec.Vector [2,0] ())
 -- True
--- >>> isNull (array [4] :: Array '[] Int)
+-- >>> isNull (array [4] :: Array Vec.Vector '[] Int)
 -- False
 isNull :: (KnownNats s, VG.Vector v a) => Array v s a -> Bool
 isNull = (0 ==) . size
@@ -715,9 +716,9 @@ infixl 9 !?
 -- | Tabulate unsafely.
 --
 -- >>> :t tabulate @(Array [2,3]) id
--- tabulate @(Array [2,3]) id :: Array [2, 3] (Fins [2, 3])
+-- tabulate @(Array [2,3]) id :: Array Vec.Vector [2, 3] (Fins [2, 3])
 -- >>> :t unsafeTabulate @[2,3] id
--- unsafeTabulate @[2,3] id :: Array [2, 3] [Int]
+-- unsafeTabulate @[2,3] id :: Array Vec.Vector [2, 3] [Int]
 -- >>> pretty $ unsafeTabulate @[2,3] id
 -- [[[0,0],[0,1],[0,2]],
 --  [[1,0],[1,1],[1,2]]]
@@ -784,7 +785,7 @@ fromScalar a = index a (UnsafeFins [])
 -- | Wrap a scalar.
 --
 -- >>> :t toScalar @Int 2
--- toScalar @Int 2 :: Array '[] Int
+-- toScalar @Int 2 :: Array Vec.Vector '[] Int
 toScalar :: (VG.Vector v a) => a -> Array v '[] a
 toScalar a = Array (VG.singleton a)
 
@@ -818,7 +819,7 @@ empty = array []
 
 -- | An enumeration of row-major or [lexicographic](https://en.wikipedia.org/wiki/Lexicographic_order) order.
 --
--- >>> pretty (range :: Array [2,3] Int)
+-- >>> pretty (range :: Array Vec.Vector [2,3] Int)
 -- [[0,1,2],
 --  [3,4,5]]
 range :: forall v s. (KnownNats s, VG.Vector v Int) => Array v s Int
@@ -1336,7 +1337,7 @@ diffs SNats xs f a = zips (Dims @ds) f (drops (Dims @ds) xs a) (dropBs (Dims @ds
 --
 -- ... the tensor product can be extended to other categories of mathematical objects in addition to vector spaces, such as to matrices, tensors, algebras, topological vector spaces, and modules. In each such case the tensor product is characterized by a similar universal property: it is the freest bilinear operation. The general concept of a "tensor product" is captured by monoidal categories; that is, the class of all things that have a tensor product is a monoidal category.
 --
--- >>> x = array [1,2,3] :: Array '[3] Int
+-- >>> x = array [1,2,3] :: Array Vec.Vector '[3] Int
 -- >>> pretty $ expand (*) x x
 -- [[1,2,3],
 --  [2,4,6],
@@ -1640,7 +1641,7 @@ reorder SNats a = unsafeBackpermute (\s -> S.insertDimsL (valuesOf @ds) s []) a
 
 -- | Remove single dimensions.
 --
--- >>> let sq = array [1..24] :: Array '[2,1,3,4,1] Int
+-- >>> let sq = array [1..24] :: Array Vec.Vector '[2,1,3,4,1] Int
 -- >>> shape $ squeeze sq
 -- [2,3,4]
 --

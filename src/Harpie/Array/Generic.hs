@@ -209,25 +209,25 @@ import Prelude as P hiding (cycle, drop, length, repeat, take, zip, zipWith)
 -- $setup
 -- >>> :m -Prelude
 -- >>> import Prelude hiding (take, drop, zipWith, length, cycle, repeat)
--- >>> import Harpie.Array as A
+-- >>> import Harpie.Array.Generic
 -- >>> import Harpie.Shape qualified as S
--- >>> import Data.Vector qualified as V
+-- >>> import Data.Vector (Vector)
 -- >>> import Data.Vector.Unboxed qualified as VU
 -- >>> import Prettyprinter hiding (dot, fill)
 -- >>> import Data.List qualified as List
--- >>> let s = 1 :: Array v Int
+-- >>> let s = 1 :: Array Vector Int
 -- >>> s
 -- UnsafeArray [] [1]
 -- >>> pretty s
 -- 1
--- >>> let v = range [3]
+-- >>> let v = range [3] :: Array Vector Int
 -- >>> v
 -- UnsafeArray [3] [0,1,2]
--- >>> let m = range [2,3]
+-- >>> let m = range [2,3] :: Array Vector Int
 -- >>> pretty m
 -- [[0,1,2],
 --  [3,4,5]]
--- >>> let a = range [2,3,4]
+-- >>> let a = range [2,3,4] :: Array Vector Int
 -- >>> a
 -- UnsafeArray [2,3,4] [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
 -- >>> pretty a
@@ -257,7 +257,7 @@ import Prelude as P hiding (cycle, drop, length, repeat, take, zip, zipWith)
 --
 -- An array with no dimensions (a scalar).
 --
--- >>> s = 1 :: Array v Int
+-- >>> s = 1 :: Array Vector Int
 -- >>> s
 -- UnsafeArray [] [1]
 -- >>> shape s
@@ -293,7 +293,7 @@ import Prelude as P hiding (cycle, drop, length, repeat, take, zip, zipWith)
 
 -- | A hyperrectangular (or multidimensional) array with a value-level shape.
 --
--- >>> let a = array [2,3,4] [1..24] :: Array v Int
+-- >>> let a = array [2,3,4] [1..24] :: Array Vector Int
 -- >>> a
 -- UnsafeArray [2,3,4] [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
 --
@@ -408,7 +408,7 @@ infixl 4 ><
 
 -- | Validate the size and shape of an array.
 --
--- >>> validate (array [2,3,4] [1..23] :: Array v Int)
+-- >>> validate (array [2,3,4] [1..23] :: Array Vector Int)
 -- False
 validate :: (VG.Vector v a) => Array v a -> Bool
 validate a = size a == VG.length (asVector a)
@@ -457,7 +457,7 @@ shape (UnsafeArray s _ _) = s
 rank :: Array v a -> Int
 rank = S.rank . shape
 
--- | size of an Array, which is the total number of elements, if the Array v is valid.
+-- | size of an Array, which is the total number of elements, if the Array Vector is valid.
 --
 -- >>> size a
 -- 24
@@ -473,11 +473,11 @@ size = S.size . shape
 length :: Array v a -> Int
 length a = bool (VU.head (shape a)) 1 (VU.null (shape a))
 
--- | Is the Array v empty (has zero number of elements).
+-- | Is the Array Vector empty (has zero number of elements).
 --
--- >>> isNull ([2,0] >< [] :: Array v ())
+-- >>> isNull ([2,0] >< [] :: Array Vector ())
 -- True
--- >>> isNull ([] >< [4] :: Array v Int)
+-- >>> isNull ([] >< [4] :: Array Vector Int)
 -- False
 isNull :: Array v a -> Bool
 isNull = (0 ==) . size
@@ -559,7 +559,7 @@ backpermute f g a = tabulateV (f (shape a)) (indexV a . g)
 
 -- | Unwrap a scalar.
 --
--- >>> let s = array [] [3] :: Array v Int
+-- >>> let s = array [] [3] :: Array Vector Int
 -- >>> fromScalar s
 -- 3
 fromScalar :: (VG.Vector v a) => Array v a -> a
@@ -568,7 +568,7 @@ fromScalar a = index a ([] :: [Int])
 -- | Wrap a scalar.
 --
 -- >>> :t toScalar 2
--- toScalar 2 :: Num a => Array v a
+-- toScalar 2 :: Num a => Array Vector a
 toScalar :: (VG.Vector v a) => a -> Array v a
 toScalar a = tabulate [] (const a)
 
@@ -1409,7 +1409,7 @@ prod ds0 ds1 g f a b =
 -- 5
 --
 -- matrix-vector multiplication
--- Note that an Array v with shape [3] is neither a row vector nor column vector.
+-- Note that an Array Vector with shape [3] is neither a row vector nor column vector.
 --
 -- >>> pretty $ dot sum (*) v (transpose m)
 -- [5,14]
@@ -1427,7 +1427,7 @@ dot f g a b = contract [r - 1, r] f (expand g a b)
   where
     r = rank a
 
--- | Array v multiplication.
+-- | Array Vector multiplication.
 --
 -- matrix multiplication
 --
@@ -1464,8 +1464,8 @@ windows xs a = backpermute (S.expandWindows (VU.fromList xs)) (S.indexWindows (S
 
 -- | Find the starting positions of occurences of one array in another.
 --
--- >>> a = cycle [4,4] (range [3]) :: Array v Int
--- >>> i = array [2,2] [1,2,2,0] :: Array v Int
+-- >>> a = cycle [4,4] (range [3]) :: Array Vector Int
+-- >>> i = array [2,2] [1,2,2,0] :: Array Vector Int
 -- >>> pretty $ find i a
 -- [[False,True,False],
 --  [True,False,False],
@@ -1479,8 +1479,8 @@ find i a = xs
 
 -- | Find the ending positions of one array in another except where the array overlaps with another copy.
 --
--- >>> a = konst [5,5] 1 :: Array v Int
--- >>> i = konst [2,2] 1 :: Array v Int
+-- >>> a = konst [5,5] 1 :: Array Vector Int
+-- >>> i = konst [2,2] 1 :: Array Vector Int
 -- >>> pretty $ findNoOverlap i a
 -- [[True,False,True,False],
 --  [False,False,False,False],
@@ -1501,8 +1501,8 @@ findNoOverlap i a = r
 
 -- | Find the indices of the starting location of one array in another.
 --
--- >>> b = cycle [4,4] (range [3]) :: Array v Int
--- >>> i = array [2,2] [1,2,2,0] :: Array v Int
+-- >>> b = cycle [4,4] (range [3]) :: Array Vector Int
+-- >>> i = array [2,2] [1,2,2,0] :: Array Vector Int
 -- >>> pretty $ findIndices i b
 -- [[0,1],[1,0],[2,2]]
 findIndices :: (Eq (v a), VG.Vector v [Int], VG.Vector v a, VG.Vector v Bool, VG.Vector v ([Int], Bool), VG.Vector v (Array v a)) => Array v a -> Array v a -> Array v [Int]
@@ -1547,7 +1547,7 @@ fill x (UnsafeArray s _ v) = unsafeArray s (VG.take (S.size s) (v VG.++ VG.repli
 
 -- | Cut an array to form a new (smaller) shape. Errors if the new shape is larger. The old array is reranked to the rank of the new shape first.
 --
--- >>> cut [2] (array [4] [0..3] :: Array v Int)
+-- >>> cut [2] (array [4] [0..3] :: Array Vector Int)
 -- UnsafeArray [2] [0,1]
 cut ::
   (VG.Vector v a) =>
@@ -1574,7 +1574,7 @@ cutSuffix s' a = bool (error "bad cut") (tabulate s' (index a' . List.zipWith (+
 
 -- | Pad an array to form a new shape, supplying a default value for elements outside the shape of the old array. The old array is reranked to the rank of the new shape first.
 --
--- >>> pad 0 [5] (array [4] [0..3] :: Array v Int)
+-- >>> pad 0 [5] (array [4] [0..3] :: Array Vector Int)
 -- UnsafeArray [5] [0,1,2,3,0]
 pad ::
   (VG.Vector v a) =>
@@ -1588,9 +1588,9 @@ pad d s' a = tabulate s' (\s -> bool d (index a' s) (VU.fromList s `S.isFins` sh
 
 -- | Left pad an array to form a new shape, supplying a default value for elements outside the shape of the old array.
 --
--- >>> lpad 0 [5] (array [4] [0..3] :: Array v Int)
+-- >>> lpad 0 [5] (array [4] [0..3] :: Array Vector Int)
 -- UnsafeArray [5] [0,0,1,2,3]
--- >>> pretty $ lpad 0 [3,3] (range [2,2] :: Array v Int)
+-- >>> pretty $ lpad 0 [3,3] (range [2,2] :: Array Vector Int)
 -- [[0,0,0],
 --  [0,0,1],
 --  [0,2,3]]
@@ -1628,7 +1628,7 @@ reshape ::
   Array v a
 reshape s a = backpermute (const (VU.fromList s)) (S.shapen (shape a) . S.flatten (VU.fromList s)) a
 
--- | Make an Array v single dimensional.
+-- | Make an Array Vector single dimensional.
 --
 -- >>> pretty $ flat (range [2,2])
 -- [0,1,2,3]
@@ -1698,7 +1698,7 @@ reorder ds a = backpermute (`S.reorder` VU.fromList ds) (\s -> S.insertDims (VU.
 
 -- | Remove single dimensions.
 --
--- >>> let sq = array [2,1,3,4,1] [1..24] :: Array v Int
+-- >>> let sq = array [2,1,3,4,1] [1..24] :: Array Vector Int
 -- >>> shape $ squeeze sq
 -- [2,3,4]
 --

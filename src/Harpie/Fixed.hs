@@ -233,7 +233,7 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 -- >>> import Data.List qualified as List
 -- >>> import Prettyprinter hiding (dot,fill)
 -- >>> import Data.Functor.Rep
--- >>> s = 1 :: Array '[] Int
+-- >>> s = array [1] :: Array '[] Int
 -- >>> s
 -- [1]
 -- >>> shape s
@@ -291,7 +291,7 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 --
 -- An array with no dimensions (a scalar).
 --
--- >>> s = 1 :: Array '[] Int
+-- >>> s = array [1] :: Array '[] Int
 -- >>> s
 -- [1]
 -- >>> shape s
