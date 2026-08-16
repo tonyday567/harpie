@@ -1496,10 +1496,9 @@ find i a = xs
 
 -- | Find the ending positions of one array in another except where the array overlaps with another copy.
 --
--- Non-overlap thinning is still wrong on the generic carrier (all-True).
--- > a = konst [5,5] 1 :: Array Vector Int
--- > i = konst [2,2] 1 :: Array Vector Int
--- > pretty $ findNoOverlap i a
+-- >>> a = konst [5,5] 1 :: Array Vector Int
+-- >>> i = konst [2,2] 1 :: Array Vector Int
+-- >>> pretty $ findNoOverlap i a
 -- [[True,False,True,False],
 --  [False,False,False,False],
 --  [True,False,True,False],
@@ -1513,7 +1512,7 @@ findNoOverlap i a = r
     cl sh =
       List.filter (P.not . any (> 0) . List.init) $
         List.filter (P.not . all (>= 0)) $
-          fmap (List.zipWith (\x x0 -> x - x0 + 1) sh) (traverse (\x -> [0 .. (2 * x - 2)]) sh)
+          fmap (\s -> List.zipWith (\x x0 -> x - x0 + 1) s sh) (traverse (\x -> [0 .. (2 * x - 2)]) sh)
     go r' s = index f s && not (any (index r') (List.filter (\x -> S.isFins (VU.fromList x) (shape f)) $ fmap (List.zipWith (+) s) (cl (VU.toList (shape i)))))
     r = tabulate (VU.toList (shape f)) (go r)
 
@@ -1867,14 +1866,10 @@ orderByG c a = VG.modify (sortBy comp) init0
 -- UnsafeArray [2,2] [1,4,2,3]
 -- >>> sorts [1] (array [2,2] [2,3,1,4])
 -- UnsafeArray [2,2] [2,3,1,4]
---
--- Multi-dimension sorts currently throw getDim outside bounds on Generic.
--- > sorts [0,1] (array [2,2] [2,3,1,4])
+-- >>> sorts [0,1] (array [2,2] [2,3,1,4])
 -- UnsafeArray [2,2] [1,2,3,4]
 sorts :: (Ord (v a), VG.Vector v a, VG.Vector v Int, VG.Vector v (Array v a)) => Dims -> Array v a -> Array v a
-sorts ds a = joins ds $ unsafeArrayL [VG.length v'] v'
-  where
-    v' = sortG (asVector (extracts ds a))
+sorts ds a = joins ds $ unsafeModifyVector sortG (extracts ds a)
 
 -- | The indices into the array if it were sorted by a comparison function along the dimensions supplied.
 --
@@ -1882,9 +1877,7 @@ sorts ds a = joins ds $ unsafeArrayL [VG.length v'] v'
 -- >>> sortsBy [0] (fmapA Down) (array [2,2] [2,3,1,4])
 -- UnsafeArray [2,2] [2,3,1,4]
 sortsBy :: (Ord (v b), VG.Vector v a, VG.Vector v Int, VG.Vector v (Array v a)) => Dims -> (Array v a -> Array v b) -> Array v a -> Array v a
-sortsBy ds c a = joins ds $ unsafeArrayL [VG.length v'] v'
-  where
-    v' = sortByG c (asVector (extracts ds a))
+sortsBy ds c a = joins ds $ unsafeModifyVector (sortByG c) (extracts ds a)
 
 -- | The indices into the array if it were sorted along the dimensions supplied.
 --
