@@ -252,5 +252,3 @@ snoc = G.snoc
 
 iota :: (VG.Vector VS.Vector Int) => Int -> Array Int
 iota = G.iota
-
-

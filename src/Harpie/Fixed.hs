@@ -217,7 +217,7 @@ import Prettyprinter hiding (dot, fill)
 import System.Random hiding (uniform)
 import System.Random.Stateful hiding (uniform)
 import Unsafe.Coerce
-import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRational, length, negate, repeat, sequence, take, zipWith)
+import Prelude as P hiding (cycle, drop, fromInteger, fromRational, length, negate, repeat, sequence, take, zipWith, (*), (+), (-), (/))
 
 -- $setup
 --
@@ -257,7 +257,7 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 --  [[12,13,14,15],
 --   [16,17,18,19],
 --   [20,21,22,23]]]
---
+
 -- $usage
 --
 -- >>> :set -XDataKinds
@@ -448,15 +448,13 @@ instance
   epsilon = konst epsilon
 
 instance
-  ( FromInteger a
-  ) =>
+  (FromInteger a) =>
   FromInteger (Array ('[] :: [Nat]) a)
   where
   fromInteger x = toScalar (fromInteger x)
 
 instance
-  ( FromRational a
-  ) =>
+  (FromRational a) =>
   FromRational (Array ('[] :: [Nat]) a)
   where
   fromRational x = toScalar (fromRational x)
@@ -2866,5 +2864,3 @@ uniform ::
 uniform g r = do
   v <- V.replicateM (S.size (VU.fromList (valuesOf @s))) (uniformRM r g)
   pure $ array v
-
-

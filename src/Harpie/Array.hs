@@ -1,9 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
@@ -1985,5 +1982,3 @@ uniform :: (StatefulGen g m, UniformRange a) => g -> [Int] -> (a, a) -> m (Array
 uniform g ds r = do
   v <- V.replicateM (S.size (VU.fromList ds)) (uniformRM r g)
   pure $ unsafeArray (VU.fromList ds) v
-
-
