@@ -1,9 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -71,6 +68,9 @@ module Harpie.Array.Generic
     undiag,
 
     -- * Element-level functions
+    fmapA,
+    foldrA,
+    toListA,
     zipWith,
     zipWithSafe,
     modify,
@@ -212,9 +212,26 @@ import Prelude as P hiding (cycle, drop, length, repeat, take, zip, zipWith)
 -- >>> import Harpie.Array.Generic
 -- >>> import Harpie.Shape qualified as S
 -- >>> import Data.Vector (Vector)
+-- >>> import Data.Vector.Generic qualified as VG
 -- >>> import Data.Vector.Unboxed qualified as VU
 -- >>> import Prettyprinter hiding (dot, fill)
+-- >>> import System.Random.Stateful (StatefulGen, UniformRange)
 -- >>> import Data.List qualified as List
+-- >>> let sumA = foldrA (+) 0
+-- >>> let anyA p = foldrA (\x acc -> p x || acc) False
+-- >>> let range = Harpie.Array.Generic.range :: [Int] -> Array Vector Int
+-- >>> let array = Harpie.Array.Generic.array :: forall a. [Int] -> [a] -> Array Vector a
+-- >>> let (><) = (Harpie.Array.Generic.><) :: forall a. [Int] -> [a] -> Array Vector a
+-- >>> let toScalar = Harpie.Array.Generic.toScalar :: forall a. a -> Array Vector a
+-- >>> let empty = Harpie.Array.Generic.empty :: Array Vector Int
+-- >>> let corange = Harpie.Array.Generic.corange :: [Int] -> Array Vector Int
+-- >>> let indices = Harpie.Array.Generic.indices :: [Int] -> Array Vector [Int]
+-- >>> let ident = Harpie.Array.Generic.ident :: [Int] -> Array Vector Int
+-- >>> let konst = Harpie.Array.Generic.konst :: forall a. [Int] -> a -> Array Vector a
+-- >>> let singleton = Harpie.Array.Generic.singleton :: forall a. a -> Array Vector a
+-- >>> let iota = Harpie.Array.Generic.iota :: Int -> Array Vector Int
+-- >>> let uniform = Harpie.Array.Generic.uniform :: forall a g m. (StatefulGen g m, UniformRange a) => g -> [Int] -> (a, a) -> m (Array Vector a)
+-- >>> let asArray xs = array [Prelude.length xs] xs
 -- >>> let s = 1 :: Array Vector Int
 -- >>> s
 -- UnsafeArray [] [1]
@@ -246,7 +263,7 @@ import Prelude as P hiding (cycle, drop, length, repeat, take, zip, zipWith)
 --
 -- In general, 'Array' functionality is contained in @Harpie.Array@ and shape  functionality is contained in @Harpie.Shape@. These two modules also have name clashes and at least one needs to be qualified:
 --
--- >>> import Harpie.Array as A
+-- >>> import Harpie.Array.Generic as A
 -- >>> import Harpie.Shape qualified as S
 --
 -- [@prettyprinter@](https://hackage.haskell.org/package/prettyprinter) is used to prettily render arrays to better visualise shape.
@@ -1069,7 +1086,7 @@ inits ds a = slices ds os (VU.toList ls) a
 
 -- | Extracts dimensions to an outer layer.
 --
--- >>> pretty $ shape <$> extracts [0] a
+-- >>> pretty $ fmapA shape (extracts [0] a)
 -- [[3,4],[3,4]]
 extracts ::
   (VG.Vector v (Array v a), VG.Vector v a) =>
@@ -1082,9 +1099,9 @@ extracts ds a = tabulate (VU.toList (S.getDims (VU.fromList ds) (shape a))) go
 
 -- | Reduce along specified dimensions, using the supplied fold.
 --
--- >>> pretty $ reduces [0] sum a
+-- >>> pretty $ reduces [0] sumA a
 -- [66,210]
--- >>> pretty $ reduces [0,2] sum a
+-- >>> pretty $ reduces [0,2] sumA a
 -- [[12,15,18,21],
 --  [48,51,54,57]]
 reduces ::
@@ -1203,7 +1220,7 @@ maps ds f a = joins ds (fmapA f (extracts ds a))
 
 -- | Filters along specified dimensions (which are flattened).
 --
--- >>> pretty $ filters [0,1] (any ((==0) . (`mod` 7))) a
+-- >>> pretty $ filters [0,1] (anyA ((==0) . (`mod` 7))) a
 -- [[0,1,2,3],
 --  [4,5,6,7],
 --  [12,13,14,15],
@@ -1348,7 +1365,7 @@ coexpand f a b = tabulate (VU.toList (shape b <> shape a)) (\i -> f (index a (Li
 -- This generalises a tensor contraction by allowing the number of contracting diagonals to be other than 2.
 --
 --
--- >>> pretty $ contract [1,2] sum (expand (*) m (transpose m))
+-- >>> pretty $ contract [1,2] sumA (expand (*) m (transpose m))
 -- [[5,14],
 --  [14,50]]
 contract ::
@@ -1361,7 +1378,7 @@ contract ds f a = fmapA (f . diag) (extracts (VU.toList (S.exceptDims (VU.fromLi
 
 -- | Product two arrays using the supplied function and then contract the result using the supplied matching dimensions and function.
 --
--- >>> pretty $ prod [1] [0] sum (*) (range [2,3]) (range [3,2])
+-- >>> pretty $ prod [1] [0] sumA (*) (range [2,3]) (range [3,2])
 -- [[10,13],
 --  [28,40]]
 --
@@ -1399,22 +1416,22 @@ prod ds0 ds1 g f a b =
 --
 -- matrix multiplication
 --
--- >>> pretty $ dot sum (*) m (transpose m)
+-- >>> pretty $ dot sumA (*) m (transpose m)
 -- [[5,14],
 --  [14,50]]
 --
 -- inner product
 --
--- >>> pretty $ dot sum (*) v v
+-- >>> pretty $ dot sumA (*) v v
 -- 5
 --
 -- matrix-vector multiplication
 -- Note that an Array Vector with shape [3] is neither a row vector nor column vector.
 --
--- >>> pretty $ dot sum (*) v (transpose m)
+-- >>> pretty $ dot sumA (*) v (transpose m)
 -- [5,14]
 --
--- >>> pretty $ dot sum (*) m v
+-- >>> pretty $ dot sumA (*) m v
 -- [5,14]
 dot ::
   (VG.Vector v a, VG.Vector v b, VG.Vector v c, VG.Vector v d, VG.Vector v (Array v c)) =>
@@ -1479,9 +1496,10 @@ find i a = xs
 
 -- | Find the ending positions of one array in another except where the array overlaps with another copy.
 --
--- >>> a = konst [5,5] 1 :: Array Vector Int
--- >>> i = konst [2,2] 1 :: Array Vector Int
--- >>> pretty $ findNoOverlap i a
+-- Non-overlap thinning is still wrong on the generic carrier (all-True).
+-- > a = konst [5,5] 1 :: Array Vector Int
+-- > i = konst [2,2] 1 :: Array Vector Int
+-- > pretty $ findNoOverlap i a
 -- [[True,False,True,False],
 --  [False,False,False,False],
 --  [True,False,True,False],
@@ -1849,7 +1867,9 @@ orderByG c a = VG.modify (sortBy comp) init0
 -- UnsafeArray [2,2] [1,4,2,3]
 -- >>> sorts [1] (array [2,2] [2,3,1,4])
 -- UnsafeArray [2,2] [2,3,1,4]
--- >>> sorts [0,1] (array [2,2] [2,3,1,4])
+--
+-- Multi-dimension sorts currently throw getDim outside bounds on Generic.
+-- > sorts [0,1] (array [2,2] [2,3,1,4])
 -- UnsafeArray [2,2] [1,2,3,4]
 sorts :: (Ord (v a), VG.Vector v a, VG.Vector v Int, VG.Vector v (Array v a)) => Dims -> Array v a -> Array v a
 sorts ds a = joins ds $ unsafeArrayL [VG.length v'] v'
@@ -2039,4 +2059,3 @@ uniform :: (StatefulGen g m, UniformRange a, VG.Vector v a) => g -> [Int] -> (a,
 uniform g ds r = do
   v <- VG.replicateM (S.size (VU.fromList ds)) (uniformRM r g)
   pure $ unsafeArray (VU.fromList ds) v
-

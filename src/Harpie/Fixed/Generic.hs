@@ -219,7 +219,7 @@ import Prettyprinter hiding (dot, fill)
 import System.Random hiding (uniform)
 import System.Random.Stateful hiding (uniform)
 import Unsafe.Coerce
-import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRational, length, negate, repeat, sequence, take, zipWith)
+import Prelude as P hiding (cycle, drop, fromInteger, fromRational, length, negate, repeat, sequence, take, zipWith, (*), (+), (-), (/))
 
 -- $setup
 --
@@ -235,33 +235,11 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 -- >>> import Data.Vector qualified as Vec
 -- >>> import Data.List qualified as List
 -- >>> import Prettyprinter hiding (dot,fill)
--- >>> import Data.Functor.Rep
+-- >>> import Data.Functor.Rep hiding (index, tabulate)
 -- >>> s = array @Vec.Vector @'[] @Int [1]
--- >>> s
--- [1]
--- >>> shape s
--- []
--- >>> pretty s
--- 1
--- >>> let v = range :: Array Vec.Vector '[3] Int
--- >>> pretty v
--- [0,1,2]
--- >>> let m = range :: Array Vec.Vector [2,3] Int
--- >>> pretty m
--- [[0,1,2],
---  [3,4,5]]
--- >>> a = range :: Array Vec.Vector [2,3,4] Int
--- >>> a
--- [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
--- >>> pretty a
--- [[[0,1,2,3],
---   [4,5,6,7],
---   [8,9,10,11]],
---  [[12,13,14,15],
---   [16,17,18,19],
---   [20,21,22,23]]]
--- >>> e = array @Vec.Vector @[3,3] @Double [4,12,-16,12,37,-43,-16,-43,98]
--- >>> l = chol e
+-- >>> let v = range @Vec.Vector @'[3]
+-- >>> let m = range @Vec.Vector @[2,3]
+-- >>> a = range @Vec.Vector @[2,3,4]
 
 -- $usage
 --
@@ -273,7 +251,7 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 --
 -- In general, 'Array' functionality is contained in @Harpie.Fixed@ and shape  functionality is contained in @Harpie.Shape@. These two modules also have name clashes and at least one needs to be qualified:
 --
--- >>> import Harpie.Fixed as F
+-- >>> import Harpie.Fixed.Generic as F
 -- >>> import Harpie.Shape qualified as S
 --
 -- [@prettyprinter@](https://hackage.haskell.org/package/prettyprinter) is used to prettily render arrays to better visualise shape.
@@ -282,7 +260,7 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 --
 -- The 'Representable' class from [@adjunctions@](https://hackage.haskell.org/package/adjunctions) is used heavily by the module.
 --
--- >>> import Data.Functor.Rep
+-- >>> import Data.Functor.Rep hiding (index, tabulate)
 --
 -- An important base accounting of 'Array' shape is the singleton types 'SNat' (a type-level 'Natural' or 'Nat') from [GHC.TypeNats](https://hackage.haskell.org/package/base/docs/GHC-TypeNats.html) in base.
 --
@@ -296,7 +274,7 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 --
 -- An array with no dimensions (a scalar).
 --
--- >>> s = 1 :: Array Vec.Vector '[] Int
+-- >>> s = array @Vec.Vector @'[] @Int [1]
 -- >>> s
 -- [1]
 -- >>> shape s
@@ -306,20 +284,20 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 --
 -- A single-dimension array (a vector).
 --
--- >>> let v = range @'[3]
+-- >>> let v = range @Vec.Vector @'[3]
 -- >>> pretty v
 -- [0,1,2]
 --
 -- A two-dimensional array (a matrix).
 --
--- >>> let m = range @[2,3]
+-- >>> let m = range @Vec.Vector @[2,3]
 -- >>> pretty m
 -- [[0,1,2],
 --  [3,4,5]]
 --
 -- An n-dimensional array (n should be finite).
 --
--- >>> a = range @[2,3,4]
+-- >>> a = range @Vec.Vector @[2,3,4]
 -- >>> a
 -- [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
 -- >>> pretty a
@@ -337,11 +315,11 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 
 -- | A hyperrectangular (or multidimensional) array with a type-level shape.
 --
--- >>> array @[2,3,4] @Int [1..24]
+-- >>> array @Vec.Vector @[2,3,4] @Int [1..24]
 -- [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
 -- >>> array [1..24] :: Array Vec.Vector '[2,3,4] Int
 -- [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
--- >>> pretty (array @[2,3,4] @Int [1..24])
+-- >>> pretty (array @Vec.Vector @[2,3,4] @Int [1..24])
 -- [[[1,2,3,4],
 --   [5,6,7,8],
 --   [9,10,11,12]],
@@ -355,7 +333,7 @@ import Prelude as P hiding ((+), (-), (*), (/), cycle, drop, fromInteger, fromRa
 --
 -- In many situations, the use of  [TypeApplication](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/type_applications.html) can lead to a clean coding style.
 --
--- >>> array @[2,3] @Int [1..6]
+-- >>> array @Vec.Vector @[2,3] @Int [1..6]
 -- [1,2,3,4,5,6]
 --
 -- The main computational entry and exit points are often via 'index' and 'tabulate' with arrays indexed by 'Fins':
@@ -504,10 +482,10 @@ index (Array v) i = VG.unsafeIndex v (S.flatten (VU.fromList s) (VU.fromList (fr
 -- > vectorAs . asVector == id
 -- > asVector . vectorAs == 'flat'
 --
--- >>> asVector (range @[2,3])
+-- >>> asVector (range @Vec.Vector @[2,3]) :: Vec.Vector Int
 -- [0,1,2,3,4,5]
 --
--- >>> -- >>> vectorAs (VG.fromList [0..5]) :: Array Vec.Vector [2,3] Int
+-- > vectorAs (VG.fromList [0..5]) :: Array Vec.Vector [2,3] Int
 -- [0,1,2,3,4,5]
 class (VG.Vector v a) => FromVector t v a | t -> a where
   asVector :: t -> v a
@@ -541,7 +519,7 @@ validate a@(Array v) = size a == VG.length v
 
 -- | Construct an Array, checking shape.
 --
--- >>> (safeArray [0..23] :: Maybe (Array [2,3,4] Int)) == Just a
+-- >>> (safeArray [0..23] :: Maybe (Array Vec.Vector [2,3,4] Int)) == Just a
 -- True
 safeArray :: (KnownNats s, FromVector t v a, VG.Vector v a) => t -> Maybe (Array v s a)
 safeArray v =
@@ -560,7 +538,7 @@ array v =
 
 -- | Unsafely modify an array shape.
 --
--- >>> pretty (unsafeModifyShape @[3,2] (array @[2,3] @Int [0..5]))
+-- >>> pretty (unsafeModifyShape @Vec.Vector @[3,2] (array @Vec.Vector @[2,3] @Int [0..5]))
 -- [[0,1],
 --  [2,3],
 --  [4,5]]
@@ -569,7 +547,7 @@ unsafeModifyShape (Array v) = Array v
 
 -- | Unsafely modify an array vector.
 --
--- >>> -- >>> pretty (unsafeModifyVector (V.map (+1)) (array [0..5] :: Array Vec.Vector [2,3] Int))
+-- > pretty (unsafeModifyVector (Vec.map (+1)) (array [0..5] :: Array Vec.Vector [2,3] Int))
 -- [[1,2,3],
 --  [4,5,6]]
 unsafeModifyVector :: forall v s a b. (KnownNats s, VG.Vector v a, VG.Vector v b) => (v a -> v b) -> Array v s a -> Array v s b
@@ -623,13 +601,13 @@ toDynamic a@(Array v) = A.arrayV (VU.toList (shape a)) v
 
 -- | Use a dynamic array in a fixed context.
 --
--- >>> import qualified Harpie.Array as A
--- >>> with (A.range [2,3,4]) show
+-- >>> import Harpie.Array.Generic qualified as A
+-- >>> with (A.range @Vec.Vector [2,3,4]) show
 -- "[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]"
 --
 -- This doesn't work for anything more complex where KnownNats need to be type computed:
 --
--- >>> :t with (A.range [2,3,4]) (pretty . F.takes (Dims @'[0]) (S.SNats @'[1]))
+-- > :t with (A.range [2,3,4]) (pretty . F.takes (Dims @'[0]) (S.SNats @'[1]))
 -- ...
 --     • Could not deduce ‘S.KnownNats (Fcf.Data.List.Drop_ 1 s)’
 -- ...
@@ -670,7 +648,7 @@ size = S.size . shape
 --
 -- >>> length a
 -- 2
--- >>> length (toScalar 0)
+-- >>> length (toScalar @Vec.Vector 0)
 -- 1
 length :: (KnownNats s, VG.Vector v a) => Array v s a -> Int
 length a = case VU.toList (shape a) of
@@ -715,11 +693,13 @@ infixl 9 !?
 
 -- | Tabulate unsafely.
 --
--- >>> :t tabulate @(Array [2,3]) id
--- tabulate @(Array [2,3]) id :: Array Vec.Vector [2, 3] (Fins [2, 3])
--- >>> :t unsafeTabulate @[2,3] id
--- unsafeTabulate @[2,3] id :: Array Vec.Vector [2, 3] [Int]
--- >>> pretty $ unsafeTabulate @[2,3] id
+-- >>> :t tabulate @Vec.Vector @[2,3] id
+-- tabulate @Vec.Vector @[2,3] id
+--   :: Array Vec.Vector [2, 3] (Fins [2, 3])
+-- >>> :t unsafeTabulate @[2,3] id :: Array Vec.Vector [2,3] [Int]
+-- unsafeTabulate @[2,3] id :: Array Vec.Vector [2,3] [Int]
+--   :: Array Vec.Vector [2, 3] [Int]
+-- >>> pretty (unsafeTabulate @[2,3] id :: Array Vec.Vector [2,3] [Int])
 -- [[[0,0],[0,1],[0,2]],
 --  [[1,0],[1,1],[1,2]]]
 unsafeTabulate :: (KnownNats s, VG.Vector v a) => ([Int] -> a) -> Array v s a
@@ -731,7 +711,7 @@ unsafeTabulate f = tabulate (f . fromFins)
 --
 -- Many functions in this module are examples of backpermute usage.
 --
--- >>> pretty $ backpermute @[4,3,2] (UnsafeFins . List.reverse . fromFins) a
+-- >>> pretty $ backpermute @Vec.Vector @[4,3,2] (UnsafeFins . List.reverse . fromFins) a
 -- [[[0,12],
 --   [4,16],
 --   [8,20]],
@@ -754,7 +734,7 @@ backpermute f a = tabulate (index a . f)
 
 -- | Unsafe backpermute
 --
--- >>> pretty $ unsafeBackpermute @[4,3,2] List.reverse a
+-- >>> pretty $ unsafeBackpermute @Vec.Vector @[4,3,2] List.reverse a
 -- [[[0,12],
 --   [4,16],
 --   [8,20]],
@@ -776,7 +756,7 @@ unsafeBackpermute f a = tabulate (index a . UnsafeFins . f . fromFins)
 
 -- | Unwrap a scalar.
 --
--- >>> s = array @'[] @Int [3]
+-- >>> s = array @Vec.Vector @'[] @Int [3]
 -- >>> :t fromScalar s
 -- fromScalar s :: Int
 fromScalar :: (VG.Vector v a) => Array v '[] a -> a
@@ -784,35 +764,35 @@ fromScalar a = index a (UnsafeFins [])
 
 -- | Wrap a scalar.
 --
--- >>> :t toScalar @Int 2
--- toScalar @Int 2 :: Array Vec.Vector '[] Int
+-- >>> :t toScalar @Vec.Vector @Int 2
+-- toScalar @Vec.Vector @Int 2 :: Array Vec.Vector '[] Int
 toScalar :: (VG.Vector v a) => a -> Array v '[] a
 toScalar a = Array (VG.singleton a)
 
 -- | Is an array a scalar?
 --
--- >>> isScalar (toScalar (2::Int))
+-- >>> isScalar (toScalar @Vec.Vector (2::Int))
 -- True
 isScalar :: (KnownNats s, VG.Vector v a) => Array v s a -> Bool
 isScalar a = rank a == 0
 
 -- | Convert a scalar to being a dimensioned array. Do nothing if not a scalar.
 --
--- >>> asSingleton (toScalar 4)
+-- >>> asSingleton (toScalar @Vec.Vector 4)
 -- [4]
 asSingleton :: (KnownNats s, KnownNats s', s' ~ Eval (AsSingleton s), VG.Vector v a) => Array v s a -> Array v s' a
 asSingleton = unsafeModifyShape
 
 -- | Convert an array with shape [1] to being a scalar (Do nothing if not a shape [1] array).
 --
--- >>> pretty (asScalar (singleton 3))
+-- >>> pretty (asScalar (singleton @Vec.Vector 3))
 -- 3
 asScalar :: (KnownNats s, KnownNats s', s' ~ Eval (AsScalar s), VG.Vector v a) => Array v s a -> Array v s' a
 asScalar = unsafeModifyShape
 
 -- | An array with no elements.
 --
--- >>> toDynamic empty
+-- >>> toDynamic (empty @Vec.Vector @Int)
 -- UnsafeArray [0] []
 empty :: (VG.Vector v a) => Array v '[0] a
 empty = array []
@@ -827,7 +807,7 @@ range = tabulate (S.flatten (VU.fromList (valuesOf @s)) . VU.fromList . fromFins
 
 -- | An enumeration of col-major or [colexicographic](https://en.wikipedia.org/wiki/Lexicographic_order) order.
 --
--- >>> pretty (corange @[2,3,4])
+-- >>> pretty (corange @Vec.Vector @[2,3,4])
 -- [[[0,6,12,18],
 --   [2,8,14,20],
 --   [4,10,16,22]],
@@ -839,7 +819,7 @@ corange = tabulate (S.flatten (VU.fromList (List.reverse (valuesOf @s))) . VU.fr
 
 -- | Indices of an array shape.
 --
--- >>> pretty $ indices @[3,3]
+-- >>> pretty (indices @[3,3] :: Array Vec.Vector [3,3] [Int])
 -- [[[0,0],[0,1],[0,2]],
 --  [[1,0],[1,1],[1,2]],
 --  [[2,0],[2,1],[2,2]]]
@@ -848,7 +828,7 @@ indices = tabulate fromFins
 
 -- | The identity array.
 --
--- >>> pretty $ ident @[3,3]
+-- >>> pretty (ident @[3,3] :: Array Vec.Vector [3,3] Int)
 -- [[1,0,0],
 --  [0,1,0],
 --  [0,0,1]]
@@ -857,7 +837,7 @@ ident = tabulate (bool Add.zero Mult.one . S.isDiag . VU.fromList . fromFins)
 
 -- | Create an array composed of a single value.
 --
--- >>> pretty $ konst @[3,2] 1
+-- >>> pretty (konst @[3,2] 1 :: Array Vec.Vector [3,2] Int)
 -- [[1,1],
 --  [1,1],
 --  [1,1]]
@@ -866,21 +846,21 @@ konst a = tabulate (const a)
 
 -- | Create an array of shape [1].
 --
--- >>> pretty $ singleton 1
+-- >>> pretty $ singleton @Vec.Vector 1
 -- [1]
 singleton :: forall v a. (VG.Vector v a) => a -> Array v '[1] a
 singleton a = Array (VG.singleton @v a)
 
 -- | Extract the diagonal of an array.
 --
--- >>> pretty $ diag (ident @[3,3])
+-- >>> pretty $ diag (ident @[3,3] :: Array Vec.Vector [3,3] Int)
 -- [1,1,1]
 diag :: forall v s' a s. (KnownNats s, KnownNats s', s' ~ Eval (MinDim s), VG.Vector v a) => Array v s a -> Array v s' a
 diag a = unsafeBackpermute (replicate (rank a) . S.getDimL 0) a
 
 -- | Expand an array to form a diagonal array
 --
--- >>> pretty $ undiag (range @'[3])
+-- >>> pretty $ undiag (range @Vec.Vector @'[3])
 -- [[0,0,0],
 --  [0,1,0],
 --  [0,0,2]]
@@ -896,7 +876,7 @@ zipWith f (Array a) (Array b) = Array (VG.zipWith f a b)
 
 -- | Modify a single value at an index.
 --
--- >>> pretty $ modify (S.UnsafeFins [0,0]) (const 100) (range @[3,2])
+-- >>> pretty $ modify (S.UnsafeFins [0,0]) (const 100) (range @Vec.Vector @[3,2])
 -- [[100,1],
 --  [2,3],
 --  [4,5]]
@@ -996,14 +976,14 @@ select Dim p a = unsafeBackpermute (S.insertDimL (valueOf @d) (fromFin p)) a
 
 -- | Insert along a dimension at a position.
 --
--- >>> pretty $ insert (Dim @2) (UnsafeFin 0) a (konst @[2,3] 0)
+-- >>> pretty $ insert (Dim @2) (UnsafeFin 0) a (konst @[2,3] 0 :: Array Vec.Vector [2,3] Int)
 -- [[[0,0,1,2,3],
 --   [0,4,5,6,7],
 --   [0,8,9,10,11]],
 --  [[0,12,13,14,15],
 --   [0,16,17,18,19],
 --   [0,20,21,22,23]]]
--- >>> toDynamic $ insert (Dim @0) (UnsafeFin 0) (toScalar 1) (toScalar 2)
+-- >>> toDynamic $ insert (Dim @0) (UnsafeFin 0) (toScalar @Vec.Vector 1) (toScalar @Vec.Vector 2)
 -- UnsafeArray [2] [2,1]
 insert :: forall v s' s si d p a. (KnownNats s, KnownNats si, KnownNats s', s' ~ Eval (IncAt d s), p ~ Eval (GetDim d s), True ~ Eval (InsertOk d s si), VG.Vector v a) => Dim d -> Fin p -> Array v s a -> Array v si a -> Array v s' a
 insert Dim i a b = tabulate go
@@ -1032,7 +1012,7 @@ delete Dim p a = unsafeBackpermute (\s -> bool (S.incAtL d s) s (S.getDimL d s <
 
 -- | Insert along a dimension at the end.
 --
--- >>> pretty $ append (Dim @2) a (konst @[2,3] 0)
+-- >>> pretty $ append (Dim @2) a (konst @[2,3] 0 :: Array Vec.Vector [2,3] Int)
 -- [[[0,1,2,3,0],
 --   [4,5,6,7,0],
 --   [8,9,10,11,0]],
@@ -1044,7 +1024,7 @@ append (Dim :: Dim d) = insert (Dim @d) (UnsafeFin (S.getDimL (valueOf @d) (valu
 
 -- | Insert along a dimension at the beginning.
 --
--- >>> pretty $ prepend (Dim @2) (konst @[2,3] 0) a
+-- >>> pretty $ prepend (Dim @2) (konst @[2,3] 0 :: Array Vec.Vector [2,3] Int) a
 -- [[[0,0,1,2,3],
 --   [0,4,5,6,7],
 --   [0,8,9,10,11]],
@@ -1058,9 +1038,9 @@ prepend d a b = insert d (UnsafeFin 0) b a
 --
 -- >>> shape $ concatenate (Dim @1) a a
 -- [2,6,4]
--- >>> toDynamic $ concatenate (Dim @0) (toScalar 1) (toScalar 2)
+-- >>> toDynamic $ concatenate (Dim @0) (toScalar @Vec.Vector 1) (toScalar @Vec.Vector 2)
 -- UnsafeArray [2] [1,2]
--- >>> toDynamic $ concatenate (Dim @0) (array @'[1] [0]) (array @'[3] [1..3])
+-- >>> toDynamic $ concatenate (Dim @0) (array @Vec.Vector @'[1] [0]) (array @Vec.Vector @'[3] [1..3])
 -- UnsafeArray [4] [0,1,2,3]
 concatenate :: forall v a s0 s1 d s. (KnownNats s0, KnownNats s1, KnownNats s, Eval (Concatenate d s0 s1) ~ s, VG.Vector v a) => Dim d -> Array v s0 a -> Array v s1 a -> Array v s a
 concatenate Dim a0 a1 = tabulate (go . fromFins)
@@ -1083,10 +1063,10 @@ concatenate Dim a0 a1 = tabulate (go . fromFins)
 
 -- | Combine two arrays as a new dimension of a new array.
 --
--- >>> pretty $ couple (Dim @0) (array @'[3] [1,2,3]) (array @'[3] @Int [4,5,6])
+-- >>> pretty $ couple (Dim @0) (array @Vec.Vector @'[3] [1,2,3]) (array @Vec.Vector @'[3] @Int [4,5,6])
 -- [[1,2,3],
 --  [4,5,6]]
--- >>> couple (Dim @0) (toScalar @Int 0) (toScalar 1)
+-- >>> couple (Dim @0) (toScalar @Vec.Vector @Int 0) (toScalar @Vec.Vector 1)
 -- [0,1]
 couple :: forall v d a s s' se. (KnownNat d, KnownNats s, KnownNats s', KnownNats se, s' ~ Eval (Concatenate d se se), se ~ Eval (InsertDim d 1 s), VG.Vector v a) => Dim d -> Array v s a -> Array v s a -> Array v s' a
 couple d a a' = concatenate d (elongate d a) (elongate d a')
@@ -1159,7 +1139,7 @@ dropBs _ _ a = unsafeBackpermute id a
 --
 -- >>> pretty $ indexes (Dims @[0,1]) (S.UnsafeFins [1,1]) a
 -- [16,17,18,19]
--- >>> F.indexes (S.SNats @'[1]) (S.fins @'[3] [1]) (F.range @[2,3])
+-- >>> pretty $ indexes (Dims @'[1]) (S.fins @'[3] [1]) (range @Vec.Vector @[2,3])
 -- [1,4]
 indexes :: forall v s' s ds xs a. (KnownNats s, KnownNats s', s' ~ Eval (DeleteDims ds s), xs ~ Eval (GetDims ds s), VG.Vector v a) => Dims ds -> Fins xs -> Array v s a -> Array v s' a
 indexes Dims xs a = unsafeBackpermute (S.insertDimsL (valuesOf @ds) (fromFins xs)) a
@@ -1221,9 +1201,9 @@ inits ds a = slices ds (SNats @os) (SNats @ls) a
 
 -- | Extracts specified dimensions to an outer layer.
 --
--- >>> :t extracts (Dims @'[0]) (range @[2,3,4])
--- extracts (Dims @'[0]) (range @[2,3,4])
---   :: Array v '[2] (Array [3, 4] Int)
+-- >>> :t extracts (Dims @'[0]) (range @Vec.Vector @[2,3,4])
+-- extracts (Dims @'[0]) (range @Vec.Vector @[2,3,4])
+--   :: Array Vec.Vector '[2] (Array Vec.Vector [3, 4] Int)
 extracts :: forall v ds st si so a. (KnownNats st, KnownNats ds, KnownNats si, KnownNats so, si ~ Eval (DeleteDims ds st), so ~ Eval (GetDims ds st), VG.Vector v a, VG.Vector v (Array v si a)) => Dims ds -> Array v st a -> Array v so (Array v si a)
 extracts ds a = tabulate (\s -> indexes ds s a)
 
@@ -1257,7 +1237,7 @@ join a = joins (SNats @ds) a
 
 -- | Traverse along specified dimensions.
 --
--- >>> traverses (Dims @'[1]) print (range @[2,3])
+-- >>> traverses (Dims @'[1]) print (range @Vec.Vector @[2,3])
 -- 0
 -- 3
 -- 1
@@ -1345,7 +1325,7 @@ diffs SNats xs f a = zips (Dims @ds) f (drops (Dims @ds) xs a) (dropBs (Dims @ds
 --
 -- Alternatively, expand can be understood as representing the permutation of element pairs of two arrays, so like the Applicative List instance.
 --
--- >>> i2 = indices @[2,2]
+-- >>> i2 = indices @[2,2] :: Array Vec.Vector [2,2] [Int]
 -- >>> pretty $ expand (,) i2 i2
 -- [[[[([0,0],[0,0]),([0,0],[0,1])],
 --    [([0,0],[1,0]),([0,0],[1,1])]],
@@ -1389,7 +1369,7 @@ contract SNats f a = fmapA (f . diag) (extracts (Dims @ds') a)
 
 -- | Expand two arrays and then contract the result using the supplied matching dimensions.
 --
--- >>> pretty $ prod (Dims @'[1]) (Dims @'[0]) sum (*) (range @[2,3]) (range @[3,2])
+-- >>> pretty $ prod (Dims @'[1]) (Dims @'[0]) sum (*) (range @Vec.Vector @[2,3]) (range @Vec.Vector @[3,2])
 -- [[10,13],
 --  [28,40]]
 --
@@ -1450,15 +1430,15 @@ mult = dot sumA (Mult.*)
 
 -- | @windows xs@ are xs-sized windows of an array
 --
--- >>> shape $ windows (Dims @[2,2]) (range @[4,3,2])
+-- >>> shape $ windows (Dims @[2,2]) (range @Vec.Vector @[4,3,2])
 -- [3,2,2,2,2]
 windows :: forall v w s ws a. (KnownNats s, KnownNats ws, ws ~ Eval (ExpandWindows w s), VG.Vector v a) => SNats w -> Array v s a -> Array v ws a
 windows SNats a = unsafeBackpermute (S.indexWindowsL (rankOf @w)) a
 
 -- | Find the starting positions of occurences of one array in another.
 --
--- >>> a = cycle @[4,4] (range @'[3])
--- >>> i = array @[2,2] [1,2,2,0]
+-- >>> a = cycle @Vec.Vector @[4,4] (range @Vec.Vector @'[3])
+-- >>> i = array @Vec.Vector @[2,2] [1,2,2,0]
 -- >>> pretty $ find i a
 -- [[False,True,False],
 --  [True,False,False],
@@ -1472,8 +1452,8 @@ find i a = xs
 
 -- | Find the ending positions of one array in another except where the array overlaps with another copy.
 --
--- >>> a = konst @[5,5] @Int 1
--- >>> i = konst @[2,2] @Int 1
+-- >>> a = konst @[5,5] 1 :: Array Vec.Vector [5,5] Int
+-- >>> i = konst @[2,2] 1 :: Array Vec.Vector [2,2] Int
 -- >>> pretty $ findNoOverlap i a
 -- [[True,False,True,False],
 --  [False,False,False,False],
@@ -1491,21 +1471,21 @@ findNoOverlap i a = r
 
 -- | Check if the first array is a prefix of the second.
 --
--- >>> isPrefixOf (array @[2,2] [0,1,4,5]) a
+-- >>> isPrefixOf (array @Vec.Vector @[2,2] [0,1,4,5]) a
 -- True
 isPrefixOf :: forall v s' s r a. (Eq a, KnownNats s, KnownNats s', KnownNat r, KnownNats (Eval (Rerank r s)), True ~ Eval (IsSubset s' s), r ~ Eval (Rank s'), VG.Vector v a, Eq (v a)) => Array v s' a -> Array v s a -> Bool
 isPrefixOf p a = p == cut a
 
 -- | Check if the first array is a suffix of the second.
 --
--- >>> isSuffixOf (array @[2,2] [18,19,22,23]) a
+-- >>> isSuffixOf (array @Vec.Vector @[2,2] [18,19,22,23]) a
 -- True
 isSuffixOf :: forall v s' s r a. (Eq a, KnownNats s, KnownNats s', KnownNat r, KnownNats (Eval (Rerank r s)), r ~ Eval (Rank s'), True ~ Eval (IsSubset s' s), VG.Vector v a, Eq (v a)) => Array v s' a -> Array v s a -> Bool
 isSuffixOf p a = p == cutSuffix a
 
 -- | Check if the first array is an infix of the second.
 --
--- >>> isInfixOf (array @[2,2] [18,19,22,23]) a
+-- >>> isInfixOf (array @Vec.Vector @[2,2] [18,19,22,23]) a
 -- True
 isInfixOf :: forall v s' si s a r i' re ws. (Eq a, KnownNats si, KnownNats s, KnownNats s', KnownNats re, KnownNats i', KnownNat r, KnownNats ws, ws ~ Eval (ExpandWindows i' s), r ~ Eval (Rank s), i' ~ Eval (Rerank r si), re ~ Eval (DimWindows ws s), i' ~ Eval (DeleteDims re ws), s' ~ Eval (GetDims re ws), VG.Vector v a, VG.Vector v Bool, Eq (v a), VG.Vector v (Array v i' a)) => Array v si a -> Array v s a -> Bool
 isInfixOf p a = orA $ find p a
@@ -1514,23 +1494,23 @@ isInfixOf p a = orA $ find p a
 --
 -- > validate (def x a) == True
 --
--- >>> pretty $ fill @'[3] 0 (array @'[0] [])
+-- >>> pretty $ fill @Vec.Vector @'[3] 0 (array @Vec.Vector @'[0] [])
 -- [0,0,0]
--- >>> pretty $ fill @'[3] 0 (array @'[4] [1..4])
+-- >>> pretty $ fill @Vec.Vector @'[3] 0 (array @Vec.Vector @'[4] [1..4])
 -- [1,2,3]
 fill :: forall v s' a s. (KnownNats s, KnownNats s', VG.Vector v a, Semigroup (v a)) => a -> Array v s a -> Array v s' a
 fill x (Array v) = Array (VG.take (S.size (VU.fromList (valuesOf @s'))) (v <> VG.replicate (S.size (VU.fromList (valuesOf @s')) - VG.length v) x))
 
 -- | Cut an array to form a new (smaller) shape. Errors if the new shape is larger. The old array is reranked to the rank of the new shape first.
 --
--- >>> toDynamic $ cut @'[2] (array @'[4] @Int [0..3])
+-- >>> toDynamic $ cut @Vec.Vector @'[2] (array @Vec.Vector @'[4] @Int [0..3])
 -- UnsafeArray [2] [0,1]
 cut :: forall v s' s r a. (KnownNats s, KnownNats s', KnownNat r, KnownNats (Eval (Rerank r s)), True ~ Eval (IsSubset s' s), r ~ Eval (Rank s'), VG.Vector v a) => Array v s a -> Array v s' a
 cut a = unsafeBackpermute id (rerank (SNat @r) a)
 
 -- | Cut an array to form a new (smaller) shape, using suffix elements. Errors if the new shape is larger. The old array is reranked to the rank of the new shape first.
 --
--- >>> toDynamic $ cutSuffix @[2,2] a
+-- >>> toDynamic $ cutSuffix @Vec.Vector @[2,2] a
 -- UnsafeArray [2,2] [18,19,22,23]
 cutSuffix :: forall v s' s a r. (KnownNats s, KnownNats s', KnownNat r, KnownNats (Eval (Rerank r s)), r ~ Eval (Rank s'), True ~ Eval (IsSubset s' s), VG.Vector v a) => Array v s a -> Array v s' a
 cutSuffix a = unsafeBackpermute (List.zipWith (+) diffDim) a'
@@ -1540,7 +1520,7 @@ cutSuffix a = unsafeBackpermute (List.zipWith (+) diffDim) a'
 
 -- | Pad an array to form a new shape, supplying a default value for elements outside the shape of the old array. The old array is reranked to the rank of the new shape first.
 --
--- >>> toDynamic $ pad @'[5] 0 (array @'[4] @Int [0..3])
+-- >>> toDynamic $ pad @Vec.Vector @'[5] 0 (array @Vec.Vector @'[4] @Int [0..3])
 -- UnsafeArray [5] [0,1,2,3,0]
 pad :: forall v s' a s r. (KnownNats s, KnownNats s', KnownNat r, KnownNats (Eval (Rerank r s)), r ~ Eval (Rank s'), VG.Vector v a) => a -> Array v s a -> Array v s' a
 pad d a = tabulate (\s -> bool d (index a' (unsafeCoerce s)) (fromFins s `S.isFinsL` VU.toList (shape a')))
@@ -1549,9 +1529,9 @@ pad d a = tabulate (\s -> bool d (index a' (unsafeCoerce s)) (fromFins s `S.isFi
 
 -- | Left pad an array to form a new shape, supplying a default value for elements outside the shape of the old array.
 --
--- >>> toDynamic $ lpad @'[5] 0 (array @'[4] [0..3])
+-- >>> toDynamic $ lpad @Vec.Vector @'[5] 0 (array @Vec.Vector @'[4] [0..3])
 -- UnsafeArray [5] [0,0,1,2,3]
--- >>> pretty $ lpad @[3,3] 0 (range @[2,2])
+-- >>> pretty $ lpad @Vec.Vector @[3,3] 0 (range @Vec.Vector @[2,2])
 -- [[0,0,0],
 --  [0,0,1],
 --  [0,2,3]]
@@ -1564,7 +1544,7 @@ lpad d a = tabulate (\s -> bool d (index a' (UnsafeFins $ olds s)) (olds s `S.is
 
 -- | Reshape an array (with the same number of elements).
 --
--- >>> pretty $ reshape @[4,3,2] a
+-- >>> pretty $ reshape @Vec.Vector @[4,3,2] a
 -- [[[0,1],
 --   [2,3],
 --   [4,5]],
@@ -1585,28 +1565,28 @@ reshape = unsafeBackpermute (VU.toList . S.shapen (VU.fromList s) . S.flatten (V
 
 -- | Make an Array single dimensional.
 --
--- >>> pretty $ flat (range @[2,2])
+-- >>> pretty $ flat (range @Vec.Vector @[2,2])
 -- [0,1,2,3]
--- >>> pretty (flat $ toScalar 0)
+-- >>> pretty (flat $ toScalar @Vec.Vector 0)
 -- [0]
 flat :: forall v s' s a. (KnownNats s, KnownNats s', s' ~ '[Eval (Size s)], VG.Vector v a) => Array v s a -> Array v s' a
 flat a = unsafeModifyShape a
 
 -- | Reshape an array, repeating the original array. The shape of the array should be a suffix of the new shape.
 --
--- >>> pretty $ repeat @[2,2,2] (array @'[2] [1,2])
+-- >>> pretty $ repeat @Vec.Vector @[2,2,2] (array @Vec.Vector @'[2] [1,2])
 -- [[[1,2],
 --   [1,2]],
 --  [[1,2],
 --   [1,2]]]
 --
--- > repeat ds (toScalar x) == konst ds x
+-- > repeat ds (toScalar @Vec.Vector x) == konst ds x
 repeat :: forall v s' s a. (KnownNats s, KnownNats s', Eval (IsPrefixOf s s') ~ True, VG.Vector v a) => Array v s a -> Array v s' a
 repeat a = unsafeBackpermute (List.drop (S.rankL (valuesOf @s') - rank a)) a
 
 -- | Reshape an array, cycling through the elements without regard to the original shape.
 --
--- >>> pretty $ cycle @[2,2,2] (array @'[3] [1,2,3])
+-- >>> pretty $ cycle @Vec.Vector @[2,2,2] (array @Vec.Vector @'[3] [1,2,3])
 -- [[[1,2],
 --   [3,1]],
 --  [[2,3],
@@ -1645,7 +1625,7 @@ reorder SNats a = unsafeBackpermute (\s -> S.insertDimsL (valuesOf @ds) s []) a
 -- >>> shape $ squeeze sq
 -- [2,3,4]
 --
--- >>> shape $ squeeze (singleton 0)
+-- >>> shape $ squeeze (singleton @Vec.Vector 0)
 -- []
 squeeze :: forall v s t a. (KnownNats s, KnownNats t, t ~ Eval (Squeeze s), VG.Vector v a) => Array v s a -> Array v t a
 squeeze = unsafeModifyShape
@@ -1654,7 +1634,7 @@ squeeze = unsafeModifyShape
 --
 -- >>> shape $ elongate (SNat @1) a
 -- [2,1,3,4]
--- >>> toDynamic $ elongate (SNat @0) (toScalar 1)
+-- >>> toDynamic $ elongate (SNat @0) (toScalar @Vec.Vector 1)
 -- UnsafeArray [1] [1]
 elongate :: (KnownNats s, KnownNats s', s' ~ Eval (InsertDim d 1 s), VG.Vector v a) => Dim d -> Array v s a -> Array v s' a
 elongate _ a = unsafeModifyShape a
@@ -1663,7 +1643,7 @@ elongate _ a = unsafeModifyShape a
 --
 -- >>> (transpose a) ! [1,0,0] == a ! [0,0,1]
 -- True
--- >>> pretty $ transpose (array @[2,2,2] [1..8])
+-- >>> pretty $ transpose (array @Vec.Vector @[2,2,2] [1..8])
 -- [[[1,5],
 --   [3,7]],
 --  [[2,6],
@@ -1673,7 +1653,7 @@ transpose a = unsafeBackpermute List.reverse a
 
 -- | Inflate (or replicate) an array by inserting a new dimension given a supplied dimension and size.
 --
--- >>> pretty $ inflate (SNat @0) (SNat @2) (array @'[3] [0,1,2])
+-- >>> pretty $ inflate (SNat @0) (SNat @2) (array @Vec.Vector @'[3] [0,1,2])
 -- [[0,1,2],
 --  [0,1,2]]
 inflate :: forall v s' s d x a. (KnownNats s, KnownNats s', s' ~ Eval (InsertDim d x s), VG.Vector v a) => Dim d -> SNat x -> Array v s a -> Array v s' a
@@ -1681,7 +1661,7 @@ inflate SNat _ a = unsafeBackpermute (S.deleteDimL (valueOf @d)) a
 
 -- | Intercalate an array along dimensions.
 --
--- >>> pretty $ intercalate (SNat @2) (konst @[2,3] 0) a
+-- >>> pretty $ intercalate (SNat @2) (konst @[2,3] 0 :: Array Vec.Vector [2,3] Int) a
 -- [[[0,0,1,0,2,0,3],
 --   [4,0,5,0,6,0,7],
 --   [8,0,9,0,10,0,11]],
@@ -1750,13 +1730,13 @@ rotates SNats rs a = unsafeBackpermute (S.rotatesIndexL (valuesOf @ds) rs (value
 
 -- | Sort an array along the supplied dimensions.
 --
--- >>> pretty $ sorts (Dims @'[0]) (array @[2,2] [2,3,1,4])
+-- >>> pretty $ sorts (Dims @'[0]) (array @Vec.Vector @[2,2] [2,3,1,4])
 -- [[1,4],
 --  [2,3]]
--- >>> pretty $ sorts (Dims @'[1]) (array @[2,2] [2,3,1,4])
+-- >>> pretty $ sorts (Dims @'[1]) (array @Vec.Vector @[2,2] [2,3,1,4])
 -- [[2,3],
 --  [1,4]]
--- >>> pretty $ sorts (Dims @[0,1]) (array @[2,2] [2,3,1,4])
+-- >>> pretty $ sorts (Dims @[0,1]) (array @Vec.Vector @[2,2] [2,3,1,4])
 -- [[1,2],
 --  [3,4]]
 sorts :: forall v ds s a si so. (Ord a, KnownNats s, KnownNats si, KnownNats so, si ~ Eval (DeleteDims ds s), so ~ Eval (GetDims ds s), s ~ Eval (InsertDims ds so si), VG.Vector v a, Ord (v a), VG.Vector v (Array v si a)) => Dims ds -> Array v s a -> Array v s a
@@ -1765,14 +1745,14 @@ sorts SNats a = joins (Dims @ds) $ unsafeModifyVector (VG.convert . sortV . VG.c
 -- | The indices into the array if it were sorted by a comparison function along the dimensions supplied.
 --
 -- >>> import Data.Ord (Down (..))
--- >>> toDynamic $ sortsBy (Dims @'[0]) (fmap Down) (array @[2,2] [2,3,1,4])
+-- >>> toDynamic $ sortsBy (Dims @'[0]) (fmap Down) (array @Vec.Vector @[2,2] [2,3,1,4])
 -- UnsafeArray [2,2] [2,3,1,4]
 sortsBy :: forall v ds s a b si so. (Ord b, KnownNats s, KnownNats si, KnownNats so, si ~ Eval (DeleteDims ds s), so ~ Eval (GetDims ds s), s ~ Eval (InsertDims ds so si), VG.Vector v a, VG.Vector v (Array v si a), Ord (v b)) => Dims ds -> (Array v si a -> Array v si b) -> Array v s a -> Array v s a
 sortsBy SNats c a = joins (Dims @ds) $ unsafeModifyVector (VG.convert . sortByV c . VG.convert) (extracts (Dims @ds) a)
 
 -- | The indices into the array if it were sorted along the dimensions supplied.
 --
--- >>> orders (Dims @'[0]) (array @[2,2] [2,3,1,4])
+-- >>> orders (Dims @'[0]) (array @Vec.Vector @[2,2] [2,3,1,4])
 -- [1,0]
 orders :: forall v ds s a si so. (Ord a, KnownNats s, KnownNats si, KnownNats so, si ~ Eval (DeleteDims ds s), so ~ Eval (GetDims ds s), s ~ Eval (InsertDims ds so si), VG.Vector v a, VG.Vector v Int, Ord (v a), VG.Vector v (Array v si a)) => Dims ds -> Array v s a -> Array v so Int
 orders SNats a = unsafeModifyVector (VG.convert . orderV . VG.convert) (extracts (Dims @ds) a)
@@ -1780,15 +1760,15 @@ orders SNats a = unsafeModifyVector (VG.convert . orderV . VG.convert) (extracts
 -- | The indices into the array if it were sorted by a comparison function along the dimensions supplied.
 --
 -- >>> import Data.Ord (Down (..))
--- >>> ordersBy (Dims @'[0]) (fmap Down) (array @[2,2] [2,3,1,4])
+-- >>> ordersBy (Dims @'[0]) (fmap Down) (array @Vec.Vector @[2,2] [2,3,1,4])
 -- [0,1]
 ordersBy :: forall v ds s a b si so. (Ord b, KnownNats s, KnownNats si, KnownNats so, si ~ Eval (DeleteDims ds s), so ~ Eval (GetDims ds s), s ~ Eval (InsertDims ds so si), VG.Vector v a, VG.Vector v Int, VG.Vector v (Array v si a), Ord (v b)) => Dims ds -> (Array v si a -> Array v si b) -> Array v s a -> Array v so Int
 ordersBy SNats c a = unsafeModifyVector (VG.convert . orderByV c . VG.convert) (extracts (Dims @ds) a)
 
 -- | Apply a binary array function to two arrays with matching shapes across the supplied (matching) dimensions.
 --
--- >>> a = array @[2,3] [0..5]
--- >>> b = array @'[3] [6..8]
+-- >>> a = array @Vec.Vector @[2,3] [0..5]
+-- >>> b = array @Vec.Vector @'[3] [6..8]
 -- >>> pretty $ telecasts (Dims @'[1]) (Dims @'[0]) (concatenate (SNat @0)) a b
 -- [[0,3,6],
 --  [1,4,7],
@@ -1798,8 +1778,8 @@ telecasts SNats SNats f a b = join (zipWith f (extracts (SNats @ma) a) (extracts
 
 -- | Apply a binary array function to two arrays where the shape of the first array is a prefix of the second array.
 --
--- >>> a = array @[2,3] [0..5]
--- >>> pretty $ transmit (zipWith (+)) (toScalar 1) a
+-- >>> a = array @Vec.Vector @[2,3] [0..5]
+-- >>> pretty $ transmit (zipWith (+)) (toScalar @Vec.Vector 1) a
 -- [[1,2,3],
 --  [4,5,6]]
 transmit :: forall v sa sb sc a b c ds sib sic sob. (KnownNats sa, KnownNats sb, KnownNats sc, KnownNats ds, KnownNats sib, KnownNats sic, KnownNats sob, ds ~ Eval (EnumFromTo (Eval (Rank sa)) (Eval (Rank sb) - 1)), sib ~ Eval (DeleteDims ds sb), sob ~ Eval (GetDims ds sb), sb ~ Eval (InsertDims ds sob sib), sc ~ Eval (InsertDims ds sob sic), True ~ Eval (IsPrefixOf sa sb), VG.Vector v a, VG.Vector v b, VG.Vector v c, VG.Vector v (Array v sib b), VG.Vector v (Array v sic c)) => (Array v sa a -> Array v sib b -> Array v sic c) -> Array v sa a -> Array v sb b -> Array v sc c
@@ -1810,21 +1790,21 @@ type Vector v s a = Array v '[s] a
 
 -- | Create a one-dimensional array.
 --
--- >>> pretty $ vector @3 @Int [2,3,4]
+-- >>> pretty $ vector @Vec.Vector @3 @Int [2,3,4]
 -- [2,3,4]
 vector :: forall v n a t. (FromVector t v a, KnownNat n, VG.Vector v a) => t -> Array v '[n] a
 vector xs = array xs
 
 -- | vector with an explicit SNat rather than a KnownNat constraint.
 --
--- >>> pretty $ vector' @Int (SNat @3) [2,3,4]
+-- >>> pretty $ vector' @Vec.Vector @Int (SNat @3) [2,3,4]
 -- [2,3,4]
 vector' :: forall v a n t. (FromVector t v a, VG.Vector v a) => SNat n -> t -> Array v '[n] a
 vector' n xs = withKnownNat n (vector xs)
 
 -- | Vector specialisation of 'range'
 --
--- >>> toDynamic $ iota @5
+-- >>> toDynamic $ iota @Vec.Vector @5
 -- UnsafeArray [5] [0,1,2,3,4]
 iota :: forall v n. (KnownNat n, VG.Vector v Int) => Vector v n Int
 iota = range
@@ -1836,7 +1816,7 @@ type Matrix v m n a = Array v '[m, n] a
 
 -- | Add a new row
 --
--- >>> pretty $ cons (array @'[2] [0,1]) (array @[2,2] [2,3,4,5])
+-- >>> pretty $ cons (array @Vec.Vector @'[2] [0,1]) (array @Vec.Vector @[2,2] [2,3,4,5])
 -- [[0,1],
 --  [2,3],
 --  [4,5]]
@@ -1846,7 +1826,7 @@ cons =
 
 -- | Add a new row at the end
 --
--- >>> pretty $ snoc (array @[2,2] [0,1,2,3]) (array @'[2] [4,5])
+-- >>> pretty $ snoc (array @Vec.Vector @[2,2] [0,1,2,3]) (array @Vec.Vector @'[2] [4,5])
 -- [[0,1],
 --  [2,3],
 --  [4,5]]
@@ -1856,7 +1836,7 @@ snoc = append (SNat @0)
 -- | split an array into the first row and the remaining rows.
 --
 -- >>> import Data.Bifunctor (bimap)
--- >>> bimap toDynamic toDynamic $ uncons (array @[3,2] [0..5])
+-- >>> bimap toDynamic toDynamic $ uncons (array @Vec.Vector @[3,2] [0..5])
 -- (UnsafeArray [2] [0,1],UnsafeArray [2,2] [2,3,4,5])
 uncons :: forall v a s sh st ls os ds. (KnownNats s, KnownNats sh, KnownNats st, ds ~ '[0], sh ~ Eval (DeleteDims ds s), KnownNats ls, KnownNats os, os ~ Eval (Replicate (Eval (Rank ds)) 1), ls ~ Eval (GetLastPositions ds s), Eval (SlicesOk ds os ls s) ~ True, st ~ Eval (SetDims ds ls s), VG.Vector v a) => Array v s a -> (Array v sh a, Array v st a)
 uncons a = (heads (Dims @ds) a, tails (Dims @ds) a)
@@ -1864,14 +1844,14 @@ uncons a = (heads (Dims @ds) a, tails (Dims @ds) a)
 -- | split an array into the initial rows and the last row.
 --
 -- >>> import Data.Bifunctor (bimap)
--- >>> bimap toDynamic toDynamic $ unsnoc (array @[3,2] [0..5])
+-- >>> bimap toDynamic toDynamic $ unsnoc (array @Vec.Vector @[3,2] [0..5])
 -- (UnsafeArray [2,2] [0,1,2,3],UnsafeArray [2] [4,5])
 unsnoc :: forall v ds os s a ls si sl. (KnownNats s, KnownNats ds, KnownNats si, KnownNats ls, KnownNats os, KnownNats sl, ds ~ '[0], Eval (SlicesOk ds os ls s) ~ True, os ~ Eval (Replicate (Eval (Rank ds)) 0), ls ~ Eval (GetLastPositions ds s), si ~ Eval (SetDims ds ls s), sl ~ Eval (DeleteDims ds s), VG.Vector v a) => Array v s a -> (Array v si a, Array v sl a)
 unsnoc a = (inits (Dims @ds) a, lasts (Dims @ds) a)
 
 -- | Convenience pattern for row extraction and consolidation at the beginning of an Array.
 --
--- >>> (x:<xs) = array @'[4] [0..3]
+-- >>> (x:<xs) = array @Vec.Vector @'[4] [0..3]
 -- >>> toDynamic x
 -- UnsafeArray [] [0]
 -- >>> toDynamic xs
@@ -1889,7 +1869,7 @@ infix 5 :<
 
 -- | Convenience pattern for row extraction and consolidation at the end of an Array.
 --
--- >>> (xs:>x) = array @'[4] [0..3]
+-- >>> (xs:>x) = array @Vec.Vector @'[4] [0..3]
 -- >>> toDynamic x
 -- UnsafeArray [] [3]
 -- >>> toDynamic xs
@@ -1909,7 +1889,7 @@ infix 5 :>
 --
 -- >>> import System.Random.Stateful hiding (uniform)
 -- >>> g <- newIOGenM (mkStdGen 42)
--- >>> u <- uniform @[2,3,4] @Int g (0,9)
+-- >>> u <- uniform @Vec.Vector @[2,3,4] @Int g (0,9)
 -- >>> pretty u
 -- [[[0,7,0,2],
 --   [1,7,4,2],
@@ -1921,5 +1901,3 @@ uniform :: forall v s a g m. (StatefulGen g m, UniformRange a, KnownNats s, VG.V
 uniform g r = do
   v <- VG.replicateM (S.size (VU.fromList (valuesOf @s))) (uniformRM r g) :: m (v a)
   pure $ array @v @s v
-
-

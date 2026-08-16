@@ -185,15 +185,13 @@ library
     Harpie.Shape
     Harpie.Sort
 
-  -- Generic module doctests are polymorphic in the vector family and need
-  -- explicit concrete vector types throughout. $setup is pinned to
-  -- Data.Vector; remaining examples still need annotations before these
-  -- two modules can be added to the list.
   x-docspec-options:
     -m Harpie.Array
+    -m Harpie.Array.Generic
     -m Harpie.Array.Storable
     -m Harpie.Array.Unboxed
     -m Harpie.Fixed
+    -m Harpie.Fixed.Generic
     -m Harpie.Fixed.Storable
     -m Harpie.Fixed.Unboxed
     -m Harpie.Shape
