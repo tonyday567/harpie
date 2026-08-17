@@ -57,6 +57,7 @@ flag hmatrix
   description:
     Enable the Harpie.Hmatrix BLAS bridge. This requires LAPACK/BLAS
     system libraries.
+
   manual: True
   default: False
 
@@ -74,7 +75,7 @@ common ghc-options-stanza
     -Wpartial-fields
     -Wredundant-constraints
 
-  if impl(ghc >= 9.14)
+  if impl(ghc >=9.14)
     ghc-options: -Wno-pattern-namespace-specifier
 
 common ghc2021-stanza
@@ -172,7 +173,6 @@ library
 
     exposed-modules:
       Harpie.Hmatrix
-
   exposed-modules:
     Harpie.Array
     Harpie.Array.Generic
