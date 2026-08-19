@@ -559,9 +559,6 @@ unsafeModifyVector f (Array v) = Array (f v)
 fmapA :: forall v s a b. (KnownNats s, VG.Vector v a, VG.Vector v b) => (a -> b) -> Array v s a -> Array v s b
 fmapA f = unsafeModifyVector (VG.map f)
 
-foldlA' :: forall v s a b. (VG.Vector v a) => (b -> a -> b) -> b -> Array v s a -> b
-foldlA' f z (Array v) = VG.foldl' f z v
-
 toListA :: forall v s a. (VG.Vector v a) => Array v s a -> [a]
 toListA (Array v) = VG.toList v
 

@@ -1995,6 +1995,7 @@ uncons a = (heads [0] a', tails [0] a')
 -- UnsafeArray [3] [1,2,3]
 -- >>> (x:<xs)
 -- UnsafeArray [4] [0,1,2,3]
+pattern (:<) :: (VG.Vector v a) => Array v a -> Array v a -> Array v a
 pattern x :< xs <- (uncons -> (x, xs))
   where
     x :< xs = cons x xs
@@ -2028,6 +2029,7 @@ unsnoc a = (inits [0] a', lasts [0] a')
 -- UnsafeArray [3] [0,1,2]
 -- >>> (xs:>x)
 -- UnsafeArray [4] [0,1,2,3]
+pattern (:>) :: (VG.Vector v a) => Array v a -> Array v a -> Array v a
 pattern xs :> x <- (unsnoc -> (xs, x))
   where
     xs :> x = snoc xs x

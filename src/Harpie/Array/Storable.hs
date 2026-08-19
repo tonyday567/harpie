@@ -25,10 +25,8 @@ module Harpie.Array.Storable
 where
 
 import Data.Bool
-import Data.Vector.Generic qualified as VG
-import Data.Vector.Storable (Storable, Vector)
+import Data.Vector.Storable (Storable)
 import Data.Vector.Storable qualified as VS
-import Data.Vector.Unboxed qualified as VU
 import Harpie.Array.Generic hiding
   ( Array,
     array,
@@ -41,8 +39,6 @@ import Harpie.Array.Generic hiding
   )
 import Harpie.Array.Generic qualified as G
 import Harpie.Shape qualified as S
-import NumHask.Algebra.Additive qualified as Add
-import NumHask.Algebra.Multiplicative qualified as Mult
 import Prelude hiding (cycle, drop, length, repeat, take, zip, zipWith)
 
 type Array a = G.Array VS.Vector a
@@ -105,150 +101,3 @@ safeArray s v =
 -- | Unsafely modify an array vector.
 unsafeModifyVector :: (FromVector u a, FromVector v b) => (u -> v) -> Array a -> Array b
 unsafeModifyVector f (G.UnsafeArray s _ v) = G.unsafeArray s (asVector (f (vectorAs v)))
-
-unsafeArray :: VU.Vector Int -> VS.Vector a -> Array a
-unsafeArray = G.unsafeArray
-
-unsafeArrayL :: [Int] -> VS.Vector a -> Array a
-unsafeArrayL = G.unsafeArrayL
-
-unsafeModifyShape :: (VU.Vector Int -> VU.Vector Int) -> Array a -> Array a
-unsafeModifyShape = G.unsafeModifyShape
-
-tabulate :: (VG.Vector VS.Vector a) => [Int] -> ([Int] -> a) -> Array a
-tabulate = G.tabulate
-
-backpermute :: (VG.Vector VS.Vector a) => (VU.Vector Int -> VU.Vector Int) -> (VU.Vector Int -> VU.Vector Int) -> Array a -> Array a
-backpermute = G.backpermute
-
-toScalar :: (VG.Vector VS.Vector a) => a -> Array a
-toScalar = G.toScalar
-
-asSingleton :: Array a -> Array a
-asSingleton = G.asSingleton
-
-asScalar :: Array a -> Array a
-asScalar = G.asScalar
-
-empty :: (VG.Vector VS.Vector a) => Array a
-empty = G.empty
-
-range :: (VG.Vector VS.Vector Int) => [Int] -> Array Int
-range = G.range
-
-corange :: (VG.Vector VS.Vector Int) => [Int] -> Array Int
-corange = G.corange
-
-indices :: (VG.Vector VS.Vector [Int]) => [Int] -> Array [Int]
-indices = G.indices
-
-ident :: (Add.Additive a, Mult.Multiplicative a, VG.Vector VS.Vector a) => [Int] -> Array a
-ident = G.ident
-
-konst :: (VG.Vector VS.Vector a) => [Int] -> a -> Array a
-konst = G.konst
-
-singleton :: (VG.Vector VS.Vector a) => a -> Array a
-singleton = G.singleton
-
-zipWith :: (VG.Vector VS.Vector a, VG.Vector VS.Vector b, VG.Vector VS.Vector c) => (a -> b -> c) -> Array a -> Array b -> Array c
-zipWith = G.zipWith
-
-modify :: (VG.Vector VS.Vector a) => [Int] -> (a -> a) -> Array a -> Array a
-modify = G.modify
-
-rowWise :: (Dims -> [x] -> Array a -> Array a) -> [x] -> Array a -> Array a
-rowWise = G.rowWise
-
-colWise :: (Dims -> [x] -> Array a -> Array a) -> [x] -> Array a -> Array a
-colWise = G.colWise
-
-dimsWise :: (Dim -> x -> Array a -> Array a) -> Dims -> [x] -> Array a -> Array a
-dimsWise = G.dimsWise
-
-couple :: (VG.Vector VS.Vector a) => Int -> Array a -> Array a -> Array a
-couple = G.couple
-
-indexes :: (VG.Vector VS.Vector a) => Dims -> [Int] -> Array a -> Array a
-indexes = G.indexes
-
-slices :: (VG.Vector VS.Vector a) => Dims -> [Int] -> [Int] -> Array a -> Array a
-slices = G.slices
-
-heads :: (VG.Vector VS.Vector a) => Dims -> Array a -> Array a
-heads = G.heads
-
-lasts :: (VG.Vector VS.Vector a) => Dims -> Array a -> Array a
-lasts = G.lasts
-
-tails :: (VG.Vector VS.Vector a) => Dims -> Array a -> Array a
-tails = G.tails
-
-inits :: (VG.Vector VS.Vector a) => Dims -> Array a -> Array a
-inits = G.inits
-
-modifies :: (VG.Vector VS.Vector a, VG.Vector VS.Vector (Array a)) => (Array a -> Array a) -> Dims -> [Int] -> Array a -> Array a
-modifies = G.modifies
-
-diffs :: (VG.Vector VS.Vector a, VG.Vector VS.Vector b, VG.Vector VS.Vector (Array a), VG.Vector VS.Vector (Array b)) => Dims -> [Int] -> (Array a -> Array a -> Array b) -> Array a -> Array b
-diffs = G.diffs
-
-windows :: (VG.Vector VS.Vector a) => [Int] -> Array a -> Array a
-windows = G.windows
-
-find :: (Eq (VS.Vector a), VG.Vector VS.Vector Bool, VG.Vector VS.Vector a, VG.Vector VS.Vector (Array a)) => Array a -> Array a -> Array Bool
-find = G.find
-
-findNoOverlap :: (Eq (VS.Vector a), VG.Vector VS.Vector Bool, VG.Vector VS.Vector a, VG.Vector VS.Vector (Array a)) => Array a -> Array a -> Array Bool
-findNoOverlap = G.findNoOverlap
-
-findIndices :: (Eq (VS.Vector a), VG.Vector VS.Vector [Int], VG.Vector VS.Vector a, VG.Vector VS.Vector Bool, VG.Vector VS.Vector ([Int], Bool), VG.Vector VS.Vector (Array a)) => Array a -> Array a -> Array [Int]
-findIndices = G.findIndices
-
-fill :: (VG.Vector VS.Vector a) => a -> Array a -> Array a
-fill = G.fill
-
-flat :: Array a -> Array a
-flat = G.flat
-
-rerank :: Int -> Array a -> Array a
-rerank = G.rerank
-
-transpose :: (VG.Vector VS.Vector a) => Array a -> Array a
-transpose = G.transpose
-
-intercalate :: (VG.Vector VS.Vector a, VG.Vector VS.Vector (Array a)) => Dim -> Array a -> Array a -> Array a
-intercalate = G.intercalate
-
-intersperse :: (VG.Vector VS.Vector a, VG.Vector VS.Vector (Array a)) => Dim -> a -> Array a -> Array a
-intersperse = G.intersperse
-
-sorts :: (Ord (VS.Vector a), VG.Vector VS.Vector a, VG.Vector VS.Vector Int, VG.Vector VS.Vector (Array a)) => Dims -> Array a -> Array a
-sorts = G.sorts
-
-sortsBy :: (Ord (VS.Vector b), VG.Vector VS.Vector a, VG.Vector VS.Vector Int, VG.Vector VS.Vector (Array a)) => Dims -> (Array a -> Array b) -> Array a -> Array a
-sortsBy = G.sortsBy
-
-orders :: (Ord (VS.Vector a), VG.Vector VS.Vector Int, VG.Vector VS.Vector a, VG.Vector VS.Vector (Array a)) => Dims -> Array a -> Array Int
-orders = G.orders
-
-ordersBy :: (Ord (VS.Vector b), VG.Vector VS.Vector Int, VG.Vector VS.Vector a, VG.Vector VS.Vector (Array a)) => Dims -> (Array a -> Array b) -> Array a -> Array Int
-ordersBy = G.ordersBy
-
-transmit :: (VG.Vector VS.Vector b, VG.Vector VS.Vector c, VG.Vector VS.Vector (Array b), VG.Vector VS.Vector (Array c)) => (Array a -> Array b -> Array c) -> Array a -> Array b -> Array c
-transmit = G.transmit
-
-transmitOp :: (VG.Vector VS.Vector a, VG.Vector VS.Vector b, VG.Vector VS.Vector c, VG.Vector VS.Vector (Array a), VG.Vector VS.Vector (Array b), VG.Vector VS.Vector (Array c)) => (a -> b -> c) -> Array a -> Array b -> Array c
-transmitOp = G.transmitOp
-
-telecasts :: (VG.Vector VS.Vector a, VG.Vector VS.Vector b, VG.Vector VS.Vector c, VG.Vector VS.Vector (Array a), VG.Vector VS.Vector (Array b), VG.Vector VS.Vector (Array c)) => Dims -> Dims -> (Array a -> Array b -> Array c) -> Array a -> Array b -> Array c
-telecasts = G.telecasts
-
-cons :: (VG.Vector VS.Vector a) => Array a -> Array a -> Array a
-cons = G.cons
-
-snoc :: (VG.Vector VS.Vector a) => Array a -> Array a -> Array a
-snoc = G.snoc
-
-iota :: (VG.Vector VS.Vector Int) => Int -> Array Int
-iota = G.iota

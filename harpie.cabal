@@ -205,15 +205,4 @@ common ghc-options-exe-stanza
     -threaded
     -with-rtsopts=-N
 
-executable harpie-bug-issue1
-  import: ghc-options-exe-stanza
-  import: ghc-options-stanza
-  import: ghc2024-stanza
-  main-is: harpie-bug-issue1.hs
-  hs-source-dirs: test
-  build-depends:
-    adjunctions >=4.0 && <5,
-    base >=4.14 && <5,
-    first-class-families >=0.8.1 && <0.9,
-    harpie,
-    vector >=0.12.3 && <0.14,
+

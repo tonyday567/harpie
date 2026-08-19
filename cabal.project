@@ -2,8 +2,3 @@ packages:
   harpie.cabal
 
 write-ghc-environment-files: always
-
-source-repository-package
-  type: git
-  location: https://github.com/tonyday567/numhask.git
-  tag: main
