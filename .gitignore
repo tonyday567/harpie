@@ -8,3 +8,7 @@ TAGS
 .ghc.environment.*
 /.hkgr/
 /checklist.org
+dist-newstyle/
+*.ghc.environment.*
+.stack-work/
+cabal.project.local
